@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { Check, CreditCard, DollarSign, Filter, Plus, Search, WalletCards, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, CreditCard, DollarSign, Filter, Plus, Search, Trash2, WalletCards, X } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,14 @@ interface Payment {
   dueDate: string;
   status: PaymentStatus;
   type: PaymentType;
+  category?: string;
+}
+
+// Extended category interface
+interface Category {
+  id: number;
+  name: string;
+  type: PaymentType;
 }
 
 const Payments = () => {
@@ -35,14 +43,42 @@ const Payments = () => {
   const [payments, setPayments] = useState<Payment[]>(upcomingPayments as Payment[]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState<Partial<Category>>({
+    name: '',
+    type: 'receivable'
+  });
+  const [categories, setCategories] = useState<Category[]>([
+    { id: 1, name: 'Casamento', type: 'receivable' },
+    { id: 2, name: 'Formatura', type: 'receivable' },
+    { id: 3, name: 'Gestante', type: 'receivable' },
+    { id: 4, name: '15 anos', type: 'receivable' },
+    { id: 5, name: 'Despesa Fixa', type: 'payable' },
+    { id: 6, name: 'Material', type: 'payable' },
+  ]);
   const [newPayment, setNewPayment] = useState<Partial<Payment>>({
     client: '',
     service: '',
     amount: 0,
     dueDate: new Date().toISOString().split('T')[0],
     status: 'pending',
-    type: 'receivable'
+    type: 'receivable',
+    category: ''
   });
+  const [clients, setClients] = useState<string[]>([
+    'Ana Carolina', 'Marcos Silva', 'Juliana Santos', 'Pedro Oliveira', 
+    'Carla Mendes', 'Aluguel Estúdio', 'Fornecedor Álbuns', 'Energia Elétrica'
+  ]);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  
+  // Initialize payments with categories from existing data
+  useEffect(() => {
+    const updatedPayments = upcomingPayments.map(payment => ({
+      ...payment,
+      category: payment.service
+    }));
+    setPayments(updatedPayments as Payment[]);
+  }, []);
   
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -67,8 +103,61 @@ const Payments = () => {
     }
   };
 
+  const handleAddCategory = () => {
+    if (!newCategory.name || !newCategory.type) {
+      toast({
+        title: "Dados incompletos",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const id = Math.max(...categories.map(c => c.id), 0) + 1;
+    const completeCategory = {
+      ...newCategory,
+      id,
+    } as Category;
+
+    setCategories([...categories, completeCategory]);
+    
+    toast({
+      title: "Categoria adicionada",
+      description: `${completeCategory.name} foi adicionada com sucesso.`,
+    });
+
+    // Reset form and close dialog
+    setNewCategory({
+      name: '',
+      type: 'receivable'
+    });
+    setIsCategoryDialogOpen(false);
+  };
+
+  const handleDeleteCategory = (id: number) => {
+    const categoryToDelete = categories.find(c => c.id === id);
+    if (!categoryToDelete) return;
+
+    // Check if category is being used in any payment
+    const isUsed = payments.some(p => p.category === categoryToDelete.name);
+    if (isUsed) {
+      toast({
+        title: "Não é possível excluir",
+        description: "Esta categoria está sendo usada em um ou mais pagamentos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCategories(categories.filter(c => c.id !== id));
+    toast({
+      title: "Categoria removida",
+      description: `${categoryToDelete.name} foi removida com sucesso.`,
+    });
+  };
+
   const handleAddNewPayment = () => {
-    if (!newPayment.client || !newPayment.service || !newPayment.amount || !newPayment.dueDate) {
+    if (!newPayment.client || !newPayment.category || !newPayment.amount || !newPayment.dueDate) {
       toast({
         title: "Dados incompletos",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -81,6 +170,7 @@ const Payments = () => {
     const completePayment = {
       ...newPayment,
       id,
+      service: newPayment.category,
       amount: Number(newPayment.amount),
       status: 'pending' as PaymentStatus,
     } as Payment;
@@ -89,13 +179,19 @@ const Payments = () => {
     
     toast({
       title: newPayment.type === 'receivable' ? "Conta a receber adicionada" : "Conta a pagar adicionada",
-      description: `${newPayment.client} - ${newPayment.service} (R$ ${Number(newPayment.amount).toLocaleString()})`,
+      description: `${newPayment.client} - ${newPayment.category} (R$ ${Number(newPayment.amount).toLocaleString()})`,
     });
+
+    // Add client to list if it doesn't exist
+    if (!clients.includes(newPayment.client!)) {
+      setClients([...clients, newPayment.client!]);
+    }
 
     // Reset form and close dialog
     setNewPayment({
       client: '',
       service: '',
+      category: '',
       amount: 0,
       dueDate: new Date().toISOString().split('T')[0],
       status: 'pending',
@@ -104,10 +200,28 @@ const Payments = () => {
     setIsAddDialogOpen(false);
   };
   
-  const filteredPayments = payments.filter(payment => 
-    payment.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.service.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPayments = payments.filter(payment => {
+    const matchesSearch = payment.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.service.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // If we have an active filter from dashboard card, apply it
+    if (activeFilter) {
+      switch (activeFilter) {
+        case 'receivable-pending':
+          return matchesSearch && payment.type === 'receivable' && payment.status === 'pending';
+        case 'receivable-completed':
+          return matchesSearch && payment.type === 'receivable' && payment.status === 'completed';
+        case 'payable-pending':
+          return matchesSearch && payment.type === 'payable' && payment.status === 'pending';
+        case 'payable-completed':
+          return matchesSearch && payment.type === 'payable' && payment.status === 'completed';
+        default:
+          return matchesSearch;
+      }
+    }
+    
+    return matchesSearch;
+  });
 
   // Calculate financial summary
   const financialSummary = {
@@ -138,6 +252,25 @@ const Payments = () => {
           .reduce((sum, p) => sum + p.amount, 0),
         count: payments.filter(p => p.type === 'payable' && p.status === 'completed').length
       }
+    }
+  };
+
+  // Handle dashboard card click
+  const handleCardClick = (filter: string) => {
+    setActiveFilter(activeFilter === filter ? null : filter);
+    
+    const filterNames = {
+      'receivable-pending': 'Contas a Receber (Pendentes)',
+      'receivable-completed': 'Contas a Receber (Concluídos)',
+      'payable-pending': 'Contas a Pagar (Pendentes)',
+      'payable-completed': 'Contas a Pagar (Concluídos)'
+    };
+    
+    if (activeFilter !== filter) {
+      toast({
+        title: "Filtro aplicado",
+        description: `Exibindo ${filterNames[filter as keyof typeof filterNames]}`,
+      });
     }
   };
   
@@ -177,7 +310,7 @@ const Payments = () => {
                           type="button"
                           variant={newPayment.type === 'receivable' ? 'default' : 'outline'}
                           className={newPayment.type === 'receivable' ? 'bg-green-600 hover:bg-green-700' : ''}
-                          onClick={() => setNewPayment({...newPayment, type: 'receivable'})}
+                          onClick={() => setNewPayment({...newPayment, type: 'receivable', category: ''})}
                         >
                           <ArrowUpIcon className="h-4 w-4 mr-2" /> Conta a Receber
                         </Button>
@@ -185,7 +318,7 @@ const Payments = () => {
                           type="button"
                           variant={newPayment.type === 'payable' ? 'default' : 'outline'}
                           className={newPayment.type === 'payable' ? 'bg-red-600 hover:bg-red-700' : ''}
-                          onClick={() => setNewPayment({...newPayment, type: 'payable'})}
+                          onClick={() => setNewPayment({...newPayment, type: 'payable', category: ''})}
                         >
                           <ArrowDownIcon className="h-4 w-4 mr-2" /> Conta a Pagar
                         </Button>
@@ -195,23 +328,61 @@ const Payments = () => {
                       <Label htmlFor="client">
                         {newPayment.type === 'receivable' ? 'Cliente' : 'Fornecedor/Despesa'}
                       </Label>
-                      <Input
-                        id="client"
-                        value={newPayment.client}
-                        onChange={(e) => setNewPayment({...newPayment, client: e.target.value})}
-                        className="bg-studio-gray border-studio-gray"
-                      />
+                      <Select 
+                        value={newPayment.client} 
+                        onValueChange={(value) => setNewPayment({...newPayment, client: value})}
+                      >
+                        <SelectTrigger className="bg-studio-gray border-studio-gray">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients.map((client, index) => (
+                            <SelectItem key={index} value={client}>{client}</SelectItem>
+                          ))}
+                          <SelectItem value="new">+ Adicionar Novo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {newPayment.client === 'new' && (
+                        <Input
+                          placeholder="Nome do cliente/fornecedor"
+                          value=""
+                          onChange={(e) => setNewPayment({...newPayment, client: e.target.value})}
+                          className="mt-2 bg-studio-gray border-studio-gray"
+                        />
+                      )}
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="service">
-                        {newPayment.type === 'receivable' ? 'Serviço' : 'Categoria'}
-                      </Label>
-                      <Input
-                        id="service"
-                        value={newPayment.service}
-                        onChange={(e) => setNewPayment({...newPayment, service: e.target.value})}
-                        className="bg-studio-gray border-studio-gray"
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="category">
+                          {newPayment.type === 'receivable' ? 'Categoria/Serviço' : 'Categoria'}
+                        </Label>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setIsCategoryDialogOpen(true)}
+                          className="h-6 text-xs"
+                        >
+                          Gerenciar Categorias
+                        </Button>
+                      </div>
+                      <Select 
+                        value={newPayment.category} 
+                        onValueChange={(value) => setNewPayment({...newPayment, category: value})}
+                      >
+                        <SelectTrigger className="bg-studio-gray border-studio-gray">
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories
+                            .filter(cat => cat.type === newPayment.type)
+                            .map((category) => (
+                              <SelectItem key={category.id} value={category.name}>
+                                {category.name}
+                              </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="amount">Valor (R$)</Label>
@@ -244,6 +415,95 @@ const Payments = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
+              {/* Category Management Dialog */}
+              <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                <DialogContent className="bg-card border border-studio-gray sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Gerenciar Categorias</DialogTitle>
+                    <DialogDescription>
+                      Adicione ou remova categorias para classificar seus pagamentos.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Nova Categoria</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="Nome da categoria"
+                          value={newCategory.name}
+                          onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                          className="bg-studio-gray border-studio-gray"
+                        />
+                        <Select 
+                          value={newCategory.type} 
+                          onValueChange={(value: PaymentType) => setNewCategory({...newCategory, type: value})}
+                        >
+                          <SelectTrigger className="w-[180px] bg-studio-gray border-studio-gray">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="receivable">Contas a Receber</SelectItem>
+                            <SelectItem value="payable">Contas a Pagar</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button onClick={handleAddCategory} size="sm" className="bg-studio-orange hover:bg-studio-orange/90">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Categorias Existentes</Label>
+                      <Tabs defaultValue="receivable" className="w-full">
+                        <TabsList className="grid grid-cols-2 bg-studio-gray">
+                          <TabsTrigger value="receivable">Contas a Receber</TabsTrigger>
+                          <TabsTrigger value="payable">Contas a Pagar</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="receivable" className="max-h-[200px] overflow-y-auto mt-2">
+                          <div className="space-y-2">
+                            {categories.filter(c => c.type === 'receivable').map(category => (
+                              <div key={category.id} className="flex items-center justify-between bg-studio-gray/50 p-2 rounded">
+                                <span>{category.name}</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleDeleteCategory(category.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-transparent"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </TabsContent>
+                        <TabsContent value="payable" className="max-h-[200px] overflow-y-auto mt-2">
+                          <div className="space-y-2">
+                            {categories.filter(c => c.type === 'payable').map(category => (
+                              <div key={category.id} className="flex items-center justify-between bg-studio-gray/50 p-2 rounded">
+                                <span>{category.name}</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleDeleteCategory(category.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-transparent"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={() => setIsCategoryDialogOpen(false)}>
+                      Fechar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </section>
           
@@ -257,6 +517,7 @@ const Payments = () => {
                   currency: "R$",
                   count: financialSummary.receivable.pending.count
                 }}
+                onClick={() => handleCardClick('receivable-pending')}
               />
             </div>
             <div className="bg-card border border-studio-gray rounded-xl p-4">
@@ -267,6 +528,7 @@ const Payments = () => {
                   currency: "R$",
                   count: financialSummary.receivable.completed.count
                 }}
+                onClick={() => handleCardClick('receivable-completed')}
               />
             </div>
             <div className="bg-card border border-studio-gray rounded-xl p-4">
@@ -277,6 +539,7 @@ const Payments = () => {
                   currency: "R$",
                   count: financialSummary.payable.pending.count
                 }}
+                onClick={() => handleCardClick('payable-pending')}
               />
             </div>
             <div className="bg-card border border-studio-gray rounded-xl p-4">
@@ -287,6 +550,7 @@ const Payments = () => {
                   currency: "R$",
                   count: financialSummary.payable.completed.count
                 }}
+                onClick={() => handleCardClick('payable-completed')}
               />
             </div>
           </section>
@@ -295,11 +559,11 @@ const Payments = () => {
             <Tabs defaultValue="all" className="w-full">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-studio-gray">
                 <TabsList className="bg-studio-gray mb-4 sm:mb-0">
-                  <TabsTrigger value="all">Todos</TabsTrigger>
-                  <TabsTrigger value="receivable">A Receber</TabsTrigger>
-                  <TabsTrigger value="payable">A Pagar</TabsTrigger>
-                  <TabsTrigger value="pending">Pendentes</TabsTrigger>
-                  <TabsTrigger value="completed">Concluídos</TabsTrigger>
+                  <TabsTrigger value="all" onClick={() => setActiveFilter(null)}>Todos</TabsTrigger>
+                  <TabsTrigger value="receivable" onClick={() => setActiveFilter(null)}>A Receber</TabsTrigger>
+                  <TabsTrigger value="payable" onClick={() => setActiveFilter(null)}>A Pagar</TabsTrigger>
+                  <TabsTrigger value="pending" onClick={() => setActiveFilter(null)}>Pendentes</TabsTrigger>
+                  <TabsTrigger value="completed" onClick={() => setActiveFilter(null)}>Concluídos</TabsTrigger>
                 </TabsList>
                 
                 <div className="flex gap-2">
@@ -354,6 +618,23 @@ const Payments = () => {
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Active filter indicator */}
+          {activeFilter && (
+            <div className="flex items-center justify-between bg-studio-gray/30 p-2 rounded-lg">
+              <span>
+                Filtro ativo: {
+                  activeFilter === 'receivable-pending' ? 'Contas a Receber (Pendentes)' :
+                  activeFilter === 'receivable-completed' ? 'Contas a Receber (Concluídos)' :
+                  activeFilter === 'payable-pending' ? 'Contas a Pagar (Pendentes)' :
+                  'Contas a Pagar (Concluídos)'
+                }
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setActiveFilter(null)}>
+                <X className="h-4 w-4 mr-1" /> Limpar filtro
+              </Button>
+            </div>
+          )}
         </main>
       </div>
     </div>
@@ -374,7 +655,7 @@ const PaymentTable = ({ payments, handleCompletePayment }: PaymentTableProps) =>
           <tr>
             <th className="text-left p-4">Tipo</th>
             <th className="text-left p-4">Cliente/Fornecedor</th>
-            <th className="text-left p-4">Serviço/Categoria</th>
+            <th className="text-left p-4">Categoria/Serviço</th>
             <th className="text-left p-4">Valor</th>
             <th className="text-left p-4">Data</th>
             <th className="text-left p-4">Status</th>
@@ -397,7 +678,7 @@ const PaymentTable = ({ payments, handleCompletePayment }: PaymentTableProps) =>
                   )}
                 </td>
                 <td className="p-4">{payment.client}</td>
-                <td className="p-4">{payment.service}</td>
+                <td className="p-4">{payment.category || payment.service}</td>
                 <td className="p-4">R$ {payment.amount.toLocaleString()}</td>
                 <td className="p-4">{new Date(payment.dueDate).toLocaleDateString('pt-BR')}</td>
                 <td className="p-4">
