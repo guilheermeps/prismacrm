@@ -1,4 +1,3 @@
-
 export const monthlyGoal = {
   current: 67,
   target: 100,
@@ -28,11 +27,78 @@ export const serviceTypes = [
 ];
 
 export const upcomingPayments = [
-  { id: 1, client: 'Ana Carolina', service: 'Casamento', amount: 3500, dueDate: '2024-05-15', status: 'pending' },
-  { id: 2, client: 'Marcos Silva', service: 'Formatura', amount: 1200, dueDate: '2024-05-10', status: 'pending' },
-  { id: 3, client: 'Juliana Santos', service: 'Gestante', amount: 850, dueDate: '2024-05-05', status: 'completed' },
-  { id: 4, client: 'Pedro Oliveira', service: '15 anos', amount: 2200, dueDate: '2024-05-20', status: 'pending' },
-  { id: 5, client: 'Carla Mendes', service: 'Casamento', amount: 4000, dueDate: '2024-05-30', status: 'pending' }
+  { 
+    id: 1, 
+    client: 'Ana Carolina', 
+    service: 'Casamento', 
+    amount: 3500, 
+    dueDate: '2024-05-15', 
+    status: 'pending',
+    type: 'receivable' // contas a receber
+  },
+  { 
+    id: 2, 
+    client: 'Marcos Silva', 
+    service: 'Formatura', 
+    amount: 1200, 
+    dueDate: '2024-05-10', 
+    status: 'pending',
+    type: 'receivable'
+  },
+  { 
+    id: 3, 
+    client: 'Juliana Santos', 
+    service: 'Gestante', 
+    amount: 850, 
+    dueDate: '2024-05-05', 
+    status: 'completed',
+    type: 'receivable'
+  },
+  { 
+    id: 4, 
+    client: 'Pedro Oliveira', 
+    service: '15 anos', 
+    amount: 2200, 
+    dueDate: '2024-05-20', 
+    status: 'pending',
+    type: 'receivable'
+  },
+  { 
+    id: 5, 
+    client: 'Carla Mendes', 
+    service: 'Casamento', 
+    amount: 4000, 
+    dueDate: '2024-05-30', 
+    status: 'pending',
+    type: 'receivable'
+  },
+  { 
+    id: 6, 
+    client: 'Aluguel Estúdio', 
+    service: 'Despesa Fixa', 
+    amount: 1500, 
+    dueDate: '2024-05-10', 
+    status: 'pending',
+    type: 'payable' // contas a pagar
+  },
+  { 
+    id: 7, 
+    client: 'Fornecedor Álbuns', 
+    service: 'Material', 
+    amount: 850, 
+    dueDate: '2024-05-15', 
+    status: 'completed',
+    type: 'payable'
+  },
+  { 
+    id: 8, 
+    client: 'Energia Elétrica', 
+    service: 'Despesa Fixa', 
+    amount: 320, 
+    dueDate: '2024-05-22', 
+    status: 'pending',
+    type: 'payable'
+  }
 ];
 
 export const upcomingSchedule = [

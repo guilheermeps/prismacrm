@@ -1,12 +1,24 @@
 
 import { negotiations } from '@/utils/mockData';
 
-const NegotiationCard = () => {
-  const { total, currency, count } = negotiations;
+interface NegotiationCardProps {
+  title?: string;
+  data?: {
+    total: number;
+    currency: string;
+    count: number;
+  }
+}
+
+const NegotiationCard = ({ 
+  title = "Em negociação", 
+  data = negotiations 
+}: NegotiationCardProps) => {
+  const { total, currency, count } = data;
   
   return (
     <div className="flex flex-col space-y-2">
-      <p className="text-muted-foreground">Em negociação</p>
+      <p className="text-muted-foreground">{title}</p>
       <div>
         <span className="text-4xl font-bold">
           {currency}{total.toLocaleString()}
