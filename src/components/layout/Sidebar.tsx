@@ -12,7 +12,8 @@ import {
   Rocket,
   FileText,
   Package,
-  Users
+  Users,
+  Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const navItems = [
   { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
   { path: '/products', label: 'Produtos', icon: Package },
   { path: '/contacts', label: 'Contatos', icon: Users },
+  { path: '/sales-pipeline', label: 'Pipeline de Vendas', icon: Target },
   { path: '/reports', label: 'Relatórios', icon: BarChart },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
