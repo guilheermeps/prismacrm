@@ -1,3 +1,4 @@
+
 export const monthlyGoal = {
   current: 67,
   target: 100,
@@ -135,4 +136,107 @@ export const notifications = [
   { id: 1, message: 'Novo lead recebido', time: '2h atrás', read: false },
   { id: 2, message: 'Pagamento confirmado - Ana Carolina', time: '5h atrás', read: true },
   { id: 3, message: 'Sessão amanhã - Pedro Oliveira', time: '1d atrás', read: true }
+];
+
+// Contatos fictícios para a interface
+export const mockContacts = [
+  {
+    id: 1,
+    name: "Maria Silva",
+    email: "maria.silva@email.com",
+    phone: "(11) 98765-4321",
+    type: "client",
+    document: "123.456.789-00",
+    identity: "12.345.678-9",
+    street: "Rua das Flores",
+    number: "123",
+    complement: "Apto 101",
+    neighborhood: "Jardim Primavera",
+    city: "São Paulo",
+    state: "SP",
+    zipCode: "01234-567",
+    notes: "Cliente desde 2022. Prefere ser contatada por WhatsApp.",
+    orders: [
+      { id: 1001, date: "15/03/2023", type: "Ensaio", value: 800, status: "completed" },
+      { id: 1045, date: "22/10/2023", type: "Casamento", value: 3500, status: "completed" }
+    ]
+  },
+  {
+    id: 2,
+    name: "João Oliveira",
+    email: "joao.oliveira@email.com",
+    phone: "(11) 91234-5678",
+    type: "client",
+    document: "987.654.321-00",
+    identity: "98.765.432-1",
+    street: "Avenida Central",
+    number: "456",
+    complement: "",
+    neighborhood: "Centro",
+    city: "São Paulo",
+    state: "SP",
+    zipCode: "04567-890",
+    notes: "Cliente corporativo. Faz pedidos semestrais para eventos da empresa.",
+    orders: [
+      { id: 1023, date: "05/06/2023", type: "Evento Corporativo", value: 2500, status: "completed" },
+      { id: 1067, date: "10/12/2023", type: "Evento Corporativo", value: 2800, status: "completed" },
+      { id: 1089, date: "15/05/2024", type: "Evento Corporativo", value: 3000, status: "in-progress" }
+    ]
+  },
+  {
+    id: 3,
+    name: "Álbuns Express",
+    email: "contato@albunsexpress.com.br",
+    phone: "(11) 3456-7890",
+    type: "supplier",
+    document: "12.345.678/0001-90",
+    identity: "123.456.789",
+    street: "Rua da Indústria",
+    number: "789",
+    complement: "Galpão 3",
+    neighborhood: "Distrito Industrial",
+    city: "Guarulhos",
+    state: "SP",
+    zipCode: "07890-123",
+    notes: "Fornecedor de álbuns fotográficos. Pedido mínimo de 5 unidades. Prazo de entrega: 15 dias úteis.",
+    orders: []
+  },
+  {
+    id: 4,
+    name: "Ana Carolina Santos",
+    email: "ana.carolina@email.com",
+    phone: "(11) 95555-9999",
+    type: "client",
+    document: "111.222.333-44",
+    identity: "11.222.333-4",
+    street: "Rua das Palmeiras",
+    number: "321",
+    complement: "Casa",
+    neighborhood: "Jardim Europa",
+    city: "São Paulo",
+    state: "SP",
+    zipCode: "05678-901",
+    notes: "Noiva. Casamento marcado para dezembro de 2024.",
+    orders: [
+      { id: 1099, date: "10/04/2024", type: "Ensaio Pré-Wedding", value: 1200, status: "pending" }
+    ]
+  },
+  {
+    id: 5,
+    name: "Gráfica Moderna",
+    email: "vendas@graficamoderna.com.br",
+    phone: "(11) 2345-6789",
+    type: "supplier",
+    document: "98.765.432/0001-10",
+    identity: "987.654.321",
+    street: "Avenida Comercial",
+    number: "1000",
+    complement: "Sala 15",
+    neighborhood: "Brás",
+    city: "São Paulo",
+    state: "SP",
+    zipCode: "03456-789",
+    notes: "Fornecedor de impressões especiais e materiais gráficos.",
+    orders: []
+  }
 ];

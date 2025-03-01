@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Plus, Trash } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Trash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -25,15 +26,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { mockContacts } from "@/utils/mockData";
 
-// Mock data para clientes e produtos/serviços
-const mockClients = [
-  { id: 1, name: "João Silva" },
-  { id: 2, name: "Maria Oliveira" },
-  { id: 3, name: "Carlos Santos" },
-  { id: 4, name: "Ana Pereira" }
-];
-
+// Mock data para produtos/serviços
 const mockProducts = [
   { id: 1, name: "Design de Website", type: "service", price: 2500 },
   { id: 2, name: "Hospedagem (1 ano)", type: "service", price: 400 },
@@ -46,6 +41,15 @@ const mockPaymentMethods = [
   { id: "debit", name: "Cartão de Débito" },
   { id: "credit", name: "Cartão de Crédito" },
   { id: "pix", name: "PIX" }
+];
+
+const mockServiceTypes = [
+  { id: "wedding", name: "Casamento" },
+  { id: "event", name: "Evento" },
+  { id: "portrait", name: "Ensaio" },
+  { id: "graduation", name: "Formatura" },
+  { id: "birthday", name: "Aniversário" },
+  { id: "corporate", name: "Corporativo" }
 ];
 
 interface OrderItem {
@@ -67,6 +71,16 @@ const OrderForm = ({
   const [orderDate, setOrderDate] = useState<Date | undefined>(
     initialOrder?.orderDate ? new Date(initialOrder.orderDate) : new Date()
   );
+  
+  // Novos campos para trabalhos fotográficos
+  const [serviceDate, setServiceDate] = useState<Date | undefined>(
+    initialOrder?.serviceDate ? new Date(initialOrder.serviceDate) : undefined
+  );
+  const [startTime, setStartTime] = useState(initialOrder?.startTime || "");
+  const [duration, setDuration] = useState(initialOrder?.duration || "");
+  const [location, setLocation] = useState(initialOrder?.location || "");
+  const [serviceType, setServiceType] = useState(initialOrder?.serviceType || "");
+  
   const [status, setStatus] = useState(initialOrder?.status || "pending");
   const [paymentMethod, setPaymentMethod] = useState(initialOrder?.paymentMethod || "");
   const [items, setItems] = useState<OrderItem[]>(initialOrder?.items || []);
@@ -165,6 +179,12 @@ const OrderForm = ({
       cardFeeType,
       cardFeeValue,
       notes,
+      // Novos campos
+      serviceDate,
+      startTime,
+      duration,
+      location,
+      serviceType,
       total: calculateTotal(),
       feeAmount: calculateFee()
     };
@@ -185,11 +205,14 @@ const OrderForm = ({
                 <SelectValue placeholder="Selecione um cliente" />
               </SelectTrigger>
               <SelectContent>
-                {mockClients.map(client => (
-                  <SelectItem key={client.id} value={client.id.toString()}>
-                    {client.name}
-                  </SelectItem>
-                ))}
+                {mockContacts
+                  .filter(contact => contact.type === "client")
+                  .map(client => (
+                    <SelectItem key={client.id} value={client.id.toString()}>
+                      {client.name}
+                    </SelectItem>
+                  ))
+                }
               </SelectContent>
             </Select>
           </div>
@@ -228,6 +251,23 @@ const OrderForm = ({
                 <SelectItem value="in-progress">Em Andamento</SelectItem>
                 <SelectItem value="completed">Concluído</SelectItem>
                 <SelectItem value="canceled">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Novo campo: Tipo de serviço */}
+          <div className="space-y-2">
+            <Label htmlFor="serviceType">Tipo de Serviço</Label>
+            <Select value={serviceType} onValueChange={setServiceType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de serviço" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockServiceTypes.map(type => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -340,6 +380,78 @@ const OrderForm = ({
         </div>
       </div>
 
+      {/* Novos campos: Detalhes do Trabalho */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalhes do Trabalho</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Data do Trabalho</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {serviceDate ? format(serviceDate, "dd/MM/yyyy") : "Selecione a data do trabalho"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={serviceDate}
+                    onSelect={setServiceDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Horário de Início</Label>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duração (horas)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  placeholder="Ex: 3.5"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="location">Local do Trabalho</Label>
+              <Textarea
+                id="location"
+                rows={2}
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Endereço completo do local onde será realizado o trabalho"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Itens do Pedido */}
       <Card>
         <CardHeader>
@@ -435,8 +547,9 @@ const OrderForm = ({
       {/* Observações */}
       <div className="space-y-2">
         <Label htmlFor="notes">Observações</Label>
-        <Input
+        <Textarea
           id="notes"
+          rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="w-full"
