@@ -9,7 +9,8 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight, 
-  Rocket 
+  Rocket,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/payments', label: 'Pagamentos', icon: CreditCard },
   { path: '/schedule', label: 'Agenda', icon: CalendarDays },
+  { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
   { path: '/reports', label: 'Relatórios', icon: BarChart },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];

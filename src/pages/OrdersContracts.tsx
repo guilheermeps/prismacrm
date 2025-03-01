@@ -8,14 +8,20 @@ import ContractsTab from "@/components/orders-contracts/ContractsTab";
 
 const OrdersContracts = () => {
   const [activeTab, setActiveTab] = useState("orders");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Pedidos e Contratos" />
+        <Header toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6">Pedidos e Contratos</h1>
             <Tabs defaultValue="orders" onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="orders">Pedidos</TabsTrigger>
