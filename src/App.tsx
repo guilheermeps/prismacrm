@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import OrdersContracts from "./pages/OrdersContracts";
 import Products from "./pages/Products";
 import Contacts from "./pages/Contacts";
+import SalesPipeline from "./pages/SalesPipeline";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/orders-contracts" element={<OrdersContracts />} />
           <Route path="/products" element={<Products />} />
           <Route path="/contacts" element={<Contacts />} />
+          <Route path="/sales-pipeline" element={<SalesPipeline />} />
           <Route path="/settings" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
