@@ -16,7 +16,8 @@ export const addNewLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'hist
     const newLead = {
       ...leadData,
       history: [],
-      isArchived: false
+      isArchived: false,
+      createdAt: new Date().toISOString() // Add createdAt field
     };
     
     console.log("Creating new lead with data:", newLead);

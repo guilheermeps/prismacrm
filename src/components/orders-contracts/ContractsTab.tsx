@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,12 +29,12 @@ interface ContractFormData {
   total_amount: number;
   due_date?: string;
   payment_method: string;
-  payment_status: string;
+  payment_status: 'pending' | 'completed';
   installments: number;
   start_date: string;
   notes?: string;
   services: ContractService[];
-  status: string;
+  status: 'active' | 'pending-signature' | 'signed' | 'canceled' | 'expired';
 }
 
 const ContractsTab = ({ leadData, contactData, onCreateContract }: ContractsTabProps) => {
@@ -91,7 +92,7 @@ const ContractsTab = ({ leadData, contactData, onCreateContract }: ContractsTabP
         start_date: formattedEventDate,
         notes: notes,
         services: services,
-        status: 'active'
+        status: 'active' as 'active' | 'pending-signature' | 'signed' | 'canceled' | 'expired'
       };
 
       const created = await createContract(newContract);

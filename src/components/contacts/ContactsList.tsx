@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   Table, 
   TableBody, 
@@ -8,37 +10,26 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Search, Plus, Edit, Trash, FileText, FileSignature, Phone } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { 
-  Plus, 
-  Search, 
-  MoreHorizontal, 
-  Phone, 
-  Mail,
-  Edit,
-  Trash,
-  FileText,
-  UserRound,
-  ShoppingCart
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Contact, getContacts, deleteContact } from "@/lib/supabase/contactsService";
+import { getContacts, deleteContact } from "@/lib/supabase/contactsService";
+import { Contact } from "@/lib/supabase/contactsService";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { formatWhatsAppNumber, getWhatsAppUrl } from "@/lib/supabase/leadsService";
 
 interface ContactsListProps {
   filterType: "all" | "client" | "supplier";
   onAddContact: () => void;
-  onEditContact: (contact: any) => void;
-  onCreateOrder?: (contact: any) => void;
-  onCreateContract?: (contact: any) => void;
+  onEditContact: (contact: Contact) => void;
+  onCreateOrder: (contact: Contact) => void;
+  onCreateContract: (contact: Contact) => void;
 }
 
 const ContactsList = ({ 
@@ -46,27 +37,51 @@ const ContactsList = ({
   onAddContact, 
   onEditContact,
   onCreateOrder,
-  onCreateContract
+  onCreateContract 
 }: ContactsListProps) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const queryClient = useQueryClient();
   
-  // Use React Query for fetching and caching contacts
-  const { data: contacts = [], isLoading, error } = useQuery({
+  // Fetch contacts using React Query
+  const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['contacts'],
     queryFn: getContacts,
+    staleTime: 30000, // Data remains fresh for 30 seconds
   });
   
+  // Filter contacts based on search term and type
+  const filteredContacts = contacts.filter(contact => {
+    // Filter by search term
+    const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (contact.phone && contact.phone.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by type
+    const matchesType = filterType === "all" || 
+      (filterType === "client" && hasTags(contact, ["Cliente"])) ||
+      (filterType === "supplier" && hasTags(contact, ["Fornecedor"]));
+    
+    return matchesSearch && matchesType;
+  });
+  
+  // Helper function to check if contact has specific tags
+  function hasTags(contact: Contact, tagNames: string[]): boolean {
+    if (!contact.tags || contact.tags.length === 0) return false;
+    return contact.tags.some(tag => tagNames.includes(tag.name));
+  }
+  
   // Handle contact deletion
-  const handleDeleteContact = async (contactId: string) => {
+  const handleDeleteContact = async (contact: Contact) => {
     try {
-      const success = await deleteContact(contactId);
-      if (success) {
-        toast.success("Contato excluído com sucesso");
-        // Invalidate and refetch contacts after deletion
-        queryClient.invalidateQueries({ queryKey: ['contacts'] });
-      } else {
-        toast.error("Erro ao excluir contato");
+      if (window.confirm(`Tem certeza que deseja excluir o contato ${contact.name}?`)) {
+        const success = await deleteContact(contact.id);
+        if (success) {
+          // Invalidate and refetch contacts
+          queryClient.invalidateQueries({ queryKey: ['contacts'] });
+          toast.success("Contato excluído com sucesso!");
+        } else {
+          toast.error("Erro ao excluir contato");
+        }
       }
     } catch (error) {
       console.error("Error deleting contact:", error);
@@ -74,135 +89,127 @@ const ContactsList = ({
     }
   };
   
-  // Filter contacts based on type and search query
-  const filteredContacts = contacts.filter(contact => {
-    const matchesType = filterType === "all" || 
-                       (filterType === "client" && contact.tags.some(tag => tag.name.toLowerCase() === "cliente")) ||
-                       (filterType === "supplier" && contact.tags.some(tag => tag.name.toLowerCase() === "fornecedor"));
-    
-    const matchesSearch = !searchQuery || 
-                          contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          contact.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          contact.phone?.includes(searchQuery);
-    return matchesType && matchesSearch;
-  });
-
-  if (isLoading) {
-    return <div className="py-8 text-center">Carregando contatos...</div>;
-  }
-
-  if (error) {
-    return <div className="py-8 text-center text-red-500">Erro ao carregar contatos</div>;
-  }
-
+  // Open WhatsApp
+  const openWhatsApp = (contact: Contact) => {
+    try {
+      if (!contact.whatsapp) {
+        toast.error("Esse contato não tem número de WhatsApp.");
+        return;
+      }
+      
+      const formattedNumber = formatWhatsAppNumber(contact.whatsapp);
+      const whatsappUrl = getWhatsAppUrl(formattedNumber);
+      
+      window.open(whatsappUrl, "_blank");
+    } catch (error) {
+      console.error("Error opening WhatsApp:", error);
+      toast.error("Erro ao abrir o WhatsApp.");
+    }
+  };
+  
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Buscar contatos..."
             className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button onClick={onAddContact} className="w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={onAddContact}>
+          <Plus className="h-4 w-4 mr-2" />
           Novo Contato
         </Button>
       </div>
-
-      {filteredContacts.length === 0 ? (
-        <div className="text-center py-16 border rounded-md">
-          <UserRound className="h-12 w-12 mx-auto text-muted-foreground" />
-          <p className="mt-4 text-muted-foreground">Nenhum contato encontrado.</p>
-          <Button onClick={onAddContact} variant="outline" className="mt-4">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Contato
-          </Button>
-        </div>
-      ) : (
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Cidade/UF</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredContacts.map((contact) => (
+      
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead className="hidden md:table-cell">Telefone</TableHead>
+              <TableHead className="hidden md:table-cell">Email</TableHead>
+              <TableHead className="hidden lg:table-cell">Cidade</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              // Loading skeleton rows
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  <TableCell><Skeleton className="h-6 w-[150px]" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-[100px]" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-[150px]" /></TableCell>
+                  <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-[100px]" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-[60px] ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : filteredContacts.length > 0 ? (
+              // Actual contacts
+              filteredContacts.map((contact) => (
                 <TableRow key={contact.id}>
-                  <TableCell className="font-medium">{contact.name}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5">
-                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{contact.phone || contact.whatsapp || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{contact.email || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {contact.tags.map((tag) => (
-                      <Badge 
-                        key={tag.id} 
-                        variant={tag.name.toLowerCase() === "cliente" ? "default" : "secondary"}
-                        className="mr-1"
-                      >
-                        {tag.name}
-                      </Badge>
-                    ))}
-                  </TableCell>
-                  <TableCell>{contact.city || 'N/A'}/{contact.state || 'N/A'}</TableCell>
+                  <TableCell>{contact.name}</TableCell>
+                  <TableCell className="hidden md:table-cell">{contact.phone || '-'}</TableCell>
+                  <TableCell className="hidden md:table-cell">{contact.email || '-'}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{contact.city || '-'}</TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEditContact(contact)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        {onCreateOrder && contact.tags.some(tag => tag.name.toLowerCase() === "cliente") && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => contact.whatsapp && openWhatsApp(contact)}
+                        disabled={!contact.whatsapp}
+                        title={contact.whatsapp ? "Abrir WhatsApp" : "Sem WhatsApp"}
+                      >
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEditContact(contact)}>
+                            Editar Contato
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onCreateOrder(contact)}>
-                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            <FileText className="h-4 w-4 mr-2" />
                             Criar Pedido
                           </DropdownMenuItem>
-                        )}
-                        {onCreateContract && contact.tags.some(tag => tag.name.toLowerCase() === "cliente") && (
                           <DropdownMenuItem onClick={() => onCreateContract(contact)}>
-                            <FileText className="mr-2 h-4 w-4" />
+                            <FileSignature className="h-4 w-4 mr-2" />
                             Criar Contrato
                           </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => handleDeleteContact(contact.id)}
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteContact(contact)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              ))
+            ) : (
+              // No results
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Nenhum contato encontrado
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

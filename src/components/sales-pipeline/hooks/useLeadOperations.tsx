@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { 
@@ -104,11 +105,11 @@ function useLeadOperationsInternal() {
           // Check the type of change and update state accordingly for better performance
           if (payload.eventType === 'INSERT') {
             // For new leads, just append to the current state
-            const newLead = payload.new as Lead;
+            const newLead = payload.new as unknown as Lead;
             setLeads(currentLeads => [...currentLeads, newLead]);
           } else if (payload.eventType === 'UPDATE') {
             // For updates, replace the specific lead
-            const updatedLead = payload.new as Lead;
+            const updatedLead = payload.new as unknown as Lead;
             setLeads(currentLeads => 
               currentLeads.map(lead => 
                 lead.id === updatedLead.id ? updatedLead : lead
@@ -187,7 +188,7 @@ function useLeadOperationsInternal() {
       console.error(`Failed to move lead ${leadId} to stage ${toStageId}`);
       // Revert local state if API call fails
       setLeads(leads);
-      toast.error("Erro ao mover lead. Tentar novamente.");
+      toast.error("Erro ao mover lead. Tente novamente.");
       return false;
     }
     

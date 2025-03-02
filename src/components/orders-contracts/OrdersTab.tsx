@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { createOrder } from "@/lib/supabase";
+import { createOrder } from "@/lib/supabase/ordersService";
 import { OrderItem, SourceEntity } from "@/lib/types";
 
 interface OrdersTabProps {
@@ -64,27 +65,27 @@ const OrdersTab = ({ leadData, contactData, onCreateOrder }: OrdersTabProps) => 
     const formattedEventDate = format(eventDate, 'yyyy-MM-dd');
 
     try {
-      const newOrder = {
+      const orderData = {
         client_name: clientName,
         total_amount: totalAmount,
         due_date: formattedDueDate,
         payment_method: paymentMethod,
-        payment_status: 'pending', // Add the missing field
+        payment_status: 'pending' as 'pending' | 'completed',
         installments: installments,
         items: items,
         notes: notes,
         client_id: leadData?.id || contactData?.id,
         source_id: leadData?.id || contactData?.id,
-        source_type: leadData ? 'lead' as const : 'contact' as const,
-        status: 'pending'
+        source_type: leadData ? 'lead' as 'lead' | 'contact' : 'contact' as 'lead' | 'contact',
+        status: 'pending' as 'pending' | 'in-progress' | 'completed' | 'canceled'
       };
 
-      const createdOrderId = await createOrder(newOrder);
+      const created = await createOrder(orderData);
 
-      if (createdOrderId) {
+      if (created) {
         toast.success('Pedido criado com sucesso!');
         if (onCreateOrder) {
-          onCreateOrder(createdOrderId, clientName, totalAmount, formattedDueDate, paymentMethod, installments, serviceType, formattedEventDate, eventTime, location, notes);
+          onCreateOrder(orderId, clientName, totalAmount, formattedDueDate, paymentMethod, installments, serviceType, formattedEventDate, eventTime, location, notes);
         }
       } else {
         toast.error('Erro ao criar pedido. Tente novamente.');
