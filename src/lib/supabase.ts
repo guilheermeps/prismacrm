@@ -237,11 +237,13 @@ export const deleteStage = async (id: string): Promise<boolean> => {
   return true;
 };
 
-// Novas funções para gerenciar links de registro de clientes
 export const generateClientRegistrationLink = async (leadId: string): Promise<ClientRegistrationLink | null> => {
   try {
-    // Gerar um token único usando crypto.randomUUID (compatible with modern browsers)
-    const token = crypto.randomUUID?.() || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Generate a more reliable unique token with extra randomness
+    const token = crypto.randomUUID?.() || 
+                 `${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}${Date.now()}`;
+    
+    console.log("Generating registration link for lead ID:", leadId, "with token:", token);
     
     // Verificar se estamos trabalhando offline/com mock data
     try {
@@ -253,12 +255,13 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
         .maybeSingle();
       
       if (fetchError) {
+        console.log("Erro ao buscar link existente, usando modo offline:", fetchError.message);
         throw new Error('Modo offline');
       }
       
       if (existingLink) {
         // Se já existe um link, retorna ele
-        console.log("Link existente encontrado:", existingLink);
+        console.log("Link existente encontrado no Supabase:", existingLink);
         return existingLink as ClientRegistrationLink;
       }
       
@@ -274,11 +277,11 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
         .single();
       
       if (error) {
-        console.error("Erro ao inserir link:", error);
+        console.error("Erro ao inserir link no Supabase:", error);
         throw new Error(error.message);
       }
       
-      console.log("Novo link criado:", data);
+      console.log("Novo link criado no Supabase:", data);
       return data as ClientRegistrationLink;
     } catch (e) {
       console.warn('Usando dados simulados para links de registro:', e);
@@ -317,6 +320,7 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
 };
 
 export const getClientRegistrationLink = async (leadId: string): Promise<ClientRegistrationLink | null> => {
+  console.log("Buscando link para lead_id:", leadId);
   try {
     try {
       const { data, error } = await supabase
@@ -334,6 +338,9 @@ export const getClientRegistrationLink = async (leadId: string): Promise<ClientR
       return data as ClientRegistrationLink;
     } catch (e) {
       // Em modo offline, retorna o link do cache se existir
+      console.log("Buscando link em modo offline para lead_id:", leadId);
+      console.log("Cache atual:", mockClientLinks);
+      
       if (mockClientLinks[leadId]) {
         console.log("Link mockado encontrado:", mockClientLinks[leadId]);
         return mockClientLinks[leadId];
@@ -356,7 +363,9 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
   }
   
   try {
+    // Primeiro tenta no Supabase
     try {
+      console.log("Buscando token no Supabase:", token);
       const { data, error } = await supabase
         .from('client_registration_links')
         .select('*')
@@ -384,23 +393,32 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
       }
       
       // Verificar se o link expirou
-      if (new Date(link.expires_at) < new Date()) {
+      const expiryDate = new Date(link.expires_at);
+      const now = new Date();
+      console.log("Verificando expiração. Expira em:", expiryDate, "Agora:", now);
+      
+      if (expiryDate < now) {
         console.log("Link expirado");
         return { valid: false };
       }
       
-      console.log("Link válido no supabase");
+      console.log("Link válido no supabase, lead_id:", link.lead_id);
       return { 
         valid: true,
         leadId: link.lead_id
       };
     } catch (e) {
+      // Se falhar, tenta nos mocks
       console.log("Verificando token em modo offline:", token);
-      // Em modo offline, verificar no cache local
+      console.log("Cache de links disponível:", Object.keys(mockClientLinks));
+      
+      // Procurar o token em todos os links mockados
       for (const leadId in mockClientLinks) {
         const link = mockClientLinks[leadId];
+        console.log(`Comparando token '${token}' com token mockado '${link.token}' para lead ${leadId}`);
+        
         if (link.token === token) {
-          console.log("Token encontrado nos mocks:", link);
+          console.log("Token encontrado nos mocks para lead:", leadId);
           
           // Verificar se o link já foi usado
           if (link.is_used) {
@@ -409,15 +427,19 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
           }
           
           // Verificar se o link expirou
-          if (new Date(link.expires_at) < new Date()) {
+          const expiryDate = new Date(link.expires_at);
+          const now = new Date();
+          console.log("Verificando expiração de mock. Expira em:", expiryDate, "Agora:", now);
+          
+          if (expiryDate < now) {
             console.log("Link mockado expirado");
             return { valid: false };
           }
           
-          console.log("Link mockado válido");
+          console.log("Link mockado válido para lead_id:", leadId);
           return {
             valid: true,
-            leadId: link.lead_id
+            leadId: leadId
           };
         }
       }
@@ -432,6 +454,9 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
 };
 
 export const updateClientRegistrationFormData = async (token: string, formData: any): Promise<boolean> => {
+  console.log("Atualizando dados de formulário para token:", token);
+  console.log("Dados do formulário:", formData);
+  
   try {
     try {
       const { error } = await supabase
@@ -447,25 +472,137 @@ export const updateClientRegistrationFormData = async (token: string, formData: 
         throw new Error(error.message);
       }
       
+      console.log("Dados atualizados com sucesso no Supabase");
+      
+      // Criar o contato automaticamente
+      await createContactFromFormData(token, formData);
+      
       return true;
     } catch (e) {
+      console.log("Atualizando dados em modo offline");
       // Em modo offline, atualizar no cache local
       for (const leadId in mockClientLinks) {
         const link = mockClientLinks[leadId];
+        console.log(`Comparando token '${token}' com token mockado '${link.token}' para lead ${leadId}`);
+        
         if (link.token === token) {
+          console.log("Token encontrado nos mocks, atualizando dados");
           mockClientLinks[leadId] = {
             ...link,
             is_used: true,
             form_data: formData
           };
+          
+          // Criar o contato automaticamente usando os dados mockados
+          await createContactFromFormData(token, formData, leadId);
+          
           return true;
         }
       }
       
+      console.log("Token não encontrado nos mocks");
       return false;
     }
   } catch (e) {
     console.error('Erro ao atualizar dados do formulário:', e);
     return false;
+  }
+};
+
+// Nova função para adicionar o contato na lista de contatos após o preenchimento do formulário
+const createContactFromFormData = async (token: string, formData: any, leadId?: string): Promise<void> => {
+  console.log("Criando contato a partir dos dados do formulário");
+  
+  try {
+    // Se estamos usando mockado
+    if (leadId) {
+      import('@/utils/mockData').then(({ mockContacts }) => {
+        // Adicionar à lista de contatos mockada
+        const newContact = {
+          id: Date.now().toString(),
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          type: "client",
+          document: formData.document,
+          street: formData.street,
+          number: formData.number,
+          complement: formData.complement,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.postalCode,
+          notes: formData.notes,
+          orders: []
+        };
+        
+        console.log("Adicionando novo contato ao mockContacts:", newContact);
+        mockContacts.push(newContact);
+      });
+      return;
+    }
+    
+    // Caso contrário, se estamos usando Supabase
+    // Primeiro, obtemos o registro de link para saber o lead_id
+    const { data: linkData, error: linkError } = await supabase
+      .from('client_registration_links')
+      .select('lead_id')
+      .eq('token', token)
+      .maybeSingle();
+    
+    if (linkError || !linkData) {
+      console.error("Erro ao buscar lead_id do link:", linkError);
+      return;
+    }
+    
+    // Aqui você implementaria a lógica para salvar o contato no banco de dados
+    // Por exemplo, inserindo na tabela 'contacts'
+    const { error } = await supabase
+      .from('contacts')
+      .insert({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        type: "client",
+        document: formData.document,
+        street: formData.street,
+        number: formData.number,
+        complement: formData.complement,
+        neighborhood: formData.neighborhood,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.postalCode,
+        notes: formData.notes,
+        lead_id: linkData.lead_id
+      });
+    
+    if (error) {
+      console.error("Erro ao criar contato no Supabase:", error);
+      // Caso não exista a tabela 'contacts', salvamos em mockContacts
+      import('@/utils/mockData').then(({ mockContacts }) => {
+        const newContact = {
+          id: Date.now().toString(),
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          type: "client",
+          document: formData.document,
+          street: formData.street,
+          number: formData.number,
+          complement: formData.complement,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.postalCode,
+          notes: formData.notes,
+          orders: []
+        };
+        
+        console.log("Fallback: Adicionando novo contato ao mockContacts:", newContact);
+        mockContacts.push(newContact);
+      });
+    }
+  } catch (e) {
+    console.error("Erro ao criar contato:", e);
   }
 };

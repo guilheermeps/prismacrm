@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +17,7 @@ const ClientRegistration = () => {
   const [isValid, setIsValid] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [leadName, setLeadName] = useState("");
+  const [validationAttempts, setValidationAttempts] = useState(0);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -35,8 +35,9 @@ const ClientRegistration = () => {
   });
 
   useEffect(() => {
+    // Adicionamos uma verificação com retry para o caso da validação falhar inicialmente
     const validateToken = async () => {
-      console.log("Iniciando validação do token na página:", token);
+      console.log(`Tentativa ${validationAttempts + 1} de validação do token na página:`, token);
       
       if (!token) {
         console.log("Token não fornecido");
@@ -46,7 +47,7 @@ const ClientRegistration = () => {
       }
 
       try {
-        console.log("Chamando validateClientRegistrationToken");
+        console.log("Chamando validateClientRegistrationToken para token:", token);
         const { valid, leadId } = await validateClientRegistrationToken(token);
         
         console.log("Resultado da validação:", { valid, leadId });
@@ -71,18 +72,40 @@ const ClientRegistration = () => {
           }
         } else {
           console.log("Token inválido ou expirado");
-          toast.error("Este link não é válido ou já expirou.");
+          
+          // Se ainda não tentamos muitas vezes e não está válido, tentamos novamente
+          if (validationAttempts < 2) {
+            setValidationAttempts(prev => prev + 1);
+            // Aguarda um pouco antes de tentar novamente
+            setTimeout(() => validateToken(), 1000);
+            return;
+          } else {
+            toast.error("Este link não é válido ou já expirou.");
+            setIsValid(false);
+          }
         }
       } catch (error) {
         console.error("Erro ao validar token:", error);
-        toast.error("Ocorreu um erro ao validar o link de cadastro.");
+        
+        // Se ainda não tentamos muitas vezes, tentamos novamente
+        if (validationAttempts < 2) {
+          setValidationAttempts(prev => prev + 1);
+          // Aguarda um pouco antes de tentar novamente
+          setTimeout(() => validateToken(), 1000);
+          return;
+        } else {
+          toast.error("Ocorreu um erro ao validar o link de cadastro.");
+          setIsValid(false);
+        }
       } finally {
-        setIsLoading(false);
+        if (validationAttempts >= 2 || isValid) {
+          setIsLoading(false);
+        }
       }
     };
 
     validateToken();
-  }, [token]);
+  }, [token, validationAttempts]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({

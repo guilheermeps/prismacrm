@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Select, 
   SelectContent, 
@@ -51,7 +53,11 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
           console.log("Resultado da busca de link:", link);
           
           if (link) {
-            const fullLink = `${window.location.origin}/register/${link.token}`;
+            // Certifica-se de que estamos usando o protocolo correto (http/https)
+            const protocol = window.location.protocol;
+            const hostname = window.location.host; // inclui host e porta
+            const fullLink = `${protocol}//${hostname}/register/${link.token}`;
+            
             console.log("Link encontrado, URL completa:", fullLink);
             setRegistrationLink(fullLink);
           } else {
@@ -105,7 +111,11 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
       console.log("Resultado da geração de link:", result);
       
       if (result) {
-        const fullLink = `${window.location.origin}/register/${result.token}`;
+        // Certifica-se de que estamos usando o protocolo correto (http/https)
+        const protocol = window.location.protocol;
+        const hostname = window.location.host; // inclui host e porta
+        const fullLink = `${protocol}//${hostname}/register/${result.token}`;
+        
         console.log("Link gerado com sucesso, URL completa:", fullLink);
         setRegistrationLink(fullLink);
         toast.success("Link de cadastro gerado com sucesso!");
