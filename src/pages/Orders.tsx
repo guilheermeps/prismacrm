@@ -60,10 +60,8 @@ const Orders = () => {
             </div>
             
             <ExportDialog 
-              isOpen={isExportDialogOpen} 
-              onOpenChange={setIsExportDialogOpen}
-              title="Exportar Pedidos"
-              description="Selecione o formato e os filtros para exportar os pedidos."
+              type="pedidos"
+              onClose={() => setIsExportDialogOpen(false)}
             />
           </div>
         </main>

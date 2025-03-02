@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Lead, Stage } from "@/lib/supabase/types";
-import WhatsAppButton from "./lead-card/WhatsAppButton";
-import LeadActions from "./lead-card/LeadActions";
-import ActionButtons from "./lead-card/ActionButtons";
-import LeadDialogs from "./lead-card/LeadDialogs";
-import ServiceTypeEditor from "./lead-card/ServiceTypeEditor";
-import ProposalValueEditor from "./lead-card/ProposalValueEditor";
+import WhatsAppButton from "@/components/sales-pipeline/lead-card/WhatsAppButton";
+import LeadActions from "@/components/sales-pipeline/lead-card/LeadActions";
+import ActionButtons from "@/components/sales-pipeline/lead-card/ActionButtons";
+import LeadDialogs from "@/components/sales-pipeline/lead-card/LeadDialogs";
+import ServiceTypeEditor from "@/components/sales-pipeline/lead-card/ServiceTypeEditor";
+import ProposalValueEditor from "@/components/sales-pipeline/lead-card/ProposalValueEditor";
 
 interface LeadCardProps {
   lead: Lead;

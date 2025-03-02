@@ -60,10 +60,8 @@ const Contracts = () => {
             </div>
             
             <ExportDialog 
-              isOpen={isExportDialogOpen} 
-              onOpenChange={setIsExportDialogOpen}
-              title="Exportar Contratos"
-              description="Selecione o formato e os filtros para exportar os contratos."
+              type="contratos"
+              onClose={() => setIsExportDialogOpen(false)}
             />
           </div>
         </main>
