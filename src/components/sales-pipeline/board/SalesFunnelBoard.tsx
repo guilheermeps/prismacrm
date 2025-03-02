@@ -26,8 +26,12 @@ const SalesFunnelBoard = ({
   onUnarchiveLead, 
   isArchived 
 }: SalesFunnelBoardProps) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
   return (
-    <div className="overflow-x-auto pb-4">
+    <div className="overflow-x-auto pb-4" onDragOver={handleDragOver}>
       <div className="flex gap-4 min-w-max">
         {stages.map(stage => (
           <LeadColumn

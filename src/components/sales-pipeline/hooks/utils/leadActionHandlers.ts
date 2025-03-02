@@ -46,6 +46,19 @@ export const moveLead = async (
   try {
     if (!lead) return false;
     
+    // Development mode handling
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      // Just update the local lead
+      const updatedLead = {
+        ...lead,
+        stageId: toStageId,
+        history: addHistoryEntry(lead.history, "moved", "Desconhecido", "Desconhecido")
+      };
+      
+      console.log("Moving lead in dev/demo mode:", updatedLead);
+      return true;
+    }
+    
     const fromStageName = "Desconhecido";
     const toStageName = "Desconhecido"; 
     
