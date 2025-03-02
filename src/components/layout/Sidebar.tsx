@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
@@ -63,12 +62,11 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
           {isOpen ? (
             <>
               <div className="flex items-center gap-2">
-                <div className="prisma-bars">
-                  <div className="prisma-bar prisma-bar-teal"></div>
-                  <div className="prisma-bar prisma-bar-red"></div>
-                  <div className="prisma-bar prisma-bar-orange"></div>
-                  <div className="prisma-bar prisma-bar-yellow"></div>
-                </div>
+                <img 
+                  src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
+                  alt="Prisma CM" 
+                  className="h-8 w-auto"
+                />
                 <span className="font-semibold text-lg text-prisma-text">Prisma CM</span>
               </div>
               <Button 
@@ -82,12 +80,11 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
             </>
           ) : (
             <>
-              <div className="prisma-bars scale-75">
-                <div className="prisma-bar prisma-bar-teal"></div>
-                <div className="prisma-bar prisma-bar-red"></div>
-                <div className="prisma-bar prisma-bar-orange"></div>
-                <div className="prisma-bar prisma-bar-yellow"></div>
-              </div>
+              <img 
+                src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
+                alt="Prisma CM" 
+                className="h-7 w-auto"
+              />
               <Button 
                 variant="ghost" 
                 size="icon" 
