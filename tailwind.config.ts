@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -59,6 +58,12 @@ export default {
 				'studio-yellow': '#FFBA08',
 				'studio-gray': '#2A2F3E',
 				'studio-light': '#E2E8F0',
+				// Prisma CM brand colors
+				'prisma-teal': '#3E8A80',
+				'prisma-red': '#9B2915',
+				'prisma-orange': '#E26530',
+				'prisma-yellow': '#FFBA08',
+				'prisma-text': '#E5E5E0',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

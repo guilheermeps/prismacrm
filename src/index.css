@@ -16,7 +16,7 @@
     --popover: 222 29% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 38 100% 50%;
+    --primary: 38 98% 52%;
     --primary-foreground: 0 0% 10%;
 
     --secondary: 217 33% 17%;
@@ -25,15 +25,15 @@
     --muted: 217 33% 20%;
     --muted-foreground: 215 20% 80%;
 
-    --accent: 38 100% 50%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 170 39% 40%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 10 75% 35%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 217 33% 25%;
     --input: 217 33% 25%;
-    --ring: 38 100% 50%;
+    --ring: 170 39% 40%;
 
     --radius: 0.75rem;
   }
@@ -69,5 +69,33 @@
   .glassmorphism {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Prisma CM brand color bars */
+  .prisma-bars {
+    display: flex;
+    align-items: center;
+  }
+  
+  .prisma-bar {
+    width: 12px;
+    height: 40px;
+    margin-right: 4px;
+  }
+  
+  .prisma-bar-teal {
+    background-color: #3E8A80;
+  }
+  
+  .prisma-bar-red {
+    background-color: #9B2915;
+  }
+  
+  .prisma-bar-orange {
+    background-color: #E26530;
+  }
+  
+  .prisma-bar-yellow {
+    background-color: #FFBA08;
   }
 }
