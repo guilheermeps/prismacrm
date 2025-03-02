@@ -19,7 +19,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <Sidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header sidebarOpen={isSidebarOpen} setSidebarOpen={setIsSidebarOpen} />
+        <Header />
         <main className="flex-1 overflow-y-auto pb-10">
           {children}
         </main>

@@ -35,7 +35,7 @@ const LeadsReports = () => {
         
         // Filter leads by period
         const filteredLeads = leads.filter(lead => {
-          const createdAt = new Date(lead.createdat);
+          const createdAt = new Date(lead.createdAt);
           return createdAt >= startDate && createdAt <= endDate;
         });
         
@@ -49,7 +49,7 @@ const LeadsReports = () => {
         const monthMap: Record<string, { month: string, count: number, converted: number, date: Date }> = {};
         
         filteredLeads.forEach(lead => {
-          const createdAt = new Date(lead.createdat);
+          const createdAt = new Date(lead.createdAt);
           const monthKey = format(createdAt, 'yyyy-MM');
           const monthDisplay = format(createdAt, 'MMM');
           
@@ -84,7 +84,7 @@ const LeadsReports = () => {
         const serviceMap: Record<string, number> = {};
         
         filteredLeads.forEach(lead => {
-          const serviceType = lead.servicetype || 'Não especificado';
+          const serviceType = lead.serviceType || 'Não especificado';
           if (!serviceMap[serviceType]) {
             serviceMap[serviceType] = 0;
           }
