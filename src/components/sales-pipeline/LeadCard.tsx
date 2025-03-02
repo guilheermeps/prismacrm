@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { MoreHorizontal, Edit, Trash, ArrowRight, ArrowLeft, UserCheck, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import LeadForm from "@/components/sales-pipeline/LeadForm";
 import LeadDetails from "@/components/sales-pipeline/LeadDetails";
 import ConvertToContactForm from "@/components/sales-pipeline/ConvertToContactForm";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface LeadCardProps {
   lead: any;
@@ -32,6 +32,7 @@ const LeadCard = ({
   onDeleteLead,
   onConvertToContact
 }: LeadCardProps) => {
+  const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
@@ -44,6 +45,18 @@ const LeadCard = ({
     if (hasNextStage) {
       const nextStage = stages[currentStageIndex + 1];
       onMoveLead(lead.id, lead.stageId, nextStage.id);
+      // Update localStorage after moving
+      const savedLeads = localStorage.getItem("salesPipelineLeads");
+      if (savedLeads) {
+        const leadsData = JSON.parse(savedLeads);
+        const updatedLeads = leadsData.map(l => {
+          if (l.id === lead.id) {
+            return {...l, stageId: nextStage.id};
+          }
+          return l;
+        });
+        localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
+      }
     }
   };
 
@@ -51,6 +64,18 @@ const LeadCard = ({
     if (hasPreviousStage) {
       const previousStage = stages[currentStageIndex - 1];
       onMoveLead(lead.id, lead.stageId, previousStage.id);
+      // Update localStorage after moving
+      const savedLeads = localStorage.getItem("salesPipelineLeads");
+      if (savedLeads) {
+        const leadsData = JSON.parse(savedLeads);
+        const updatedLeads = leadsData.map(l => {
+          if (l.id === lead.id) {
+            return {...l, stageId: previousStage.id};
+          }
+          return l;
+        });
+        localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
+      }
     }
   };
 
@@ -61,7 +86,17 @@ const LeadCard = ({
   };
 
   const openWhatsApp = () => {
-    const whatsappUrl = `https://wa.me/${lead.whatsapp}`;
+    if (!lead.whatsapp) {
+      toast.error("Número de WhatsApp não disponível");
+      return;
+    }
+    
+    // Format the number properly
+    let whatsappNumber = lead.whatsapp;
+    // Remove any non-digit characters if they exist
+    whatsappNumber = whatsappNumber.replace(/\D/g, '');
+    
+    const whatsappUrl = `https://wa.me/${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -74,6 +109,7 @@ const LeadCard = ({
     onConvertToContact(lead);
     setIsConvertDialogOpen(false);
     toast.success(`${lead.name} foi convertido em cliente com sucesso!`);
+    navigate("/contacts");
   };
 
   return (

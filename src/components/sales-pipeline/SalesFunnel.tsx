@@ -94,7 +94,9 @@ const SalesFunnel = () => {
       ]
     };
     
-    setLeads([...leads, leadWithMetadata]);
+    const updatedLeads = [...leads, leadWithMetadata];
+    setLeads(updatedLeads);
+    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
     setIsNewLeadDialogOpen(false);
     toast.success("Lead adicionado com sucesso!");
   };
@@ -123,26 +125,35 @@ const SalesFunnel = () => {
     });
     
     setLeads(updatedLeads);
+    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
   };
 
   const handleUpdateLead = (updatedLead) => {
-    setLeads(leads.map(lead => lead.id === updatedLead.id ? updatedLead : lead));
+    const updatedLeads = leads.map(lead => lead.id === updatedLead.id ? updatedLead : lead);
+    setLeads(updatedLeads);
+    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
     toast.success("Lead atualizado com sucesso!");
   };
 
   const handleDeleteLead = (leadId) => {
-    setLeads(leads.filter(lead => lead.id !== leadId));
+    const updatedLeads = leads.filter(lead => lead.id !== leadId);
+    setLeads(updatedLeads);
+    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
     toast.success("Lead removido com sucesso!");
   };
 
   const handleAddStage = (newStage) => {
     const id = `${Date.now()}`;
-    setStages([...stages, { ...newStage, id }]);
+    const updatedStages = [...stages, { ...newStage, id }];
+    setStages(updatedStages);
+    localStorage.setItem("salesPipelineStages", JSON.stringify(updatedStages));
     toast.success("Etapa adicionada com sucesso!");
   };
 
   const handleUpdateStage = (updatedStage) => {
-    setStages(stages.map(stage => stage.id === updatedStage.id ? updatedStage : stage));
+    const updatedStages = stages.map(stage => stage.id === updatedStage.id ? updatedStage : stage);
+    setStages(updatedStages);
+    localStorage.setItem("salesPipelineStages", JSON.stringify(updatedStages));
     setSelectedStage(null);
     setIsEditStageDialogOpen(false);
     toast.success("Etapa atualizada com sucesso!");
@@ -157,7 +168,9 @@ const SalesFunnel = () => {
       return;
     }
     
-    setStages(stages.filter(stage => stage.id !== stageId));
+    const updatedStages = stages.filter(stage => stage.id !== stageId);
+    setStages(updatedStages);
+    localStorage.setItem("salesPipelineStages", JSON.stringify(updatedStages));
     setSelectedStage(null);
     setIsEditStageDialogOpen(false);
     toast.success("Etapa removida com sucesso!");
@@ -180,6 +193,7 @@ const SalesFunnel = () => {
 
   const handleResetLeads = () => {
     setLeads([]);
+    localStorage.setItem("salesPipelineLeads", JSON.stringify([]));
     setIsResetConfirmOpen(false);
     toast.success("Todos os leads foram removidos com sucesso!");
   };
