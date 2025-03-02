@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Inicialização do cliente Supabase com fallback para valores mocados
@@ -40,6 +41,9 @@ export interface ClientRegistrationLink {
   is_used: boolean;
   form_data: any;
 }
+
+// Cache local para links de registro
+const mockClientLinks: Record<string, ClientRegistrationLink> = {};
 
 // Modificando as funções para retornar dados simulados quando não há conexão com Supabase
 export const getLeads = async (): Promise<Lead[]> => {
@@ -240,35 +244,68 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
     // Gerar um token único usando crypto.randomUUID (compatible with modern browsers)
     const token = crypto.randomUUID?.() || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
-    // Verificar se já existe um link para este lead
-    const { data: existingLink } = await supabase
-      .from('client_registration_links')
-      .select('*')
-      .eq('lead_id', leadId)
-      .maybeSingle();
-    
-    if (existingLink) {
-      // Se já existe um link, retorna ele
-      return existingLink as ClientRegistrationLink;
-    }
-    
-    // Criar novo link
-    const { data, error } = await supabase
-      .from('client_registration_links')
-      .insert({ 
-        lead_id: leadId, 
+    // Verificar se estamos trabalhando offline/com mock data
+    try {
+      // Verificar se já existe um link para este lead
+      const { data: existingLink, error: fetchError } = await supabase
+        .from('client_registration_links')
+        .select('*')
+        .eq('lead_id', leadId)
+        .maybeSingle();
+      
+      if (fetchError) {
+        throw new Error('Modo offline');
+      }
+      
+      if (existingLink) {
+        // Se já existe um link, retorna ele
+        return existingLink as ClientRegistrationLink;
+      }
+      
+      // Criar novo link
+      const { data, error } = await supabase
+        .from('client_registration_links')
+        .insert({ 
+          lead_id: leadId, 
+          token: token,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 dias
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data as ClientRegistrationLink;
+    } catch (e) {
+      console.warn('Usando dados simulados para links de registro:', e);
+      
+      // Se já existe um link mockado para este lead, retorna ele
+      if (mockClientLinks[leadId]) {
+        return mockClientLinks[leadId];
+      }
+      
+      // Criar novo link mockado
+      const now = new Date();
+      const expiresAt = new Date(now);
+      expiresAt.setDate(expiresAt.getDate() + 7); // Adiciona 7 dias
+      
+      const mockLink: ClientRegistrationLink = {
+        id: Math.random().toString(36).substring(2, 15),
+        lead_id: leadId,
         token: token,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 dias
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Erro ao gerar link de registro:', error);
-      return null;
+        created_at: now.toISOString(),
+        expires_at: expiresAt.toISOString(),
+        is_used: false,
+        form_data: {}
+      };
+      
+      // Armazenar no cache local
+      mockClientLinks[leadId] = mockLink;
+      
+      return mockLink;
     }
-    
-    return data as ClientRegistrationLink;
   } catch (e) {
     console.error('Erro ao gerar link de registro:', e);
     return null;
@@ -277,17 +314,25 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
 
 export const getClientRegistrationLink = async (leadId: string): Promise<ClientRegistrationLink | null> => {
   try {
-    const { data, error } = await supabase
-      .from('client_registration_links')
-      .select('*')
-      .eq('lead_id', leadId)
-      .maybeSingle();
-    
-    if (error || !data) {
+    try {
+      const { data, error } = await supabase
+        .from('client_registration_links')
+        .select('*')
+        .eq('lead_id', leadId)
+        .maybeSingle();
+      
+      if (error) {
+        throw new Error('Modo offline');
+      }
+      
+      return data as ClientRegistrationLink;
+    } catch (e) {
+      // Em modo offline, retorna o link do cache se existir
+      if (mockClientLinks[leadId]) {
+        return mockClientLinks[leadId];
+      }
       return null;
     }
-    
-    return data as ClientRegistrationLink;
   } catch (e) {
     console.error('Erro ao buscar link de registro:', e);
     return null;
@@ -296,32 +341,57 @@ export const getClientRegistrationLink = async (leadId: string): Promise<ClientR
 
 export const validateClientRegistrationToken = async (token: string): Promise<{valid: boolean, leadId?: string}> => {
   try {
-    const { data, error } = await supabase
-      .from('client_registration_links')
-      .select('*')
-      .eq('token', token)
-      .maybeSingle();
-    
-    if (error || !data) {
+    try {
+      const { data, error } = await supabase
+        .from('client_registration_links')
+        .select('*')
+        .eq('token', token)
+        .maybeSingle();
+      
+      if (error || !data) {
+        throw new Error('Modo offline ou token inválido');
+      }
+      
+      const link = data as ClientRegistrationLink;
+      
+      // Verificar se o link já foi usado
+      if (link.is_used) {
+        return { valid: false };
+      }
+      
+      // Verificar se o link expirou
+      if (new Date(link.expires_at) < new Date()) {
+        return { valid: false };
+      }
+      
+      return { 
+        valid: true,
+        leadId: link.lead_id
+      };
+    } catch (e) {
+      // Em modo offline, verificar no cache local
+      for (const leadId in mockClientLinks) {
+        const link = mockClientLinks[leadId];
+        if (link.token === token) {
+          // Verificar se o link já foi usado
+          if (link.is_used) {
+            return { valid: false };
+          }
+          
+          // Verificar se o link expirou
+          if (new Date(link.expires_at) < new Date()) {
+            return { valid: false };
+          }
+          
+          return {
+            valid: true,
+            leadId: link.lead_id
+          };
+        }
+      }
+      
       return { valid: false };
     }
-    
-    const link = data as ClientRegistrationLink;
-    
-    // Verificar se o link já foi usado
-    if (link.is_used) {
-      return { valid: false };
-    }
-    
-    // Verificar se o link expirou
-    if (new Date(link.expires_at) < new Date()) {
-      return { valid: false };
-    }
-    
-    return { 
-      valid: true,
-      leadId: link.lead_id
-    };
   } catch (e) {
     console.error('Erro ao validar token:', e);
     return { valid: false };
@@ -330,20 +400,36 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
 
 export const updateClientRegistrationFormData = async (token: string, formData: any): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('client_registration_links')
-      .update({ 
-        is_used: true,
-        form_data: formData
-      })
-      .eq('token', token);
-    
-    if (error) {
-      console.error('Erro ao atualizar dados do formulário:', error);
+    try {
+      const { error } = await supabase
+        .from('client_registration_links')
+        .update({ 
+          is_used: true,
+          form_data: formData
+        })
+        .eq('token', token);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return true;
+    } catch (e) {
+      // Em modo offline, atualizar no cache local
+      for (const leadId in mockClientLinks) {
+        const link = mockClientLinks[leadId];
+        if (link.token === token) {
+          mockClientLinks[leadId] = {
+            ...link,
+            is_used: true,
+            form_data: formData
+          };
+          return true;
+        }
+      }
+      
       return false;
     }
-    
-    return true;
   } catch (e) {
     console.error('Erro ao atualizar dados do formulário:', e);
     return false;
