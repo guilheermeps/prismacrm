@@ -36,14 +36,20 @@ const ClientRegistration = () => {
 
   useEffect(() => {
     const validateToken = async () => {
+      console.log("Iniciando validação do token na página:", token);
+      
       if (!token) {
+        console.log("Token não fornecido");
         setIsValid(false);
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log("Chamando validateClientRegistrationToken");
         const { valid, leadId } = await validateClientRegistrationToken(token);
+        
+        console.log("Resultado da validação:", { valid, leadId });
         
         if (valid && leadId) {
           setIsValid(true);
@@ -52,6 +58,7 @@ const ClientRegistration = () => {
           const lead = leads.find(l => l.id === leadId);
           
           if (lead) {
+            console.log("Lead encontrado:", lead);
             setLeadName(lead.name);
             
             setFormData(prev => ({
@@ -59,8 +66,11 @@ const ClientRegistration = () => {
               name: lead.name || "",
               phone: lead.whatsapp || ""
             }));
+          } else {
+            console.log("Lead não encontrado para ID:", leadId);
           }
         } else {
+          console.log("Token inválido ou expirado");
           toast.error("Este link não é válido ou já expirou.");
         }
       } catch (error) {

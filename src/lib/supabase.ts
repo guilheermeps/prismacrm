@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Inicialização do cliente Supabase com fallback para valores mocados
@@ -259,6 +258,7 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
       
       if (existingLink) {
         // Se já existe um link, retorna ele
+        console.log("Link existente encontrado:", existingLink);
         return existingLink as ClientRegistrationLink;
       }
       
@@ -274,15 +274,18 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
         .single();
       
       if (error) {
+        console.error("Erro ao inserir link:", error);
         throw new Error(error.message);
       }
       
+      console.log("Novo link criado:", data);
       return data as ClientRegistrationLink;
     } catch (e) {
       console.warn('Usando dados simulados para links de registro:', e);
       
       // Se já existe um link mockado para este lead, retorna ele
       if (mockClientLinks[leadId]) {
+        console.log("Link mockado existente encontrado:", mockClientLinks[leadId]);
         return mockClientLinks[leadId];
       }
       
@@ -303,6 +306,7 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
       
       // Armazenar no cache local
       mockClientLinks[leadId] = mockLink;
+      console.log("Novo link mockado criado:", mockLink);
       
       return mockLink;
     }
@@ -322,15 +326,19 @@ export const getClientRegistrationLink = async (leadId: string): Promise<ClientR
         .maybeSingle();
       
       if (error) {
+        console.error("Erro ao buscar link:", error);
         throw new Error('Modo offline');
       }
       
+      console.log("Link encontrado no supabase:", data);
       return data as ClientRegistrationLink;
     } catch (e) {
       // Em modo offline, retorna o link do cache se existir
       if (mockClientLinks[leadId]) {
+        console.log("Link mockado encontrado:", mockClientLinks[leadId]);
         return mockClientLinks[leadId];
       }
+      console.log("Nenhum link encontrado para lead_id:", leadId);
       return null;
     }
   } catch (e) {
@@ -340,6 +348,13 @@ export const getClientRegistrationLink = async (leadId: string): Promise<ClientR
 };
 
 export const validateClientRegistrationToken = async (token: string): Promise<{valid: boolean, leadId?: string}> => {
+  console.log("Validando token:", token);
+  
+  if (!token) {
+    console.log("Token vazio");
+    return { valid: false };
+  }
+  
   try {
     try {
       const { data, error } = await supabase
@@ -348,41 +363,58 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
         .eq('token', token)
         .maybeSingle();
       
-      if (error || !data) {
+      if (error) {
+        console.error("Erro ao validar token no supabase:", error);
         throw new Error('Modo offline ou token inválido');
+      }
+      
+      console.log("Resultado da validação supabase:", data);
+      
+      if (!data) {
+        console.log("Token não encontrado no supabase");
+        return { valid: false };
       }
       
       const link = data as ClientRegistrationLink;
       
       // Verificar se o link já foi usado
       if (link.is_used) {
+        console.log("Link já utilizado");
         return { valid: false };
       }
       
       // Verificar se o link expirou
       if (new Date(link.expires_at) < new Date()) {
+        console.log("Link expirado");
         return { valid: false };
       }
       
+      console.log("Link válido no supabase");
       return { 
         valid: true,
         leadId: link.lead_id
       };
     } catch (e) {
+      console.log("Verificando token em modo offline:", token);
       // Em modo offline, verificar no cache local
       for (const leadId in mockClientLinks) {
         const link = mockClientLinks[leadId];
         if (link.token === token) {
+          console.log("Token encontrado nos mocks:", link);
+          
           // Verificar se o link já foi usado
           if (link.is_used) {
+            console.log("Link mockado já utilizado");
             return { valid: false };
           }
           
           // Verificar se o link expirou
           if (new Date(link.expires_at) < new Date()) {
+            console.log("Link mockado expirado");
             return { valid: false };
           }
           
+          console.log("Link mockado válido");
           return {
             valid: true,
             leadId: link.lead_id
@@ -390,6 +422,7 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
         }
       }
       
+      console.log("Token não encontrado nos mocks");
       return { valid: false };
     }
   } catch (e) {
@@ -410,6 +443,7 @@ export const updateClientRegistrationFormData = async (token: string, formData: 
         .eq('token', token);
       
       if (error) {
+        console.error("Erro ao atualizar dados no supabase:", error);
         throw new Error(error.message);
       }
       

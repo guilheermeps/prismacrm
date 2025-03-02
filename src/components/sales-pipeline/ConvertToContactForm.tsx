@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -44,17 +43,28 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
   // Verificar se já existe um link para este lead
   useEffect(() => {
     const checkExistingLink = async () => {
-      if (lead.id) {
-        const link = await getClientRegistrationLink(lead.id);
-        if (link) {
-          const fullLink = `${window.location.origin}/register/${link.token}`;
-          setRegistrationLink(fullLink);
+      console.log("Verificando link existente para lead:", lead);
+      if (lead && lead.id) {
+        try {
+          console.log("Buscando link para lead_id:", lead.id);
+          const link = await getClientRegistrationLink(lead.id);
+          console.log("Resultado da busca de link:", link);
+          
+          if (link) {
+            const fullLink = `${window.location.origin}/register/${link.token}`;
+            console.log("Link encontrado, URL completa:", fullLink);
+            setRegistrationLink(fullLink);
+          } else {
+            console.log("Nenhum link encontrado para este lead");
+          }
+        } catch (error) {
+          console.error("Erro ao verificar link existente:", error);
         }
       }
     };
     
     checkExistingLink();
-  }, [lead.id]);
+  }, [lead]);
 
   const handleChange = (field: string, value: string) => {
     setFormData({
@@ -88,14 +98,19 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
   };
 
   const generateLink = async () => {
+    console.log("Iniciando geração de link para lead:", lead.id);
     setIsGeneratingLink(true);
     try {
       const result = await generateClientRegistrationLink(lead.id);
+      console.log("Resultado da geração de link:", result);
+      
       if (result) {
         const fullLink = `${window.location.origin}/register/${result.token}`;
+        console.log("Link gerado com sucesso, URL completa:", fullLink);
         setRegistrationLink(fullLink);
         toast.success("Link de cadastro gerado com sucesso!");
       } else {
+        console.error("Falha ao gerar link - resultado nulo");
         toast.error("Erro ao gerar link de cadastro.");
       }
     } catch (error) {
