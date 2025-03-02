@@ -31,7 +31,22 @@ const Financial = () => {
         }
 
         if (data) {
-          setTransactions(data as FinancialTransaction[]);
+          // Map the database record format to our FinancialTransaction interface
+          const mappedTransactions: FinancialTransaction[] = data.map(item => ({
+            id: item.id,
+            type: item.type as 'receivable' | 'payable',
+            client: item.client,
+            dueDate: item.due_date,
+            paymentMethod: item.payment_method,
+            sourceId: item.source_id,
+            sourceType: item.source_type as 'order' | 'contract' | 'manual' | undefined,
+            status: item.status as 'pending' | 'completed' | 'canceled',
+            amount: item.amount,
+            category: item.category,
+            totalInstallments: item.total_installments
+          }));
+          
+          setTransactions(mappedTransactions);
         }
       } catch (error: any) {
         console.error("Error fetching financial transactions:", error.message);

@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Lead } from "@/lib/supabase";
+import { Lead } from "@/lib/supabase/types";
 
 interface LeadActionsProps {
   lead: Lead;

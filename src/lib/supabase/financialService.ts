@@ -79,7 +79,7 @@ export const getTransactions = async (): Promise<FinancialTransaction[]> => {
 
     return data.map(item => ({
       id: item.id,
-      type: item.type as 'income' | 'expense',
+      type: item.type as 'receivable' | 'payable',
       client: item.client,
       dueDate: item.due_date,
       paymentMethod: item.payment_method,
@@ -119,7 +119,7 @@ export const getTransactionById = async (id: string): Promise<FinancialTransacti
 
     return {
       id: data.id,
-      type: data.type as 'income' | 'expense',
+      type: data.type as 'receivable' | 'payable',
       client: data.client,
       dueDate: data.due_date,
       paymentMethod: data.payment_method,
@@ -202,5 +202,3 @@ export const deleteTransaction = async (id: string): Promise<boolean> => {
     return false;
   }
 };
-
-// rest of file...

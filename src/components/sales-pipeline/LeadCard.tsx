@@ -3,12 +3,12 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Lead, Stage } from "@/lib/supabase/types";
-import WhatsAppButton from "./lead-card/WhatsAppButton";
-import LeadActions from "./lead-card/LeadActions";
-import ActionButtons from "./lead-card/ActionButtons";
-import LeadDialogs from "./lead-card/LeadDialogs";
-import ServiceTypeEditor from "./lead-card/ServiceTypeEditor";
-import ProposalValueEditor from "./lead-card/ProposalValueEditor";
+import WhatsAppButton from "@/components/sales-pipeline/lead-card/WhatsAppButton";
+import LeadActions from "@/components/sales-pipeline/lead-card/LeadActions";
+import ActionButtons from "@/components/sales-pipeline/lead-card/ActionButtons";
+import LeadDialogs from "@/components/sales-pipeline/lead-card/LeadDialogs";
+import ServiceTypeEditor from "@/components/sales-pipeline/lead-card/ServiceTypeEditor";
+import ProposalValueEditor from "@/components/sales-pipeline/lead-card/ProposalValueEditor";
 
 interface LeadCardProps {
   lead: Lead;
@@ -38,6 +38,7 @@ const LeadCard = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -161,11 +162,14 @@ const LeadCard = ({
         stages={stages}
         isEditDialogOpen={isEditDialogOpen}
         isDetailsDialogOpen={isDetailsDialogOpen}
+        isDeleteDialogOpen={isDeleteDialogOpen}
         isConvertDialogOpen={isConvertDialogOpen}
         setIsEditDialogOpen={setIsEditDialogOpen}
         setIsDetailsDialogOpen={setIsDetailsDialogOpen}
+        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
         setIsConvertDialogOpen={setIsConvertDialogOpen}
-        onUpdateLead={onUpdateLead}
+        onUpdate={onUpdateLead}
+        onDelete={onDeleteLead}
         onConvertToContact={onConvertToContact}
       />
     </>

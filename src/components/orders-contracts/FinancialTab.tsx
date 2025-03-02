@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { 
   Table, 
@@ -135,9 +136,9 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
                   </TableCell>
                   <TableCell>{formatCurrency(transaction.amount)}</TableCell>
                   <TableCell>
-                    {format(new Date(transaction.due_date), 'dd/MM/yyyy')}
+                    {format(new Date(transaction.dueDate), 'dd/MM/yyyy')}
                   </TableCell>
-                  <TableCell>{transaction.payment_method}</TableCell>
+                  <TableCell>{transaction.paymentMethod}</TableCell>
                   <TableCell>
                     <Badge variant={transaction.status === 'completed' ? 'outline' : 'secondary'}>
                       {transaction.status === 'completed' ? 'Pago' : 'Pendente'}
