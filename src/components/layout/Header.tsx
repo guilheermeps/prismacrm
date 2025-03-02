@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
-  Menu,
   Search,
   Settings,
   LogOut,
@@ -22,11 +21,7 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/lib/supabase/client";
 
-interface HeaderProps {
-  toggle: () => void;
-}
-
-const Header = ({ toggle }: HeaderProps) => {
+const Header = () => {
   const { user, signOut } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
@@ -56,22 +51,12 @@ const Header = ({ toggle }: HeaderProps) => {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background px-4">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden"
-        onClick={toggle}
-      >
-        <Menu className="h-6 w-6" />
-        <span className="sr-only">Toggle Menu</span>
-      </Button>
-
       <div className="w-full flex justify-between items-center">
         <div className="flex items-center gap-2">
           <img 
             src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
             alt="Prisma CM" 
-            className="h-9 w-auto object-contain hidden md:block"
+            className="h-9 w-auto object-contain"
           />
         </div>
 
