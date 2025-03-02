@@ -1,3 +1,4 @@
+
 import { supabase } from "../client";
 import { Lead } from '../types';
 import { normalizeLeadFromSupabase, normalizeLeadForSupabase } from '../utils/leadNormalizer';
@@ -61,14 +62,14 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
 }
 
 // Update an existing lead
-export async function updateLead(id: string, updates: Partial<Lead>) {
+export async function updateLead(lead: Lead) {
   try {
-    const normalizedUpdates = normalizeLeadForSupabase(updates as Lead);
+    const normalizedUpdates = normalizeLeadForSupabase(lead);
 
     const { data, error } = await supabase
       .from('leads')
       .update(normalizedUpdates)
-      .eq('id', id)
+      .eq('id', lead.id)
       .select()
       .single();
 
