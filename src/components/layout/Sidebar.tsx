@@ -13,7 +13,8 @@ import {
   FileText,
   Package,
   Users,
-  Target
+  Target,
+  Banknote
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,8 @@ const navItems = [
   { path: '/schedule', label: 'Agenda', icon: CalendarDays },
   { path: '/products', label: 'Produtos', icon: Package },
   { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
-  { path: '/payments', label: 'Financeiro', icon: CreditCard },
+  { path: '/financial', label: 'Financeiro', icon: Banknote },
+  { path: '/payments', label: 'Pagamentos', icon: CreditCard },
   { path: '/reports', label: 'Relatórios', icon: BarChart },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
