@@ -39,6 +39,120 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          lead_id: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          postal_code: string | null
+          state: string | null
+          tags: Json | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          tags?: Json | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          tags?: Json | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      contracts: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          contract_number: string | null
+          created_at: string | null
+          due_date: string | null
+          end_date: string | null
+          id: string
+          installments: number | null
+          notes: string | null
+          payment_method: string | null
+          payment_status: string | null
+          services: Json | null
+          source_id: string | null
+          source_type: string | null
+          start_date: string
+          status: string
+          terms: string | null
+          total_amount: number
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          contract_number?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          end_date?: string | null
+          id?: string
+          installments?: number | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          services?: Json | null
+          source_id?: string | null
+          source_type?: string | null
+          start_date: string
+          status?: string
+          terms?: string | null
+          total_amount?: number
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          contract_number?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          end_date?: string | null
+          id?: string
+          installments?: number | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          services?: Json | null
+          source_id?: string | null
+          source_type?: string | null
+          start_date?: string
+          status?: string
+          terms?: string | null
+          total_amount?: number
+        }
+        Relationships: []
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -120,6 +234,117 @@ export type Database = {
           servicetype?: string | null
           stageid?: string
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string | null
+          due_date: string | null
+          id: string
+          installments: number | null
+          items: Json | null
+          notes: string | null
+          payment_method: string | null
+          payment_status: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string
+          total_amount: number
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          installments?: number | null
+          items?: Json | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          total_amount?: number
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          installments?: number | null
+          items?: Json | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          total_amount?: number
+        }
+        Relationships: []
+      }
+      packages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          products: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number
+          products?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          products?: Json | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
         }
         Relationships: []
       }
