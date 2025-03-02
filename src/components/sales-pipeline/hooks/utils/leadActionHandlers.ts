@@ -170,4 +170,4 @@ export const resetAllLeads = async (): Promise<boolean> => {
 };
 
 // Export the convertLeadToContact function from leadDeleteConvertHandlers.ts
-export { convertLeadToContact } from './leadDeleteConvertHandlers';
+export { convertLeadToContact };

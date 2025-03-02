@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { updateLead } from "@/lib/supabase/services/leadsCrudService";

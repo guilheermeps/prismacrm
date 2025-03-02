@@ -1,62 +1,31 @@
+
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
-import { updateLead } from "@/lib/supabase/services/leadsCrudService";
 import { createContact } from "@/lib/supabase/contactsService";
-import { addHistoryEntry } from "./leadHistoryUtils";
+import { deleteLead } from "@/lib/supabase/services/leadsCrudService";
 
-// Discard lead
-export const discardLead = async (lead: Lead): Promise<boolean> => {
-  try {
-    const updatedLead = {
-      ...lead,
-      history: addHistoryEntry(lead.history, "discarded", null, null)
-    };
-    
-    await updateLead(updatedLead);
-    
-    toast.success("Lead descartado com sucesso");
-    return true;
-  } catch (error) {
-    console.error("Erro ao descartar lead:", error);
-    toast.error("Erro ao descartar lead");
-    return false;
-  }
-};
-
-// Convert lead to contact
+// Function to convert a lead to a contact
 export const convertLeadToContact = async (lead: Lead): Promise<boolean> => {
   try {
-    console.log(`Converting lead ${lead.id} to contact`);
-    
-    // Create the contact
-    const contactData = {
+    // Create a new contact from the lead data
+    const newContact = {
       name: lead.name,
       whatsapp: lead.whatsapp,
       leadId: lead.id,
-      notes: `Converted from lead: ${lead.name}`,
-      is_active: true  // Add the missing required field
+      notes: lead.notes || "",
+      is_active: true // Add the missing is_active property
     };
     
-    const contactId = await createContact(contactData);
+    await createContact(newContact);
     
-    if (!contactId) {
-      toast.error("Erro ao criar contato");
-      return false;
-    }
-    
-    // Update lead to mark as converted
-    const updatedLead = {
-      ...lead,
-      history: addHistoryEntry(lead.history, "converted_to_contact", null, contactId)
-    };
-    
-    await updateLead(updatedLead);
+    // Delete the lead after successfully creating a contact
+    await deleteLead(lead.id);
     
     toast.success("Lead convertido para contato com sucesso");
     return true;
   } catch (error) {
-    console.error("Erro ao converter lead:", error);
-    toast.error("Erro ao converter lead para contato");
+    console.error("Erro ao converter lead em contato:", error);
+    toast.error("Erro ao converter lead em contato");
     return false;
   }
 };

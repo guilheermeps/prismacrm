@@ -1,7 +1,7 @@
-
 import { supabase } from "../client";
 import { Lead } from '../types';
 import { normalizeLeadFromSupabase, normalizeLeadForSupabase } from '../utils/leadNormalizer';
+import { addHistoryEntry } from "@/components/sales-pipeline/hooks/utils/leadHistoryUtils";
 
 // Get all leads for the current user
 export async function getLeads() {
@@ -160,5 +160,31 @@ export async function searchLeads(query: string) {
   } catch (error) {
     console.error('Error in searchLeads:', error);
     return [];
+  }
+}
+
+// Add the updateLeadForTransactionCreation function
+export async function updateLeadForTransactionCreation(
+  lead: Lead, 
+  transactionType: 'order' | 'contract'
+): Promise<boolean> {
+  try {
+    // Update lead history to show a transaction was created from it
+    const updatedLead = {
+      ...lead,
+      history: addHistoryEntry(
+        lead.history, 
+        transactionType === 'order' ? 'created_order' : 'created_contract',
+        null,
+        null
+      )
+    };
+    
+    await updateLead(updatedLead);
+    
+    return true;
+  } catch (error) {
+    console.error(`Error in updateLeadForTransactionCreation:`, error);
+    return false;
   }
 }
