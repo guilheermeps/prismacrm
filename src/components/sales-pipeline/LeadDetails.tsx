@@ -1,10 +1,13 @@
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { UserCheck, Edit, MessageSquare } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { UserCheck, Edit, MessageSquare, Link2, Copy, Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { getClientRegistrationLink } from "@/lib/supabase";
 
 interface LeadDetailsProps {
   lead: any;
@@ -14,6 +17,22 @@ interface LeadDetailsProps {
 }
 
 const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsProps) => {
+  const [registrationLink, setRegistrationLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  
+  useEffect(() => {
+    // Verificar se existe um link de registro para este lead
+    const checkRegistrationLink = async () => {
+      const linkData = await getClientRegistrationLink(lead.id);
+      if (linkData) {
+        const fullLink = `${window.location.origin}/register/${linkData.token}`;
+        setRegistrationLink(fullLink);
+      }
+    };
+    
+    checkRegistrationLink();
+  }, [lead.id]);
+  
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
@@ -44,6 +63,15 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
     
     const whatsappUrl = `https://wa.me/${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
+  };
+  
+  const copyToClipboard = () => {
+    if (registrationLink) {
+      navigator.clipboard.writeText(registrationLink);
+      setCopied(true);
+      toast.success("Link copiado para a área de transferência!");
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -76,6 +104,33 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
           WhatsApp
         </Button>
       </div>
+
+      {registrationLink && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Link de Cadastro do Cliente</h4>
+            <div className="flex">
+              <Input 
+                value={registrationLink} 
+                readOnly 
+                className="flex-1 bg-muted cursor-text text-xs"
+              />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="ml-2" 
+                onClick={copyToClipboard}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Este link pode ser compartilhado com o cliente para que ele complete seu cadastro.
+            </p>
+          </div>
+        </>
+      )}
 
       <Separator />
       

@@ -31,6 +31,16 @@ export interface Stage {
   color: string;
 }
 
+export interface ClientRegistrationLink {
+  id: string;
+  lead_id: string;
+  token: string;
+  created_at: string;
+  expires_at: string;
+  is_used: boolean;
+  form_data: any;
+}
+
 // Modificando as funções para retornar dados simulados quando não há conexão com Supabase
 export const getLeads = async (): Promise<Lead[]> => {
   try {
@@ -222,4 +232,120 @@ export const deleteStage = async (id: string): Promise<boolean> => {
   }
   
   return true;
+};
+
+// Novas funções para gerenciar links de registro de clientes
+export const generateClientRegistrationLink = async (leadId: string): Promise<ClientRegistrationLink | null> => {
+  try {
+    // Gerar um token único usando crypto.randomUUID (compatible with modern browsers)
+    const token = crypto.randomUUID?.() || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
+    // Verificar se já existe um link para este lead
+    const { data: existingLink } = await supabase
+      .from('client_registration_links')
+      .select('*')
+      .eq('lead_id', leadId)
+      .maybeSingle();
+    
+    if (existingLink) {
+      // Se já existe um link, retorna ele
+      return existingLink as ClientRegistrationLink;
+    }
+    
+    // Criar novo link
+    const { data, error } = await supabase
+      .from('client_registration_links')
+      .insert({ 
+        lead_id: leadId, 
+        token: token,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 dias
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Erro ao gerar link de registro:', error);
+      return null;
+    }
+    
+    return data as ClientRegistrationLink;
+  } catch (e) {
+    console.error('Erro ao gerar link de registro:', e);
+    return null;
+  }
+};
+
+export const getClientRegistrationLink = async (leadId: string): Promise<ClientRegistrationLink | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('client_registration_links')
+      .select('*')
+      .eq('lead_id', leadId)
+      .maybeSingle();
+    
+    if (error || !data) {
+      return null;
+    }
+    
+    return data as ClientRegistrationLink;
+  } catch (e) {
+    console.error('Erro ao buscar link de registro:', e);
+    return null;
+  }
+};
+
+export const validateClientRegistrationToken = async (token: string): Promise<{valid: boolean, leadId?: string}> => {
+  try {
+    const { data, error } = await supabase
+      .from('client_registration_links')
+      .select('*')
+      .eq('token', token)
+      .maybeSingle();
+    
+    if (error || !data) {
+      return { valid: false };
+    }
+    
+    const link = data as ClientRegistrationLink;
+    
+    // Verificar se o link já foi usado
+    if (link.is_used) {
+      return { valid: false };
+    }
+    
+    // Verificar se o link expirou
+    if (new Date(link.expires_at) < new Date()) {
+      return { valid: false };
+    }
+    
+    return { 
+      valid: true,
+      leadId: link.lead_id
+    };
+  } catch (e) {
+    console.error('Erro ao validar token:', e);
+    return { valid: false };
+  }
+};
+
+export const updateClientRegistrationFormData = async (token: string, formData: any): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('client_registration_links')
+      .update({ 
+        is_used: true,
+        form_data: formData
+      })
+      .eq('token', token);
+    
+    if (error) {
+      console.error('Erro ao atualizar dados do formulário:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (e) {
+    console.error('Erro ao atualizar dados do formulário:', e);
+    return false;
+  }
 };
