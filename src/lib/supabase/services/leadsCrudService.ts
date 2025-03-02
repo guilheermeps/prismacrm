@@ -8,6 +8,13 @@ import { normalizeLeadFromSupabase, normalizeLeadForSupabase } from '../utils/le
 export const getLeads = async (): Promise<Lead[]> => {
   try {
     console.log('Fetching leads from Supabase...');
+    
+    // Check if we're in development or demo mode - return mock data directly
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('Development or demo mode detected, returning mock leads');
+      return mockLeads();
+    }
+    
     // Try to fetch from Supabase
     const { data, error } = await supabase
       .from('leads')
@@ -42,6 +49,25 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
   try {
     console.log('Creating lead with data:', lead);
     
+    // Check if we're in development or demo mode - simulate success with mock data
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      const mockId = crypto.randomUUID();
+      const mockLead = {
+        id: mockId,
+        name: lead.name,
+        serviceType: lead.serviceType,
+        whatsapp: lead.whatsapp || '',
+        stageId: lead.stageId,
+        proposalValue: lead.proposalValue || 0,
+        notes: lead.notes || '',
+        createdAt: new Date().toISOString(),
+        isArchived: lead.isArchived === undefined ? false : lead.isArchived,
+        history: lead.history || []
+      };
+      console.log('Created mock lead in development mode:', mockLead);
+      return mockLead;
+    }
+    
     // Normalize lead data for Supabase
     const leadWithDefaults = {
       ...normalizeLeadForSupabase(lead),
@@ -58,26 +84,6 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
     
     if (error) {
       console.error('Error creating lead in Supabase:', error);
-      
-      // In demo/development mode, simulate success with mock data
-      if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-        const mockId = crypto.randomUUID();
-        const mockLead = {
-          id: mockId,
-          name: lead.name,
-          serviceType: lead.serviceType,
-          whatsapp: lead.whatsapp || '',
-          stageId: lead.stageId,
-          proposalValue: lead.proposalValue || 0,
-          notes: lead.notes || '',
-          createdAt: new Date().toISOString(),
-          isArchived: lead.isArchived === undefined ? false : lead.isArchived,
-          history: lead.history || []
-        };
-        console.log('Created mock lead in development mode:', mockLead);
-        return mockLead;
-      }
-      
       return null;
     }
     
@@ -98,6 +104,12 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
   try {
     console.log('Updating lead:', lead);
     
+    // Check if we're in development or demo mode - simulate success with mock data
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('Updated mock lead in development mode:', lead);
+      return lead;
+    }
+    
     // Normalize field names for DB
     const leadWithDefaults = normalizeLeadForSupabase(lead);
     
@@ -112,13 +124,6 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
     
     if (error) {
       console.error('Error updating lead in Supabase:', error);
-      
-      // In demo/development mode, simulate success with mock data
-      if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-        console.log('Updated mock lead in development mode:', lead);
-        return lead;
-      }
-      
       return null;
     }
     
@@ -139,6 +144,12 @@ export const deleteLead = async (id: string): Promise<boolean> => {
   try {
     console.log('Deleting lead with ID:', id);
     
+    // Check if we're in development or demo mode - simulate success
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('Deleted mock lead in development mode, id:', id);
+      return true;
+    }
+    
     const { error } = await supabase
       .from('leads')
       .delete()
@@ -146,13 +157,6 @@ export const deleteLead = async (id: string): Promise<boolean> => {
     
     if (error) {
       console.error('Error deleting lead from Supabase:', error);
-      
-      // In demo/development mode, simulate success
-      if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-        console.log('Deleted mock lead in development mode, id:', id);
-        return true;
-      }
-      
       return false;
     }
     
