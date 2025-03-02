@@ -5,22 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import FinancialTab from "@/components/orders-contracts/FinancialTab";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-// Define transaction types
-export interface FinancialTransaction {
-  id: string;
-  client: string;
-  amount: number;
-  due_date: string;
-  category: string;
-  payment_method: string;
-  total_installments: number;
-  type: 'receivable' | 'payable';
-  status: 'pending' | 'completed';
-  source_id?: string;
-  source_type?: 'order' | 'contract' | 'manual';
-  created_at: string;
-}
+import { FinancialTransaction } from "@/lib/supabase/financialService";
 
 const Financial = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);

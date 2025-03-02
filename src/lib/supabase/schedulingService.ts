@@ -1,40 +1,46 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
+// Schedule event types
 export interface ScheduleEvent {
-  id?: string;
+  id: string;
   client: string;
   service: string;
   date: string;
   time: string;
   location: string;
-  source_id?: string;
-  source_type?: "order" | "contract" | "manual";
   notes?: string;
+  source_id?: string;
+  source_type?: 'order' | 'contract' | 'manual';
+  created_at: string;
 }
 
-export const createScheduleEvent = async (event: ScheduleEvent): Promise<string | null> => {
+// Create a new schedule event
+export const createScheduleEvent = async (eventData: Omit<ScheduleEvent, 'id' | 'created_at'>): Promise<string | null> => {
   try {
-    const { data, error } = await supabase
+    const id = uuidv4();
+    
+    const { error } = await supabase
       .from('schedule_events')
-      .insert(event)
-      .select('id')
-      .single();
+      .insert({
+        id,
+        ...eventData
+      });
 
     if (error) {
+      console.error("Error creating schedule event:", error);
       throw error;
     }
 
-    toast.success('Evento adicionado à agenda com sucesso');
-    return data.id;
-  } catch (error: any) {
-    console.error('Error creating schedule event:', error.message);
-    toast.error('Erro ao adicionar evento à agenda');
+    return id;
+  } catch (error) {
+    console.error("Error in createScheduleEvent:", error);
     return null;
   }
 };
 
+// Get all schedule events
 export const getScheduleEvents = async (): Promise<ScheduleEvent[]> => {
   try {
     const { data, error } = await supabase
@@ -43,37 +49,59 @@ export const getScheduleEvents = async (): Promise<ScheduleEvent[]> => {
       .order('date', { ascending: true });
 
     if (error) {
+      console.error("Error fetching schedule events:", error);
       throw error;
     }
 
-    return data || [];
-  } catch (error: any) {
-    console.error('Error fetching schedule events:', error.message);
-    toast.error('Erro ao buscar eventos da agenda');
+    return data as ScheduleEvent[];
+  } catch (error) {
+    console.error("Error in getScheduleEvents:", error);
     return [];
   }
 };
 
-export const updateScheduleEvent = async (id: string, updates: Partial<ScheduleEvent>): Promise<boolean> => {
+// Get schedule event by ID
+export const getScheduleEventById = async (id: string): Promise<ScheduleEvent | null> => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('schedule_events')
-      .update(updates)
-      .eq('id', id);
+      .select('*')
+      .eq('id', id)
+      .single();
 
     if (error) {
+      console.error("Error fetching schedule event:", error);
       throw error;
     }
 
-    toast.success('Evento atualizado com sucesso');
+    return data as ScheduleEvent;
+  } catch (error) {
+    console.error("Error in getScheduleEventById:", error);
+    return null;
+  }
+};
+
+// Update a schedule event
+export const updateScheduleEvent = async (event: Partial<ScheduleEvent> & { id: string }): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('schedule_events')
+      .update(event)
+      .eq('id', event.id);
+
+    if (error) {
+      console.error("Error updating schedule event:", error);
+      throw error;
+    }
+
     return true;
-  } catch (error: any) {
-    console.error('Error updating schedule event:', error.message);
-    toast.error('Erro ao atualizar evento');
+  } catch (error) {
+    console.error("Error in updateScheduleEvent:", error);
     return false;
   }
 };
 
+// Delete a schedule event
 export const deleteScheduleEvent = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
@@ -82,14 +110,56 @@ export const deleteScheduleEvent = async (id: string): Promise<boolean> => {
       .eq('id', id);
 
     if (error) {
+      console.error("Error deleting schedule event:", error);
       throw error;
     }
 
-    toast.success('Evento removido com sucesso');
     return true;
-  } catch (error: any) {
-    console.error('Error deleting schedule event:', error.message);
-    toast.error('Erro ao remover evento');
+  } catch (error) {
+    console.error("Error in deleteScheduleEvent:", error);
     return false;
+  }
+};
+
+// Get schedule events by date range
+export const getScheduleEventsByDateRange = async (startDate: string, endDate: string): Promise<ScheduleEvent[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('schedule_events')
+      .select('*')
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.error("Error fetching schedule events by date range:", error);
+      throw error;
+    }
+
+    return data as ScheduleEvent[];
+  } catch (error) {
+    console.error("Error in getScheduleEventsByDateRange:", error);
+    return [];
+  }
+};
+
+// Get schedule events by client
+export const getScheduleEventsByClient = async (clientName: string): Promise<ScheduleEvent[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('schedule_events')
+      .select('*')
+      .ilike('client', `%${clientName}%`)
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.error("Error fetching schedule events by client:", error);
+      throw error;
+    }
+
+    return data as ScheduleEvent[];
+  } catch (error) {
+    console.error("Error in getScheduleEventsByClient:", error);
+    return [];
   }
 };

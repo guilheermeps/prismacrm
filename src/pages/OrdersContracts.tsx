@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/layout/Header";
@@ -9,7 +10,7 @@ import FinancialTab from "@/components/orders-contracts/FinancialTab";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { FinancialTransaction } from "./Financial";
+import { FinancialTransaction, createFinancialTransaction } from "@/lib/supabase/financialService";
 import { createScheduleEvent } from "@/lib/supabase/schedulingService";
 import { format } from "date-fns";
 
@@ -105,7 +106,15 @@ const OrdersContracts = () => {
         .order('due_date', { ascending: true });
       
       if (error) throw error;
-      setTransactions(data || []);
+      
+      const typedData = data.map(item => ({
+        ...item,
+        type: item.type as 'receivable' | 'payable',
+        status: item.status as 'pending' | 'completed',
+        source_type: item.source_type as 'order' | 'contract' | 'manual' | undefined
+      }));
+      
+      setTransactions(typedData);
     } catch (error) {
       console.error('Error loading transactions:', error);
       toast.error('Erro ao carregar transações financeiras');
@@ -119,7 +128,7 @@ const OrdersContracts = () => {
   };
 
   // Create financial transaction when order or contract is created
-  const createFinancialTransaction = async (
+  const createFinancialTransactionHandler = async (
     client: string, 
     amount: number, 
     dueDate: string, 
@@ -142,20 +151,20 @@ const OrdersContracts = () => {
         source_type: sourceType
       };
 
-      const { error } = await supabase
-        .from('financial_transactions')
-        .insert(transaction);
-
-      if (error) {
-        throw error;
+      const transactionId = await createFinancialTransaction(transaction);
+      
+      if (!transactionId) {
+        throw new Error('Failed to create transaction');
       }
 
       toast.success('Transação financeira criada com sucesso');
       // Refresh the transactions list
       loadTransactions();
+      return transactionId;
     } catch (error: any) {
       console.error('Error creating financial transaction:', error.message);
       toast.error('Erro ao criar transação financeira');
+      return null;
     }
   };
 
@@ -186,10 +195,13 @@ const OrdersContracts = () => {
       
       if (eventId) {
         toast.success('Evento adicionado à agenda com sucesso');
+        return eventId;
       }
+      return null;
     } catch (error: any) {
       console.error('Error creating schedule event:', error.message);
       toast.error('Erro ao adicionar evento à agenda');
+      return null;
     }
   };
 
@@ -227,7 +239,7 @@ const OrdersContracts = () => {
     notes?: string
   ) => {
     // Create financial transaction
-    createFinancialTransaction(
+    createFinancialTransactionHandler(
       clientName,
       totalAmount,
       dueDate,
@@ -278,7 +290,7 @@ const OrdersContracts = () => {
     notes?: string
   ) => {
     // Create financial transaction
-    createFinancialTransaction(
+    createFinancialTransactionHandler(
       clientName,
       totalAmount,
       dueDate,
@@ -405,7 +417,6 @@ const OrdersContracts = () => {
 
               <TabsContent value="orders" className="bg-card rounded-lg p-4">
                 <OrdersTab 
-                  onCreateOrder={handleCreateOrder}
                   leadData={selectedLead}
                   contactData={selectedContact}
                 />
@@ -413,7 +424,6 @@ const OrdersContracts = () => {
               
               <TabsContent value="contracts" className="bg-card rounded-lg p-4">
                 <ContractsTab 
-                  onCreateContract={handleCreateContract}
                   leadData={selectedLead}
                   contactData={selectedContact}
                 />
