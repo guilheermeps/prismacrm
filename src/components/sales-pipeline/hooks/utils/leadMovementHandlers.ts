@@ -20,15 +20,7 @@ const handleDevModeMoveOperation = (
   fromStageName: string = "Desconhecido",
   toStageName: string = "Desconhecido"
 ): boolean => {
-  // Just update the local lead
-  const updatedLead = {
-    ...lead,
-    stageId: toStageId,
-    history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
-  };
-  
-  console.log("Moving lead in dev/demo mode:", updatedLead);
-  
+  console.log("Moving lead in dev/demo mode:", lead.id, "to stage", toStageId);
   // Return success immediately for faster UI update
   return true;
 };
@@ -51,7 +43,7 @@ export const moveLead = async (
     
     console.log(`Moving lead ${lead.id} from ${lead.stageId} to ${toStageId}`);
     
-    // Development mode handling
+    // Development mode handling - immediate return for UI responsiveness
     if (isDevOrDemoMode()) {
       return handleDevModeMoveOperation(lead, toStageId);
     }
@@ -65,22 +57,14 @@ export const moveLead = async (
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
-    console.log("Updating lead:", updatedLead);
+    // Try to update in Supabase - but don't wait for the response to update UI
+    updateLead(updatedLead).then(result => {
+      if (!result && !isDevOrDemoMode()) {
+        toast.error("Erro ao persistir a mudança de etapa do lead.");
+      }
+    });
     
-    // Try to update in Supabase
-    const result = await updateLead(updatedLead);
-    
-    if (!result && isDevOrDemoMode()) {
-      console.log("Fallback to local update mode due to API error");
-      // Return success for development mode
-      return true;
-    }
-    
-    // Delay the toast to avoid interfering with drag operation
-    setTimeout(() => {
-      toast.success("Lead movido para nova etapa!");
-    }, 500);
-    
+    // Return true immediately for UI responsiveness
     return true;
   } catch (error) {
     console.error("Erro ao mover lead:", error);

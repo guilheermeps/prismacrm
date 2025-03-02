@@ -31,13 +31,11 @@ const SalesFunnelBoard = ({
   isArchived 
 }: SalesFunnelBoardProps) => {
   const [boardLeads, setBoardLeads] = useState<Lead[]>(filteredLeads);
-  const [localFilteredLeads, setLocalFilteredLeads] = useState<Lead[]>(filteredLeads);
   const [isDragging, setIsDragging] = useState(false);
 
   // Update local state when props change
   useEffect(() => {
     setBoardLeads(filteredLeads);
-    setLocalFilteredLeads(filteredLeads);
   }, [filteredLeads]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -50,7 +48,7 @@ const SalesFunnelBoard = ({
     // Prevent moving in archived view
     if (isArchived) return;
     
-    // Update the lead's stage in our local state first
+    // Update the lead's stage in our local state first for instant UI update
     const updatedLeads = boardLeads.map(lead => {
       if (lead.id === leadId) {
         return { ...lead, stageId: toStageId };
@@ -58,9 +56,8 @@ const SalesFunnelBoard = ({
       return lead;
     });
     
-    // Update local state
+    // Update local state immediately
     setBoardLeads(updatedLeads);
-    setLocalFilteredLeads(updatedLeads);
     
     // Then call the parent handler to update backend
     onMoveLead(leadId, fromStageId, toStageId);
@@ -69,7 +66,6 @@ const SalesFunnelBoard = ({
   // Handle refreshing the board
   const handleRefresh = () => {
     setBoardLeads(filteredLeads);
-    setLocalFilteredLeads(filteredLeads);
   };
 
   // Calculate total value and count of leads
@@ -111,7 +107,7 @@ const SalesFunnelBoard = ({
             <LeadColumn
               key={stage.id}
               stage={stage}
-              leads={localFilteredLeads.filter(lead => lead.stageId === stage.id)}
+              leads={boardLeads.filter(lead => lead.stageId === stage.id)}
               allStages={stages}
               onMoveLead={handleOptimisticLeadMove}
               onUpdateLead={onUpdateLead}
