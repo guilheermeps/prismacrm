@@ -26,13 +26,13 @@ const SalesPipeline = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header toggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 bg-background">
           <div className="max-w-full mx-auto">
-            <h1 className="text-2xl font-bold mb-4">Pipeline de Vendas</h1>
+            <h1 className="text-2xl font-bold mb-4 text-foreground">Pipeline de Vendas</h1>
             
             <LeadOperationsProvider>
               <SalesFunnelStats />
@@ -88,7 +88,7 @@ const SalesPipeline = () => {
                     </div>
                   </div>
                   
-                  <TabsContent value="active" className="m-0">
+                  <TabsContent value="active" className="m-0 bg-background">
                     <SalesFunnel 
                       searchTerm={searchTerm} 
                       serviceTypeFilter={filterType !== "all" ? filterType : null}
@@ -97,7 +97,7 @@ const SalesPipeline = () => {
                     />
                   </TabsContent>
                   
-                  <TabsContent value="archived" className="m-0">
+                  <TabsContent value="archived" className="m-0 bg-background">
                     <SalesFunnel 
                       searchTerm={searchTerm} 
                       serviceTypeFilter={filterType !== "all" ? filterType : null}

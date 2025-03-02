@@ -129,6 +129,7 @@ const LeadColumn = ({
       onDragEnter={handleDragOver}
       onDrop={handleDrop}
       data-stage-id={stage.id}
+      style={{ backgroundColor: isDragOver ? 'rgba(255, 186, 8, 0.2)' : 'rgba(53, 59, 69, 0.2)' }}
     >
       {/* Stage Header */}
       <ColumnHeader 

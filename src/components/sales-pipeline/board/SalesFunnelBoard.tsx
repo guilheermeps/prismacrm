@@ -82,12 +82,21 @@ const SalesFunnelBoard = ({
   const totalValue = boardLeads.reduce((sum, lead) => sum + (lead.proposalValue || 0), 0);
   const totalLeads = boardLeads.length;
 
+  // Ensure there are stages to render
+  if (!stages || stages.length === 0) {
+    return (
+      <div className="p-4 bg-card rounded-lg text-center">
+        <p>Nenhum estágio configurado. Adicione estágios para visualizar o pipeline.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-background w-full">
       {/* Board Header with Stats */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 bg-card p-4 rounded-lg shadow-sm">
         <div>
-          <h3 className="text-lg font-medium">
+          <h3 className="text-lg font-medium text-foreground">
             {isArchived ? "Leads Arquivados" : "Kanban de Leads"}
           </h3>
           <p className="text-sm text-muted-foreground">
@@ -108,7 +117,7 @@ const SalesFunnelBoard = ({
       
       {/* Kanban Board */}
       <div 
-        className={`overflow-x-auto pb-4 min-h-[calc(100vh-250px)] transition-opacity ${isDragging ? 'opacity-95' : 'opacity-100'}`}
+        className={`overflow-x-auto pb-4 min-h-[calc(100vh-250px)] transition-opacity ${isDragging ? 'opacity-95' : 'opacity-100'} bg-background`}
         onDragOver={handleDragOver}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={() => setIsDragging(false)}

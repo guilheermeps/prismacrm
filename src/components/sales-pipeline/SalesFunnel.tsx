@@ -47,40 +47,52 @@ const SalesFunnel = ({
   // Apply all filters
   const filteredLeads = filterLeads(leads, searchTerm, serviceTypeFilter, dateFilter, isArchived);
 
+  // Add better error handling and fallback for empty states
   if (leadsLoading || stagesLoading) {
-    return <LoadingState />;
+    return (
+      <div className="w-full h-full flex items-center justify-center p-8">
+        <LoadingState />
+      </div>
+    );
+  }
+
+  // Check for valid stages before rendering
+  if (!stages || stages.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-8 bg-card rounded-lg">
+        <div className="text-center">
+          <h3 className="text-lg font-medium mb-2">Nenhum estágio encontrado</h3>
+          <p className="text-muted-foreground">Não foi possível carregar os estágios do pipeline.</p>
+        </div>
+      </div>
+    );
   }
 
   // Create wrapper functions to fix type issues
   const handleAddNewLeadWrapper = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     await handleAddNewLead(newLead);
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   const handleAddStageWrapper = async (newStage: Omit<Stage, 'id'>) => {
     await handleAddStage(newStage);
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   const handleUpdateStageWrapper = async (updatedStage: Stage) => {
     await handleUpdateStage(updatedStage);
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   const handleDeleteStageWrapper = async (stageId: string) => {
     await handleDeleteStage(stageId);
-    // No explicit return, which implicitly returns undefined -> void
   };
   
   const handleResetLeadsWrapper = async () => {
     await handleResetLeads();
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full bg-background">
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between w-full">
         <ActionBar 
           stages={stages} 
           isArchived={isArchived}
