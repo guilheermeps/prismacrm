@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,45 +87,51 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // Check if test user exists
-      const { data, error: checkError } = await supabase.auth.signInWithPassword({
-        email: testEmail,
-        password: testPassword
-      });
+      // Try to login directly first
+      const { error: signInError } = await signIn(testEmail, testPassword);
       
-      if (checkError) {
-        // User doesn't exist, create it
+      if (signInError) {
         console.log("Test user doesn't exist, creating it...");
+        // User likely doesn't exist, create it
         const { error: signUpError } = await signUp(testEmail, testPassword, {
           full_name: testName,
         });
         
         if (signUpError) {
-          toast.error("Erro ao criar conta de teste");
+          console.error("Error creating test account:", signUpError);
+          toast.error("Erro ao criar conta de teste: " + signUpError.message);
           setLoading(false);
           return;
         }
         
-        // Try login after creation
+        toast.success("Conta de teste criada! Tentando fazer login...");
+        
+        // Try login after creation with a delay
         setTimeout(async () => {
-          const { error: loginError } = await signIn(testEmail, testPassword);
-          
-          if (loginError) {
-            toast.error("Erro ao fazer login com conta de teste");
-          } else {
-            toast.success("Login de teste realizado com sucesso!");
+          try {
+            const { error: loginError } = await signIn(testEmail, testPassword);
+            
+            if (loginError) {
+              console.error("Error logging in with test account:", loginError);
+              toast.error("Erro ao fazer login com conta de teste: " + loginError.message);
+            } else {
+              toast.success("Login de teste realizado com sucesso!");
+            }
+          } catch (error: any) {
+            console.error("Test login after creation error:", error);
+            toast.error("Erro ao fazer login: " + error.message);
+          } finally {
+            setLoading(false);
           }
-          setLoading(false);
         }, 1500);
       } else {
-        // User exists, just login
-        console.log("Test user exists, logging in...");
+        // User exists, login successful
         toast.success("Login de teste realizado com sucesso!");
-        // Navigation happens in the signIn function via session change
+        setLoading(false);
       }
     } catch (error: any) {
       console.error("Test login error:", error);
-      toast.error(error.message || "Erro ao fazer login de teste");
+      toast.error("Erro ao fazer login de teste: " + error.message);
       setLoading(false);
     }
   };
