@@ -34,11 +34,27 @@ const LeadCard = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData("leadId", lead.id);
     e.dataTransfer.setData("stageId", lead.stageId);
     e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+    
+    // Log for debugging
+    console.log(`Started dragging lead: ${lead.id} from stage: ${lead.stageId}`);
+    
+    // Add a small delay to allow the drag image to be captured
+    setTimeout(() => {
+      e.currentTarget.classList.add("opacity-50");
+    }, 0);
+  };
+  
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.classList.remove("opacity-50");
+    setIsDragging(false);
+    console.log("Drag ended");
   };
 
   const handleArchiveLead = () => {
@@ -58,9 +74,10 @@ const LeadCard = ({
   return (
     <>
       <Card 
-        className="cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow"
-        draggable
+        className={`cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all ${isDragging ? 'opacity-50' : ''}`}
+        draggable={!isArchived}
         onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
         <CardContent className="p-3">
           <div className="space-y-2">

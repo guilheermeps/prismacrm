@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { createLead, updateLead, deleteLead } from "@/lib/supabase/leadsService";
@@ -44,7 +43,12 @@ export const moveLead = async (
   toStageId: string
 ): Promise<boolean> => {
   try {
-    if (!lead) return false;
+    if (!lead) {
+      console.error("Tentativa de mover um lead indefinido");
+      return false;
+    }
+    
+    console.log(`Moving lead ${lead.id} from ${lead.stageId} to ${toStageId}`);
     
     // Development mode handling
     if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
@@ -56,6 +60,7 @@ export const moveLead = async (
       };
       
       console.log("Moving lead in dev/demo mode:", updatedLead);
+      toast.success(`Lead movido para nova etapa!`);
       return true;
     }
     
@@ -69,6 +74,7 @@ export const moveLead = async (
     };
     
     await updateLead(updatedLead);
+    toast.success(`Lead movido para nova etapa!`);
     return true;
   } catch (error) {
     console.error("Erro ao mover lead:", error);

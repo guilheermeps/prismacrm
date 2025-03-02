@@ -50,25 +50,26 @@ const LeadColumn = ({
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    // Adiciona um estilo visual para indicar que o drop é permitido
-    e.currentTarget.classList.add("bg-accent/50");
+    // Add visual indicator that drop is allowed
+    e.currentTarget.classList.add("bg-accent/50", "transition-colors");
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    // Remove o estilo visual quando o item arrastado sai da área
-    e.currentTarget.classList.remove("bg-accent/50");
+    // Remove visual indicator
+    e.currentTarget.classList.remove("bg-accent/50", "transition-colors");
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    // Remove o estilo visual
-    e.currentTarget.classList.remove("bg-accent/50");
+    // Remove visual indicator
+    e.currentTarget.classList.remove("bg-accent/50", "transition-colors");
     
     try {
       const leadId = e.dataTransfer.getData("leadId");
       const fromStageId = e.dataTransfer.getData("stageId");
       
-      if (fromStageId !== stage.id) {
+      if (leadId && fromStageId && fromStageId !== stage.id) {
+        console.log(`Moving lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
         onMoveLead(leadId, fromStageId, stage.id);
       }
     } catch (error) {
@@ -82,7 +83,7 @@ const LeadColumn = ({
 
   return (
     <div 
-      className="flex flex-col bg-secondary/20 rounded-md min-w-[300px] max-w-[300px]"
+      className="flex flex-col bg-secondary/20 rounded-md min-w-[300px] max-w-[300px] transition-colors"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
