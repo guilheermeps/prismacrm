@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { validateClientRegistrationToken, updateClientRegistrationFormData, getLeads } from "@/lib/supabase";
 import { toast } from "sonner";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 const ClientRegistration = () => {
   const { token } = useParams<{ token: string }>();
@@ -155,20 +156,22 @@ const ClientRegistration = () => {
 
   if (!isValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-lg">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-red-600">Link inválido</CardTitle>
-            <CardDescription>
+      <div className="min-h-screen flex items-center justify-center bg-[#1A1F2C]">
+        <div className="w-full max-w-lg p-6 rounded-lg">
+          <div className="text-center mb-6">
+            <AlertCircle className="h-12 w-12 text-[#ea384c] mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-[#ea384c] mb-2">Link inválido</h2>
+            <p className="text-white/80">
               Este link de cadastro não é válido ou já expirou.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button className="w-full" onClick={() => navigate("/")}>
-              Voltar para a página inicial
-            </Button>
-          </CardFooter>
-        </Card>
+            </p>
+          </div>
+          <Button 
+            className="w-full bg-[#F97316] hover:bg-[#F97316]/90 text-white"
+            onClick={() => navigate("/")}
+          >
+            Voltar para a página inicial
+          </Button>
+        </div>
       </div>
     );
   }
