@@ -31,11 +31,18 @@ const handleDevModeMoveOperation = async (
     };
     
     // In dev mode, we still want to persist changes
-    await updateLead(updatedLead);
+    const result = await updateLead(updatedLead);
+    
+    // Check if the update was successful
+    if (!result) {
+      console.error("Failed to update lead in database even in dev mode");
+      return false;
+    }
+    
     return true;
   } catch (error) {
     console.error("Dev mode error:", error);
-    return true; // Still return true in dev mode for UI responsiveness
+    return false; // Return false to indicate failure even in dev mode
   }
 };
 
@@ -73,15 +80,15 @@ export const moveLead = async (
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
+    console.log("Updating lead in database with new stage:", updatedLead);
+    
     // Persist the change to database - await the result to ensure it's saved
     const result = await updateLead(updatedLead);
     
     if (!result) {
       console.error("Failed to update lead in database");
-      if (!isDevOrDemoMode()) {
-        toast.error("Erro ao persistir a mudança de etapa do lead.");
-        return false;
-      }
+      toast.error("Erro ao persistir a mudança de etapa do lead.");
+      return false;
     }
     
     // Return success
