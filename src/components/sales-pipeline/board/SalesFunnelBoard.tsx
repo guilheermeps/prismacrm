@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from "react";
 import LeadColumn from "@/components/sales-pipeline/LeadColumn";
-import SalesPipelineMenu from "@/components/sales-pipeline/board/SalesPipelineMenu";
 import { Lead, Stage } from "@/lib/supabase/types";
 
 interface SalesFunnelBoardProps {
@@ -27,7 +27,6 @@ const SalesFunnelBoard = ({
   isArchived 
 }: SalesFunnelBoardProps) => {
   const [boardLeads, setBoardLeads] = useState<Lead[]>(filteredLeads);
-  const [searchTerm, setSearchTerm] = useState("");
   const [localFilteredLeads, setLocalFilteredLeads] = useState<Lead[]>(filteredLeads);
 
   // Update local state when props change
@@ -35,22 +34,6 @@ const SalesFunnelBoard = ({
     setBoardLeads(filteredLeads);
     setLocalFilteredLeads(filteredLeads);
   }, [filteredLeads]);
-
-  // Search functionality - modified to only use properties that exist in Lead type
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setLocalFilteredLeads(boardLeads);
-    } else {
-      const lowercaseSearch = searchTerm.toLowerCase();
-      const filtered = boardLeads.filter(lead => 
-        lead.name.toLowerCase().includes(lowercaseSearch) || 
-        (lead.whatsapp && lead.whatsapp.toLowerCase().includes(lowercaseSearch)) ||
-        (lead.serviceType && lead.serviceType.toLowerCase().includes(lowercaseSearch)) ||
-        (lead.notes && lead.notes.toLowerCase().includes(lowercaseSearch))
-      );
-      setLocalFilteredLeads(filtered);
-    }
-  }, [searchTerm, boardLeads]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -74,32 +57,8 @@ const SalesFunnelBoard = ({
     onMoveLead(leadId, fromStageId, toStageId);
   };
 
-  // Handle adding a new lead (passed to menu)
-  const handleAddNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
-    // This is just a pass-through to the parent component
-    return Promise.resolve();
-  };
-
-  // Handle refresh action
-  const handleRefresh = () => {
-    // Simply reset to the filtered leads from props
-    setBoardLeads(filteredLeads);
-    setLocalFilteredLeads(filteredLeads);
-    setSearchTerm("");
-  };
-
   return (
-    <div className="space-y-4">
-      {/* New Menu Component */}
-      <SalesPipelineMenu 
-        stages={stages}
-        isArchived={isArchived}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onAddNewLead={handleAddNewLead}
-        onRefresh={handleRefresh}
-      />
-      
+    <div className="space-y-4">      
       {/* Board Content */}
       <div 
         className="overflow-x-auto pb-4 min-h-[500px]" 
