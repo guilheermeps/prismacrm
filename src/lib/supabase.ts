@@ -409,6 +409,35 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
       
       if (!data) {
         console.log("Token não encontrado no supabase");
+        
+        // Criar um link de teste se estamos em modo desenvolvimento/demo
+        if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+          console.log("Modo desenvolvimento/demo: criando link de teste para o token");
+          const mockLeadId = '1'; // ID do primeiro lead de teste
+          const now = new Date();
+          const expiresAt = new Date(now);
+          expiresAt.setDate(expiresAt.getDate() + 7);
+          
+          // Inserir um link de teste no Supabase
+          const { error: insertError } = await supabase
+            .from('client_registration_links')
+            .insert({ 
+              lead_id: mockLeadId,
+              token: tokenStr,
+              expires_at: expiresAt.toISOString(),
+              is_used: false,
+              form_data: {}
+            });
+          
+          if (insertError) {
+            console.error("Erro ao criar link de teste:", insertError);
+            return { valid: false };
+          }
+          
+          console.log("Link de teste criado para desenvolvimento");
+          return { valid: true, leadId: mockLeadId };
+        }
+        
         return { valid: false };
       }
       
@@ -480,7 +509,7 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
       
       // Teste: criar um mock link para este token se não encontrarmos
       // Este é um "failsafe" para garantir que a demonstração funcione
-      if (Object.keys(mockClientLinks).length === 0) {
+      if (Object.keys(mockClientLinks).length === 0 || import.meta.env.DEV) {
         const mockLeadId = '1'; // Usar um ID de lead fixo para teste
         const now = new Date();
         const expiresAt = new Date(now);

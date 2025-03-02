@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { validateClientRegistrationToken, updateClientRegistrationFormData, getLeads } from "@/lib/supabase";
 import { toast } from "sonner";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const ClientRegistration = () => {
   const { token } = useParams<{ token: string }>();
@@ -19,6 +20,7 @@ const ClientRegistration = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [leadName, setLeadName] = useState("");
   const [validationAttempts, setValidationAttempts] = useState(0);
+  const [validationProgress, setValidationProgress] = useState(0);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -36,9 +38,12 @@ const ClientRegistration = () => {
   });
 
   useEffect(() => {
-    // Validação do token com máximo de 3 tentativas
+    // Validação do token com máximo de 5 tentativas e feedback visual
     const validateToken = async () => {
       console.log(`Tentativa ${validationAttempts + 1} de validação do token na página:`, token);
+      
+      // Atualizar o progresso da validação
+      setValidationProgress(Math.min((validationAttempts / 5) * 100, 100));
       
       if (!token) {
         console.log("Token não fornecido");
@@ -60,32 +65,37 @@ const ClientRegistration = () => {
           console.log("Token é válido, definindo isValid como true");
           setIsValid(true);
           // Tentar buscar informações do lead para pré-preencher o formulário
-          const leads = await getLeads();
-          console.log("Leads obtidos:", leads);
-          const lead = leads.find(l => l.id === leadId);
-          
-          if (lead) {
-            console.log("Lead encontrado:", lead);
-            setLeadName(lead.name);
+          try {
+            const leads = await getLeads();
+            console.log("Leads obtidos:", leads);
+            const lead = leads.find(l => l.id === leadId);
             
-            setFormData(prev => ({
-              ...prev,
-              name: lead.name || "",
-              phone: lead.whatsapp || ""
-            }));
-          } else {
-            console.log("Lead não encontrado para ID:", leadId);
-            // Mesmo se o lead não for encontrado, o token é válido
-            // Então mantemos isValid como true
+            if (lead) {
+              console.log("Lead encontrado:", lead);
+              setLeadName(lead.name);
+              
+              setFormData(prev => ({
+                ...prev,
+                name: lead.name || "",
+                phone: lead.whatsapp || ""
+              }));
+            } else {
+              console.log("Lead não encontrado para ID:", leadId);
+              // Mesmo se o lead não for encontrado, o token é válido
+              // Então mantemos isValid como true
+            }
+          } catch (error) {
+            console.error("Erro ao buscar leads:", error);
+            // Continuar mesmo se não conseguir buscar leads
           }
         } else {
           console.log("Token inválido ou expirado na tentativa", validationAttempts + 1);
           
           // Se ainda não tentamos muitas vezes e não está válido, tentamos novamente
-          if (validationAttempts < 3) {
+          if (validationAttempts < 5) {
             setValidationAttempts(prev => prev + 1);
             // Aguarda um pouco antes de tentar novamente
-            setTimeout(() => validateToken(), 1000);
+            setTimeout(() => validateToken(), 1500);
             return;
           } else {
             toast.error("Este link não é válido ou já expirou.");
@@ -96,17 +106,17 @@ const ClientRegistration = () => {
         console.error("Erro ao validar token:", error);
         
         // Se ainda não tentamos muitas vezes, tentamos novamente
-        if (validationAttempts < 3) {
+        if (validationAttempts < 5) {
           setValidationAttempts(prev => prev + 1);
           // Aguarda um pouco antes de tentar novamente
-          setTimeout(() => validateToken(), 1000);
+          setTimeout(() => validateToken(), 1500);
           return;
         } else {
           toast.error("Ocorreu um erro ao validar o link de cadastro.");
           setIsValid(false);
         }
       } finally {
-        if (validationAttempts >= 3 || isValid) {
+        if (validationAttempts >= 5 || isValid) {
           setIsLoading(false);
         }
       }
@@ -156,6 +166,9 @@ const ClientRegistration = () => {
             <CardDescription>
               Estamos verificando o seu link de cadastro.
             </CardDescription>
+            <div className="mt-4">
+              <Progress value={validationProgress} className="h-2" />
+            </div>
           </CardHeader>
         </Card>
       </div>
