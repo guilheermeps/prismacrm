@@ -27,7 +27,8 @@ const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
       whatsappNumber = '55' + whatsappNumber;
     }
     
-    const whatsappUrl = `https://wa.me/${whatsappNumber}`;
+    // Construct WhatsApp URL with formatted number
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
     
     // Add to history
@@ -45,6 +46,7 @@ const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
     };
     
     onUpdateLead(updatedLead);
+    toast.success("Redirecionando para o WhatsApp...");
   };
 
   return (
