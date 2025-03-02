@@ -14,7 +14,8 @@ export const addNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'histo
     const lead = {
       ...newLead,
       createdAt: new Date().toISOString(), // Explicitly add createdAt
-      history: []
+      history: [],
+      isArchived: false
     };
     
     console.log("Formatted lead for Supabase creation:", lead);
@@ -50,24 +51,8 @@ export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
 // Remove lead
 export const removeLead = async (leadId: string): Promise<boolean> => {
   try {
-    const lead: Lead = {
-      id: leadId,
-      name: 'Dummy',
-      serviceType: 'Dummy',
-      whatsapp: 'Dummy',
-      stageId: 'Dummy',
-      proposalValue: 0,
-      createdAt: new Date().toISOString(),
-      history: []
-    };
-    
-    const { updateLead } = await import("@/lib/supabase/leadsService");
-    const updatedLead = {
-      ...lead,
-      history: addHistoryEntry(lead.history, "deleted", null, null)
-    };
-    
-    await updateLead(updatedLead);
+    const { deleteLead } = await import("@/lib/supabase/leadsService");
+    await deleteLead(leadId);
     
     toast.success("Lead removido com sucesso");
     return true;

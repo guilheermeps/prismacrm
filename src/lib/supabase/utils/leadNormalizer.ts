@@ -21,6 +21,8 @@ export const normalizeLeadFromSupabase = (data: any): Lead => {
 // Function to normalize lead data from our application model to Supabase
 export const normalizeLeadForSupabase = (lead: Omit<Lead, 'id'> | Lead): Record<string, any> => {
   console.log("Normalizing lead for Supabase insertion:", lead);
+  
+  // Ensure all fields are properly mapped to the database column names
   const normalizedLead = {
     name: lead.name,
     servicetype: lead.serviceType, // Map from our interface to DB field

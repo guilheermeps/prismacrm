@@ -80,13 +80,15 @@ const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormPr
     console.log("Submitting lead data:", {
       ...formData,
       whatsapp: formattedWhatsapp,
-      proposalValue
+      proposalValue,
+      createdAt: new Date().toISOString() // Add createdAt field here
     });
     
     onSave({
       ...formData,
       whatsapp: formattedWhatsapp,
-      proposalValue
+      proposalValue,
+      createdAt: new Date().toISOString() // Add createdAt field here
     });
   };
 

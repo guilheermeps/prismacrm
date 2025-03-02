@@ -80,12 +80,14 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
 
     const userId = session.user.id;
     
-    // Ensure createdat is present in the normalized lead data
-    if (!lead.createdAt) {
-      lead.createdAt = new Date().toISOString();
-    }
+    // Make sure the lead has a createdAt timestamp
+    const leadWithDate = {
+      ...lead,
+      createdAt: lead.createdAt || new Date().toISOString()
+    };
     
-    const normalizedLead = normalizeLeadForSupabase(lead);
+    // Normalize the lead for Supabase
+    const normalizedLead = normalizeLeadForSupabase(leadWithDate);
 
     console.log("Creating lead with normalized data:", normalizedLead);
     console.log("User ID for lead creation:", userId);
@@ -160,34 +162,6 @@ export async function deleteLead(id: string) {
   } catch (error) {
     console.error('Error in deleteLead:', error);
     return false;
-  }
-}
-
-// Search leads by name or service type
-export async function searchLeads(query: string) {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return [];
-    
-    const userId = session.user.id;
-    
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('user_id', userId)
-      .or(`name.ilike.%${query}%,servicetype.ilike.%${query}%`)
-      .eq('isarchived', false)
-      .order('createdat', { ascending: false });
-      
-    if (error) {
-      console.error('Error searching leads:', error);
-      return [];
-    }
-    
-    return data.map(normalizeLeadFromSupabase);
-  } catch (error) {
-    console.error('Error in searchLeads:', error);
-    return [];
   }
 }
 
