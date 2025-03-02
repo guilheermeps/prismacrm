@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { MoreHorizontal, Edit, Trash, ArrowRight, ArrowLeft, UserCheck, MessageSquare } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, ArrowRight, ArrowLeft, UserCheck, MessageSquare, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -74,8 +74,29 @@ const LeadCard = ({
     // Remove any non-digit characters if they exist
     whatsappNumber = whatsappNumber.replace(/\D/g, '');
     
+    // Check if the number starts with country code
+    if (!whatsappNumber.startsWith('55') && whatsappNumber.length <= 11) {
+      whatsappNumber = '55' + whatsappNumber;
+    }
+    
     const whatsappUrl = `https://wa.me/${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
+    
+    // Add to history
+    const updatedLead = {
+      ...lead,
+      history: [
+        ...lead.history,
+        {
+          action: "whatsapp",
+          timestamp: new Date().toISOString(),
+          from: null,
+          to: null
+        }
+      ]
+    };
+    
+    onUpdateLead(updatedLead);
   };
 
   const handleConvertClick = () => {
@@ -102,10 +123,15 @@ const LeadCard = ({
             {/* Lead Header */}
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <h4 className="font-medium text-sm line-clamp-1" onClick={() => setIsDetailsDialogOpen(true)}>
+                <h4 className="font-medium text-sm line-clamp-1 cursor-pointer hover:text-primary transition-colors" onClick={() => setIsDetailsDialogOpen(true)}>
                   {lead.name}
                 </h4>
                 <p className="text-xs text-muted-foreground">{lead.serviceType}</p>
+                {lead.createdAt && (
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(lead.createdAt).toLocaleDateString('pt-BR')}
+                  </p>
+                )}
               </div>
               
               <DropdownMenu>
@@ -196,7 +222,20 @@ const LeadCard = ({
             lead={lead} 
             stages={stages} 
             onSave={(updatedLead) => {
-              onUpdateLead(updatedLead);
+              // Add history entry for edit
+              const editedLead = {
+                ...updatedLead,
+                history: [
+                  ...lead.history,
+                  {
+                    action: "edited",
+                    timestamp: new Date().toISOString(),
+                    from: null,
+                    to: null
+                  }
+                ]
+              };
+              onUpdateLead(editedLead);
               setIsEditDialogOpen(false);
             }}
             onCancel={() => setIsEditDialogOpen(false)}

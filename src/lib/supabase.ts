@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Inicialização do cliente Supabase com fallback para valores mocados
@@ -16,6 +15,7 @@ export interface Lead {
   proposalValue: number;
   notes?: string;
   createdAt: string;
+  isArchived?: boolean;
   history: LeadHistory[];
 }
 
@@ -23,7 +23,7 @@ export interface LeadHistory {
   action: string;
   timestamp: string;
   from: string | null;
-  to: string;
+  to: string | null;
 }
 
 export interface Stage {
@@ -57,7 +57,14 @@ export const getLeads = async (): Promise<Lead[]> => {
       return mockLeads();
     }
     
-    return data || [];
+    // Ensure all leads have the required fields
+    const processedData = data.map(lead => ({
+      ...lead,
+      history: lead.history || [],
+      isArchived: lead.isArchived === undefined ? false : lead.isArchived
+    }));
+    
+    return processedData;
   } catch (e) {
     console.warn('Usando dados simulados para leads devido a erro:', e);
     return mockLeads();
@@ -92,6 +99,7 @@ const mockLeads = (): Lead[] => {
       proposalValue: 3500,
       notes: 'Cliente interessado em pacote completo',
       createdAt: new Date().toISOString(),
+      isArchived: false,
       history: [
         {
           action: 'created',
@@ -110,6 +118,7 @@ const mockLeads = (): Lead[] => {
       proposalValue: 1200,
       notes: 'Ensaio pré-wedding',
       createdAt: new Date().toISOString(),
+      isArchived: false,
       history: [
         {
           action: 'moved',
@@ -149,14 +158,33 @@ const mockStages = (): Stage[] => {
 
 // Funções para interagir com o Supabase
 export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> => {
+  // Ensure the lead has all required fields
+  const leadWithDefaults = {
+    ...lead,
+    history: lead.history || [],
+    isArchived: lead.isArchived === undefined ? false : lead.isArchived
+  };
+  
   const { data, error } = await supabase
     .from('leads')
-    .insert(lead)
+    .insert(leadWithDefaults)
     .select()
     .single();
   
   if (error) {
     console.error('Erro ao criar lead:', error);
+    
+    // In demo/development mode, simulate success with mock data
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      const mockId = Math.random().toString(36).substring(2, 15);
+      const mockLead = {
+        id: mockId,
+        ...leadWithDefaults,
+      };
+      console.log('Created mock lead in development mode:', mockLead);
+      return mockLead;
+    }
+    
     return null;
   }
   
@@ -164,15 +192,29 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
 };
 
 export const updateLead = async (lead: Lead): Promise<Lead | null> => {
+  // Ensure the lead has all required fields
+  const leadWithDefaults = {
+    ...lead,
+    history: lead.history || [],
+    isArchived: lead.isArchived === undefined ? false : lead.isArchived
+  };
+  
   const { data, error } = await supabase
     .from('leads')
-    .update(lead)
+    .update(leadWithDefaults)
     .eq('id', lead.id)
     .select()
     .single();
   
   if (error) {
     console.error('Erro ao atualizar lead:', error);
+    
+    // In demo/development mode, simulate success with mock data
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('Updated mock lead in development mode:', leadWithDefaults);
+      return leadWithDefaults;
+    }
+    
     return null;
   }
   
@@ -187,6 +229,13 @@ export const deleteLead = async (id: string): Promise<boolean> => {
   
   if (error) {
     console.error('Erro ao excluir lead:', error);
+    
+    // In demo/development mode, simulate success
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('Deleted mock lead in development mode, id:', id);
+      return true;
+    }
+    
     return false;
   }
   
@@ -202,6 +251,18 @@ export const createStage = async (stage: Omit<Stage, 'id'>): Promise<Stage | nul
   
   if (error) {
     console.error('Erro ao criar estágio:', error);
+    
+    // In demo/development mode, simulate success with mock data
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      const mockId = Math.random().toString(36).substring(2, 15);
+      const mockStage = {
+        id: mockId,
+        ...stage,
+      };
+      console.log('Created mock stage in development mode:', mockStage);
+      return mockStage;
+    }
+    
     return null;
   }
   
@@ -218,6 +279,13 @@ export const updateStage = async (stage: Stage): Promise<Stage | null> => {
   
   if (error) {
     console.error('Erro ao atualizar estágio:', error);
+    
+    // In demo/development mode, simulate success with mock data
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('Updated mock stage in development mode:', stage);
+      return stage;
+    }
+    
     return null;
   }
   
@@ -232,6 +300,13 @@ export const deleteStage = async (id: string): Promise<boolean> => {
   
   if (error) {
     console.error('Erro ao excluir estágio:', error);
+    
+    // In demo/development mode, simulate success
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('Deleted mock stage in development mode, id:', id);
+      return true;
+    }
+    
     return false;
   }
   

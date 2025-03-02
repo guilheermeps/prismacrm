@@ -16,6 +16,9 @@ interface LeadColumnProps {
   onUpdateLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
   onConvertToContact: (lead: Lead) => void;
+  onArchiveLead?: (lead: Lead) => void;
+  onUnarchiveLead?: (lead: Lead) => void;
+  isArchived?: boolean;
 }
 
 const LeadColumn = ({
@@ -25,7 +28,10 @@ const LeadColumn = ({
   onMoveLead,
   onUpdateLead,
   onDeleteLead,
-  onConvertToContact
+  onConvertToContact,
+  onArchiveLead,
+  onUnarchiveLead,
+  isArchived = false
 }: LeadColumnProps) => {
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = React.useState(false);
 
@@ -72,24 +78,26 @@ const LeadColumn = ({
           </span>
         </div>
         
-        <Dialog open={isNewLeadDialogOpen} onOpenChange={setIsNewLeadDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
-              <PlusCircle className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Adicionar Lead em {stage.title}</DialogTitle>
-            </DialogHeader>
-            <NewLeadForm 
-              onSave={handleAddNewLead} 
-              stages={allStages}
-              initialStageId={stage.id}
-              onCancel={() => setIsNewLeadDialogOpen(false)} 
-            />
-          </DialogContent>
-        </Dialog>
+        {!isArchived && (
+          <Dialog open={isNewLeadDialogOpen} onOpenChange={setIsNewLeadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <PlusCircle className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Adicionar Lead em {stage.title}</DialogTitle>
+              </DialogHeader>
+              <NewLeadForm 
+                onSave={handleAddNewLead} 
+                stages={allStages}
+                initialStageId={stage.id}
+                onCancel={() => setIsNewLeadDialogOpen(false)} 
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Value Summary */}
@@ -121,7 +129,9 @@ const LeadColumn = ({
             ))
           ) : (
             <div className="text-center py-6 text-muted-foreground text-sm">
-              Nenhum lead nesta etapa. Adicione um novo!
+              {isArchived 
+                ? "Nenhum lead arquivado nesta etapa." 
+                : "Nenhum lead nesta etapa. Adicione um novo!"}
             </div>
           )}
         </div>

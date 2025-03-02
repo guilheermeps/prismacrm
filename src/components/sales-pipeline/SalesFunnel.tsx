@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { PlusCircle, Search, Filter, Settings, Trash2 } from "lucide-react";
+import { PlusCircle, Search, Filter, Settings, Trash2, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -50,13 +50,24 @@ const initialStages = [
   { id: "6", title: "Fechado (Perdido)", color: "#ff595e" },
 ];
 
-const SalesFunnel = () => {
+interface SalesFunnelProps {
+  searchTerm?: string;
+  serviceTypeFilter?: string | null;
+  dateFilter?: string;
+  isArchived?: boolean;
+}
+
+const SalesFunnel = ({ 
+  searchTerm = "", 
+  serviceTypeFilter = null,
+  dateFilter = "all",
+  isArchived = false 
+}: SalesFunnelProps) => {
   const navigate = useNavigate();
   const [stages, setStages] = useState<Stage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [searchTerm, setSearchTerm] = useState("");
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [isEditStageDialogOpen, setIsEditStageDialogOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
@@ -124,13 +135,55 @@ const SalesFunnel = () => {
     };
   }, []);
 
-  // Filter leads by search term
-  const filteredLeads = leads.filter(lead =>
-    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.serviceType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Apply all filters
+  const filteredLeads = leads.filter(lead => {
+    // Filter by search term
+    const matchesSearch = 
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.serviceType && lead.serviceType.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (lead.notes && lead.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by service type
+    const matchesServiceType = 
+      !serviceTypeFilter || 
+      lead.serviceType === serviceTypeFilter;
+    
+    // Filter by archive status
+    const matchesArchiveStatus = 
+      lead.isArchived === isArchived;
+    
+    // Filter by date
+    let matchesDate = true;
+    if (dateFilter !== "all" && lead.createdAt) {
+      const createdDate = new Date(lead.createdAt);
+      const now = new Date();
+      
+      switch (dateFilter) {
+        case "today":
+          matchesDate = createdDate.toDateString() === now.toDateString();
+          break;
+        case "week":
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(now.getDate() - 7);
+          matchesDate = createdDate >= oneWeekAgo;
+          break;
+        case "month":
+          const oneMonthAgo = new Date();
+          oneMonthAgo.setMonth(now.getMonth() - 1);
+          matchesDate = createdDate >= oneMonthAgo;
+          break;
+        case "quarter":
+          const threeMonthsAgo = new Date();
+          threeMonthsAgo.setMonth(now.getMonth() - 3);
+          matchesDate = createdDate >= threeMonthsAgo;
+          break;
+      }
+    }
+    
+    return matchesSearch && matchesServiceType && matchesArchiveStatus && matchesDate;
+  });
 
-  const handleAddNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history'>) => {
+  const handleAddNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     try {
       const createdAt = new Date().toISOString();
       const stageName = stages.find(stage => stage.id === newLead.stageId)?.title || "Desconhecido";
@@ -138,6 +191,7 @@ const SalesFunnel = () => {
       const leadWithMetadata = {
         ...newLead,
         createdAt,
+        isArchived: false,
         history: [
           {
             action: "created",
@@ -197,6 +251,54 @@ const SalesFunnel = () => {
     } catch (error) {
       console.error("Erro ao atualizar lead:", error);
       toast.error("Erro ao atualizar lead. Tente novamente.");
+    }
+  };
+
+  const handleArchiveLead = async (lead: Lead) => {
+    try {
+      const updatedLead = {
+        ...lead,
+        isArchived: true,
+        history: [
+          ...lead.history,
+          {
+            action: "archived",
+            timestamp: new Date().toISOString(),
+            from: null,
+            to: null
+          }
+        ]
+      };
+      
+      await updateLead(updatedLead);
+      toast.success("Lead arquivado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao arquivar lead:", error);
+      toast.error("Erro ao arquivar lead. Tente novamente.");
+    }
+  };
+
+  const handleUnarchiveLead = async (lead: Lead) => {
+    try {
+      const updatedLead = {
+        ...lead,
+        isArchived: false,
+        history: [
+          ...lead.history,
+          {
+            action: "unarchived",
+            timestamp: new Date().toISOString(),
+            from: null,
+            to: null
+          }
+        ]
+      };
+      
+      await updateLead(updatedLead);
+      toast.success("Lead restaurado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao restaurar lead:", error);
+      toast.error("Erro ao restaurar lead. Tente novamente.");
     }
   };
 
@@ -278,6 +380,24 @@ const SalesFunnel = () => {
       if (wonStage) {
         await handleMoveLead(lead.id, lead.stageId, wonStage.id);
       }
+      
+      // Archive the lead after conversion
+      const updatedLead = {
+        ...lead,
+        stageId: wonStage?.id || lead.stageId,
+        isArchived: true,
+        history: [
+          ...lead.history,
+          {
+            action: "converted",
+            timestamp: new Date().toISOString(),
+            from: null,
+            to: null
+          }
+        ]
+      };
+      
+      await updateLead(updatedLead);
     } catch (error) {
       console.error("Erro ao converter para contato:", error);
       toast.error("Erro ao converter para contato. Tente novamente.");
@@ -398,14 +518,14 @@ const SalesFunnel = () => {
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="flex gap-2">
                 <Trash2 className="h-4 w-4" />
-                Limpar Leads
+                Limpar {isArchived ? "Arquivados" : "Leads"}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta ação removerá permanentemente todos os leads do pipeline de vendas. Esta ação não pode ser desfeita.
+                  Esta ação removerá permanentemente todos os leads {isArchived ? "arquivados" : ""} do pipeline de vendas. Esta ação não pode ser desfeita.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -416,18 +536,6 @@ const SalesFunnel = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar leads..."
-            className="pl-8 w-full"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
         </div>
       </div>
 
@@ -444,6 +552,9 @@ const SalesFunnel = () => {
               onUpdateLead={handleUpdateLead}
               onDeleteLead={handleDeleteLead}
               onConvertToContact={convertToContact}
+              onArchiveLead={handleArchiveLead}
+              onUnarchiveLead={handleUnarchiveLead}
+              isArchived={isArchived}
             />
           ))}
         </div>
