@@ -47,6 +47,10 @@ const SalesFunnel = ({
   // Apply all filters
   const filteredLeads = filterLeads(leads, searchTerm, serviceTypeFilter, dateFilter, isArchived);
 
+  console.log("Filtered leads:", filteredLeads);
+  console.log("Stages:", stages);
+  console.log("Loading states - leads:", leadsLoading, "stages:", stagesLoading);
+
   // Add better error handling and fallback for empty states
   if (leadsLoading || stagesLoading) {
     return (
@@ -70,23 +74,24 @@ const SalesFunnel = ({
 
   // Create wrapper functions to fix type issues
   const handleAddNewLeadWrapper = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
-    await handleAddNewLead(newLead);
+    console.log("Adding new lead from SalesFunnel:", newLead);
+    return await handleAddNewLead(newLead);
   };
 
   const handleAddStageWrapper = async (newStage: Omit<Stage, 'id'>) => {
-    await handleAddStage(newStage);
+    return await handleAddStage(newStage);
   };
 
   const handleUpdateStageWrapper = async (updatedStage: Stage) => {
-    await handleUpdateStage(updatedStage);
+    return await handleUpdateStage(updatedStage);
   };
 
   const handleDeleteStageWrapper = async (stageId: string) => {
-    await handleDeleteStage(stageId);
+    return await handleDeleteStage(stageId);
   };
   
   const handleResetLeadsWrapper = async () => {
-    await handleResetLeads();
+    return await handleResetLeads();
   };
 
   return (

@@ -1,9 +1,9 @@
-
 import { useState, useEffect, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { 
   supabase, 
   getLeads,
+  createLead as apiCreateLead,
   type Lead
 } from "@/lib/supabase";
 import { 
@@ -75,6 +75,7 @@ function useLeadOperationsInternal() {
     try {
       console.log("Fetching leads to update global state...");
       const leadsData = await getLeads();
+      console.log("Fetched leads:", leadsData);
       setLeads(leadsData);
       return leadsData;
     } catch (error) {
@@ -105,16 +106,10 @@ function useLeadOperationsInternal() {
           // Check the type of change and update state accordingly for better performance
           if (payload.eventType === 'INSERT') {
             // For new leads, just append to the current state
-            const newLead = payload.new as unknown as Lead;
-            setLeads(currentLeads => [...currentLeads, newLead]);
+            await fetchLeads(); // Refresh all leads to ensure we have complete data
           } else if (payload.eventType === 'UPDATE') {
             // For updates, replace the specific lead
-            const updatedLead = payload.new as unknown as Lead;
-            setLeads(currentLeads => 
-              currentLeads.map(lead => 
-                lead.id === updatedLead.id ? updatedLead : lead
-              )
-            );
+            await fetchLeads(); // Refresh all leads to ensure we have complete data
           } else if (payload.eventType === 'DELETE') {
             // For deletions, remove the lead
             const deletedLeadId = payload.old.id;
@@ -151,11 +146,23 @@ function useLeadOperationsInternal() {
   };
 
   const handleAddNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
-    const result = await addNewLead(newLead);
-    if (result) {
-      await refreshLeads();
+    try {
+      console.log("Adding new lead:", newLead);
+      const result = await addNewLead(newLead);
+      console.log("Add new lead result:", result);
+      if (result) {
+        toast.success("Lead adicionado com sucesso!");
+        await refreshLeads();
+        return true;
+      } else {
+        toast.error("Erro ao adicionar lead");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error adding new lead:", error);
+      toast.error("Erro ao adicionar lead: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+      return false;
     }
-    return result;
   };
 
   const handleMoveLead = async (leadId: string, fromStageId: string, toStageId: string) => {
@@ -198,19 +205,34 @@ function useLeadOperationsInternal() {
   };
 
   const handleUpdateLead = async (updatedLead: Lead) => {
-    const result = await updateLeadData(updatedLead);
-    if (result) {
-      await refreshLeads();
+    try {
+      const result = await updateLeadData(updatedLead);
+      if (result) {
+        await refreshLeads();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      toast.error("Erro ao atualizar lead");
+      return false;
     }
-    return result;
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    const result = await removeLead(leadId);
-    if (result) {
-      await refreshLeads();
+    try {
+      const result = await removeLead(leadId);
+      if (result) {
+        toast.success("Lead removido com sucesso!");
+        await refreshLeads();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error deleting lead:", error);
+      toast.error("Erro ao remover lead");
+      return false;
     }
-    return result;
   };
 
   const handleArchiveLead = async (lead: Lead) => {

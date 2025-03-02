@@ -47,28 +47,33 @@ const LeadCard = ({
       return;
     }
     
-    // Set data in dataTransfer with multiple formats for reliability
-    const data = {
-      leadId: lead.id,
-      stageId: lead.stageId,
-      leadObject: JSON.stringify(lead) // Add the entire lead object
-    };
-    
-    // Set as JSON for structured data
-    e.dataTransfer.setData("application/json", JSON.stringify(data));
-    
-    // Set individual properties as fallback
-    e.dataTransfer.setData("leadId", lead.id);
-    e.dataTransfer.setData("stageId", lead.stageId);
-    e.dataTransfer.setData("text/plain", lead.name); // For compatibility
-    
-    e.dataTransfer.effectAllowed = "move";
-    
-    // Add visual feedback immediately
-    setIsDragging(true);
-    
-    // Log for debugging
-    console.log(`Started dragging lead: ${lead.id} from stage: ${lead.stageId}`);
+    try {
+      // Set data in dataTransfer with multiple formats for reliability
+      const data = {
+        leadId: lead.id,
+        stageId: lead.stageId,
+        leadObject: JSON.stringify(lead) // Add the entire lead object
+      };
+      
+      // Set as JSON for structured data
+      e.dataTransfer.setData("application/json", JSON.stringify(data));
+      
+      // Set individual properties as fallback
+      e.dataTransfer.setData("leadId", lead.id);
+      e.dataTransfer.setData("stageId", lead.stageId);
+      e.dataTransfer.setData("text/plain", lead.name); // For compatibility
+      
+      e.dataTransfer.effectAllowed = "move";
+      
+      // Add visual feedback immediately
+      setIsDragging(true);
+      
+      // Log for debugging
+      console.log(`Started dragging lead: ${lead.id} from stage: ${lead.stageId}`);
+    } catch (error) {
+      console.error("Error setting drag data:", error);
+      toast.error("Erro ao iniciar arrasto do card");
+    }
   };
   
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
@@ -108,7 +113,6 @@ const LeadCard = ({
                 <h4 className="font-medium text-sm line-clamp-1 cursor-pointer hover:text-primary transition-colors" onClick={() => setIsDetailsDialogOpen(true)}>
                   {lead.name}
                 </h4>
-                {/* Substituir o texto estático pelo editor de tipo de serviço */}
                 <ServiceTypeEditor 
                   lead={lead} 
                   onUpdateLead={onUpdateLead} 
@@ -127,13 +131,12 @@ const LeadCard = ({
                 onViewDetails={() => setIsDetailsDialogOpen(true)}
                 onEdit={() => setIsEditDialogOpen(true)}
                 onConvert={() => setIsConvertDialogOpen(true)}
-                onDelete={onDeleteLead}
-                onArchive={onArchiveLead}
-                onUnarchive={onUnarchiveLead}
+                onDelete={() => setIsDeleteDialogOpen(true)}
+                onArchive={handleArchiveLead}
+                onUnarchive={handleUnarchiveLead}
               />
             </div>
             
-            {/* Substituir a exibição do valor por um editor */}
             <ProposalValueEditor 
               lead={lead} 
               onUpdateLead={onUpdateLead} 

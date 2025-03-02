@@ -1,3 +1,4 @@
+
 import { supabase } from "../client";
 import { Lead } from '../types';
 import { normalizeLeadFromSupabase, normalizeLeadForSupabase } from '../utils/leadNormalizer';
@@ -67,12 +68,18 @@ export async function getArchivedLeads() {
 // Create a new lead
 export async function createLead(lead: Omit<Lead, 'id'>) {
   try {
+    console.log("Creating lead in Supabase:", lead);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("No session found");
+    if (!session) {
+      console.error("No session found when creating lead");
+      throw new Error("No session found");
+    }
 
     const userId = session.user.id;
     const normalizedLead = normalizeLeadForSupabase(lead);
 
+    console.log("Normalized lead:", normalizedLead);
+    
     const { data, error } = await supabase
       .from('leads')
       .insert([{ ...normalizedLead, user_id: userId }])
@@ -84,6 +91,7 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
       throw error;
     }
 
+    console.log("Lead created successfully:", data);
     return normalizeLeadFromSupabase(data);
   } catch (error) {
     console.error('Error in createLead:', error);

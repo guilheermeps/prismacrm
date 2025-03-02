@@ -46,14 +46,16 @@ const LeadColumn = ({
 
   const handleAddNewLead = (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     try {
+      console.log("Adding new lead in column:", newLead);
       // Create a new lead in this stage
       const leadWithStage = { ...newLead, stageId: stage.id };
       onUpdateLead(leadWithStage as Lead);
       setIsNewLeadDialogOpen(false);
-      toast.success("Lead adicionado com sucesso!");
+      return true;
     } catch (error) {
       console.error("Erro ao adicionar lead:", error);
       toast.error("Erro ao adicionar lead. Tente novamente.");
+      return false;
     }
   };
 
