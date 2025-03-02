@@ -1,15 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { OrderItem } from "@/lib/types";
 import { Json } from "@/integrations/supabase/types";
-
-// Order types
-export interface OrderItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
 
 export interface Order {
   id: string;
@@ -20,8 +13,8 @@ export interface Order {
   status: 'pending' | 'in-progress' | 'completed' | 'canceled';
   payment_method: string;
   payment_status: 'pending' | 'completed';
-  installments: number;
   due_date?: string;
+  installments?: number;
   notes?: string;
   created_at: string;
   source_id?: string;
@@ -40,27 +33,24 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at'>): 
       return null;
     }
     
-    // Convert orderData.items to JSON-compatible format
-    const dbOrder = {
-      id,
-      client_name: orderData.client_name,
-      client_id: orderData.client_id,
-      total_amount: orderData.total_amount,
-      items: orderData.items as unknown as Json,
-      status: orderData.status,
-      payment_method: orderData.payment_method,
-      payment_status: orderData.payment_status,
-      installments: orderData.installments,
-      due_date: orderData.due_date,
-      notes: orderData.notes,
-      source_id: orderData.source_id,
-      source_type: orderData.source_type,
-      user_id: user.id
-    };
-    
     const { error } = await supabase
       .from('orders')
-      .insert(dbOrder);
+      .insert({
+        id,
+        client_name: orderData.client_name,
+        client_id: orderData.client_id,
+        total_amount: orderData.total_amount,
+        items: orderData.items as unknown as Json,
+        status: orderData.status,
+        payment_method: orderData.payment_method,
+        payment_status: orderData.payment_status,
+        due_date: orderData.due_date,
+        installments: orderData.installments,
+        notes: orderData.notes,
+        source_id: orderData.source_id,
+        source_type: orderData.source_type,
+        user_id: user.id
+      });
 
     if (error) {
       console.error("Error creating order:", error);
@@ -77,9 +67,16 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at'>): 
 // Get all orders
 export const getOrders = async (): Promise<Order[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -87,13 +84,11 @@ export const getOrders = async (): Promise<Order[]> => {
       throw error;
     }
 
-    // Convert the data from JSON to our Order type
-    const orders = data.map(item => ({
-      ...item,
-      items: item.items as unknown as OrderItem[]
+    // Convert items from JSON to array of OrderItem
+    return data.map(order => ({
+      ...order,
+      items: order.items as unknown as OrderItem[]
     })) as Order[];
-
-    return orders;
   } catch (error) {
     console.error("Error in getOrders:", error);
     return [];
@@ -103,10 +98,17 @@ export const getOrders = async (): Promise<Order[]> => {
 // Get order by ID
 export const getOrderById = async (id: string): Promise<Order | null> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -114,15 +116,11 @@ export const getOrderById = async (id: string): Promise<Order | null> => {
       throw error;
     }
 
-    if (!data) return null;
-
-    // Convert the data from JSON to our Order type
-    const order = {
+    // Convert items from JSON to array of OrderItem
+    return {
       ...data,
       items: data.items as unknown as OrderItem[]
     } as Order;
-
-    return order;
   } catch (error) {
     console.error("Error in getOrderById:", error);
     return null;
@@ -132,16 +130,23 @@ export const getOrderById = async (id: string): Promise<Order | null> => {
 // Update an order
 export const updateOrder = async (order: Partial<Order> & { id: string }): Promise<boolean> => {
   try {
-    // Prepare DB-compatible object
-    const dbOrder: any = { ...order };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
+    // Prepare data for update
+    const updateData: any = { ...order };
     if (order.items) {
-      dbOrder.items = order.items as unknown as Json;
+      updateData.items = order.items as unknown as Json;
     }
 
     const { error } = await supabase
       .from('orders')
-      .update(dbOrder)
-      .eq('id', order.id);
+      .update(updateData)
+      .eq('id', order.id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error updating order:", error);
@@ -158,10 +163,17 @@ export const updateOrder = async (order: Partial<Order> & { id: string }): Promi
 // Delete an order
 export const deleteOrder = async (id: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     const { error } = await supabase
       .from('orders')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error deleting order:", error);
@@ -175,57 +187,36 @@ export const deleteOrder = async (id: string): Promise<boolean> => {
   }
 };
 
-// Get orders by filter
-export const getOrdersByFilter = async (
-  filter: {
-    status?: string;
-    client_name?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    paymentStatus?: string;
-  }
-): Promise<Order[]> => {
+// Get orders by status
+export const getOrdersByStatus = async (status: Order['status']): Promise<Order[]> => {
   try {
-    let query = supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
+    const { data, error } = await supabase
       .from('orders')
-      .select('*');
-
-    if (filter.status && filter.status !== 'all') {
-      query = query.eq('status', filter.status);
-    }
-
-    if (filter.paymentStatus && filter.paymentStatus !== 'all') {
-      query = query.eq('payment_status', filter.paymentStatus);
-    }
-
-    if (filter.client_name) {
-      query = query.ilike('client_name', `%${filter.client_name}%`);
-    }
-
-    if (filter.dateFrom) {
-      query = query.gte('created_at', filter.dateFrom);
-    }
-
-    if (filter.dateTo) {
-      query = query.lte('created_at', filter.dateTo);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
+      .select('*')
+      .eq('status', status)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching filtered orders:", error);
+      console.error("Error fetching orders by status:", error);
       throw error;
     }
 
-    // Convert the data from JSON to our Order type
-    const orders = data.map(item => ({
-      ...item,
-      items: item.items as unknown as OrderItem[]
+    // Convert items from JSON to array of OrderItem
+    return data.map(order => ({
+      ...order,
+      items: order.items as unknown as OrderItem[]
     })) as Order[];
-
-    return orders;
   } catch (error) {
-    console.error("Error in getOrdersByFilter:", error);
+    console.error("Error in getOrdersByStatus:", error);
     return [];
   }
 };
+
+// rest of file...

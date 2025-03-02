@@ -1,15 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { ContractService } from "@/lib/types";
 import { Json } from "@/integrations/supabase/types";
-
-// Contract types
-export interface ContractService {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-}
 
 export interface Contract {
   id: string;
@@ -18,12 +11,12 @@ export interface Contract {
   contract_number?: string;
   total_amount: number;
   services: ContractService[];
-  status: 'active' | 'pending-signature' | 'signed' | 'canceled' | 'expired';
-  payment_method: string;
-  payment_status: 'pending' | 'completed';
-  installments: number;
+  status: 'pending-signature' | 'active' | 'signed' | 'expired' | 'canceled';
   start_date: string;
   end_date?: string;
+  payment_method?: string;
+  payment_status?: string;
+  installments?: number;
   due_date?: string;
   notes?: string;
   terms?: string;
@@ -44,31 +37,28 @@ export const createContract = async (contractData: Omit<Contract, 'id' | 'create
       return null;
     }
     
-    // Convert contractData.services to JSON-compatible format
-    const dbContract = {
-      id,
-      client_name: contractData.client_name,
-      client_id: contractData.client_id,
-      contract_number: contractData.contract_number,
-      total_amount: contractData.total_amount,
-      services: contractData.services as unknown as Json,
-      status: contractData.status,
-      payment_method: contractData.payment_method,
-      payment_status: contractData.payment_status,
-      installments: contractData.installments,
-      start_date: contractData.start_date,
-      end_date: contractData.end_date,
-      due_date: contractData.due_date,
-      notes: contractData.notes,
-      terms: contractData.terms,
-      source_id: contractData.source_id,
-      source_type: contractData.source_type,
-      user_id: user.id
-    };
-    
     const { error } = await supabase
       .from('contracts')
-      .insert(dbContract);
+      .insert({
+        id,
+        client_name: contractData.client_name,
+        client_id: contractData.client_id,
+        contract_number: contractData.contract_number,
+        total_amount: contractData.total_amount,
+        services: contractData.services as unknown as Json,
+        status: contractData.status,
+        start_date: contractData.start_date,
+        end_date: contractData.end_date,
+        payment_method: contractData.payment_method,
+        payment_status: contractData.payment_status,
+        installments: contractData.installments,
+        due_date: contractData.due_date,
+        notes: contractData.notes,
+        terms: contractData.terms,
+        source_id: contractData.source_id,
+        source_type: contractData.source_type,
+        user_id: user.id
+      });
 
     if (error) {
       console.error("Error creating contract:", error);
@@ -85,9 +75,16 @@ export const createContract = async (contractData: Omit<Contract, 'id' | 'create
 // Get all contracts
 export const getContracts = async (): Promise<Contract[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('contracts')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -95,13 +92,11 @@ export const getContracts = async (): Promise<Contract[]> => {
       throw error;
     }
 
-    // Convert the data from JSON to our Contract type
-    const contracts = data.map(item => ({
-      ...item,
-      services: item.services as unknown as ContractService[]
+    // Convert services from JSON to array of ContractService
+    return data.map(contract => ({
+      ...contract,
+      services: contract.services as unknown as ContractService[]
     })) as Contract[];
-
-    return contracts;
   } catch (error) {
     console.error("Error in getContracts:", error);
     return [];
@@ -111,10 +106,17 @@ export const getContracts = async (): Promise<Contract[]> => {
 // Get contract by ID
 export const getContractById = async (id: string): Promise<Contract | null> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('contracts')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -122,15 +124,11 @@ export const getContractById = async (id: string): Promise<Contract | null> => {
       throw error;
     }
 
-    if (!data) return null;
-
-    // Convert the data from JSON to our Contract type
-    const contract = {
+    // Convert services from JSON to array of ContractService
+    return {
       ...data,
       services: data.services as unknown as ContractService[]
     } as Contract;
-
-    return contract;
   } catch (error) {
     console.error("Error in getContractById:", error);
     return null;
@@ -140,23 +138,23 @@ export const getContractById = async (id: string): Promise<Contract | null> => {
 // Update a contract
 export const updateContract = async (contract: Partial<Contract> & { id: string }): Promise<boolean> => {
   try {
-    // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       console.error("User not authenticated");
       return false;
     }
-    
-    // Prepare DB-compatible object
-    const dbContract: any = { ...contract };
+
+    // Prepare data for update
+    const updateData: any = { ...contract };
     if (contract.services) {
-      dbContract.services = contract.services as unknown as Json;
+      updateData.services = contract.services as unknown as Json;
     }
 
     const { error } = await supabase
       .from('contracts')
-      .update(dbContract)
-      .eq('id', contract.id);
+      .update(updateData)
+      .eq('id', contract.id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error updating contract:", error);
@@ -173,10 +171,17 @@ export const updateContract = async (contract: Partial<Contract> & { id: string 
 // Delete a contract
 export const deleteContract = async (id: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     const { error } = await supabase
       .from('contracts')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error deleting contract:", error);
@@ -190,57 +195,4 @@ export const deleteContract = async (id: string): Promise<boolean> => {
   }
 };
 
-// Get contracts by filter
-export const getContractsByFilter = async (
-  filter: {
-    status?: string;
-    client_name?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    paymentStatus?: string;
-  }
-): Promise<Contract[]> => {
-  try {
-    let query = supabase
-      .from('contracts')
-      .select('*');
-
-    if (filter.status && filter.status !== 'all') {
-      query = query.eq('status', filter.status);
-    }
-
-    if (filter.paymentStatus && filter.paymentStatus !== 'all') {
-      query = query.eq('payment_status', filter.paymentStatus);
-    }
-
-    if (filter.client_name) {
-      query = query.ilike('client_name', `%${filter.client_name}%`);
-    }
-
-    if (filter.dateFrom) {
-      query = query.gte('created_at', filter.dateFrom);
-    }
-
-    if (filter.dateTo) {
-      query = query.lte('created_at', filter.dateTo);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("Error fetching filtered contracts:", error);
-      throw error;
-    }
-
-    // Convert the data from JSON to our Contract type
-    const contracts = data.map(item => ({
-      ...item,
-      services: item.services as unknown as ContractService[]
-    })) as Contract[];
-
-    return contracts;
-  } catch (error) {
-    console.error("Error in getContractsByFilter:", error);
-    return [];
-  }
-};
+// rest of file...

@@ -58,9 +58,16 @@ export const createScheduleEvent = async (eventData: Omit<ScheduleEvent, 'id' | 
 // Get all schedule events
 export const getScheduleEvents = async (): Promise<ScheduleEvent[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('schedule_events')
       .select('*')
+      .eq('user_id', user.id)
       .order('date', { ascending: true });
 
     if (error) {
@@ -78,10 +85,17 @@ export const getScheduleEvents = async (): Promise<ScheduleEvent[]> => {
 // Get schedule event by ID
 export const getScheduleEventById = async (id: string): Promise<ScheduleEvent | null> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('schedule_events')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -99,10 +113,17 @@ export const getScheduleEventById = async (id: string): Promise<ScheduleEvent | 
 // Update a schedule event
 export const updateScheduleEvent = async (event: Partial<ScheduleEvent> & { id: string }): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     const { error } = await supabase
       .from('schedule_events')
       .update(event)
-      .eq('id', event.id);
+      .eq('id', event.id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error updating schedule event:", error);
@@ -119,10 +140,17 @@ export const updateScheduleEvent = async (event: Partial<ScheduleEvent> & { id: 
 // Delete a schedule event
 export const deleteScheduleEvent = async (id: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     const { error } = await supabase
       .from('schedule_events')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error deleting schedule event:", error);
@@ -136,45 +164,4 @@ export const deleteScheduleEvent = async (id: string): Promise<boolean> => {
   }
 };
 
-// Get schedule events by date range
-export const getScheduleEventsByDateRange = async (startDate: string, endDate: string): Promise<ScheduleEvent[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('schedule_events')
-      .select('*')
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching schedule events by date range:", error);
-      throw error;
-    }
-
-    return data as ScheduleEvent[];
-  } catch (error) {
-    console.error("Error in getScheduleEventsByDateRange:", error);
-    return [];
-  }
-};
-
-// Get schedule events by client
-export const getScheduleEventsByClient = async (clientName: string): Promise<ScheduleEvent[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('schedule_events')
-      .select('*')
-      .ilike('client', `%${clientName}%`)
-      .order('date', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching schedule events by client:", error);
-      throw error;
-    }
-
-    return data as ScheduleEvent[];
-  } catch (error) {
-    console.error("Error in getScheduleEventsByClient:", error);
-    return [];
-  }
-};
+// rest of file...

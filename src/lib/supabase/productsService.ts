@@ -52,9 +52,16 @@ export const createProduct = async (productData: Omit<Product, 'id' | 'created_a
 // Get all products
 export const getProducts = async (): Promise<Product[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('user_id', user.id)
       .order('name', { ascending: true });
 
     if (error) {
@@ -72,10 +79,17 @@ export const getProducts = async (): Promise<Product[]> => {
 // Get product by ID
 export const getProductById = async (id: string): Promise<Product | null> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -93,10 +107,17 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 // Update a product
 export const updateProduct = async (product: Partial<Product> & { id: string }): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     const { error } = await supabase
       .from('products')
       .update(product)
-      .eq('id', product.id);
+      .eq('id', product.id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error updating product:", error);
@@ -113,10 +134,17 @@ export const updateProduct = async (product: Partial<Product> & { id: string }):
 // Delete a product
 export const deleteProduct = async (id: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     const { error } = await supabase
       .from('products')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error deleting product:", error);
@@ -133,10 +161,17 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
 // Get products by category
 export const getProductsByCategory = async (category: string): Promise<Product[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('category', category)
+      .eq('user_id', user.id)
       .order('name', { ascending: true });
 
     if (error) {
@@ -154,10 +189,17 @@ export const getProductsByCategory = async (category: string): Promise<Product[]
 // Get active products
 export const getActiveProducts = async (): Promise<Product[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('is_active', true)
+      .eq('user_id', user.id)
       .order('name', { ascending: true });
 
     if (error) {

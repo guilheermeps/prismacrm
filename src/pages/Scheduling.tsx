@@ -2,17 +2,28 @@
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
-import { Calendar } from '@/components/ui/calendar';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus, ArrowLeft, ArrowRight } from 'lucide-react';
+import { addMonths, subMonths, format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 
 const Scheduling = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(addMonths(currentDate, 1));
+  };
+
+  const prevMonth = () => {
+    setCurrentDate(subMonths(currentDate, 1));
   };
 
   return (
@@ -24,63 +35,77 @@ const Scheduling = () => {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6">
               <h1 className="text-xl md:text-2xl font-bold">Agenda</h1>
-              <Button className="mt-2 md:mt-0 flex items-center gap-1 w-fit">
-                <PlusCircle className="h-4 w-4" />
-                <span>Agendar Evento</span>
+              <Button className="mt-2 md:mt-0" size="sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Agendamento
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <Card className="p-4 lg:col-span-4">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md border"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-md font-medium">Calendário</CardTitle>
+                  <div className="flex items-center">
+                    <Button variant="ghost" size="icon" onClick={prevMonth}>
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium mx-2">
+                      {format(currentDate, 'MMMM yyyy', { locale: pt })}
+                    </span>
+                    <Button variant="ghost" size="icon" onClick={nextMonth}>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    month={currentDate}
+                    className="rounded-md border"
+                  />
+                </CardContent>
               </Card>
               
-              <Card className="p-4 lg:col-span-8">
-                <h2 className="text-lg font-semibold mb-4">Eventos do Dia</h2>
-                <div className="space-y-4">
-                  <div className="border p-3 rounded-md hover:bg-accent transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">Reunião com cliente</h3>
-                        <p className="text-sm text-muted-foreground">09:30 - 10:30</p>
-                      </div>
-                      <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">Reunião</span>
+              <Card className="col-span-1 md:col-span-2">
+                <CardHeader>
+                  <CardTitle>
+                    {selectedDate ? (
+                      format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: pt })
+                    ) : (
+                      "Selecione uma data"
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedDate ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Nenhum evento para esta data</p>
+                      <Button variant="outline" className="mt-4">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar Evento
+                      </Button>
                     </div>
-                    <p className="text-sm mt-2">Cliente: João Silva</p>
-                    <p className="text-sm">Local: Escritório central</p>
-                  </div>
-                  
-                  <div className="border p-3 rounded-md hover:bg-accent transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">Entrega de produto</h3>
-                        <p className="text-sm text-muted-foreground">14:00 - 15:00</p>
-                      </div>
-                      <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">Entrega</span>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Selecione uma data no calendário para ver ou adicionar eventos</p>
                     </div>
-                    <p className="text-sm mt-2">Cliente: Maria Oliveira</p>
-                    <p className="text-sm">Local: Av. Paulista, 1000</p>
-                  </div>
-                  
-                  <div className="border p-3 rounded-md hover:bg-accent transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">Assinatura de contrato</h3>
-                        <p className="text-sm text-muted-foreground">16:30 - 17:30</p>
-                      </div>
-                      <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full">Contrato</span>
-                    </div>
-                    <p className="text-sm mt-2">Cliente: Carlos Mendes</p>
-                    <p className="text-sm">Local: Virtual (Zoom)</p>
-                  </div>
-                </div>
+                  )}
+                </CardContent>
               </Card>
             </div>
+            
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Próximos eventos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Não há eventos agendados para os próximos dias</p>
+                </CardContent>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>

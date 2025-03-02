@@ -9,6 +9,17 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, FileDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+interface ExportDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+}
+
+interface OrderFilterProps {
+  onClose?: () => void;
+}
+
 const Orders = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -49,15 +60,15 @@ const Orders = () => {
             </div>
             
             <div className="bg-card rounded-lg p-3 md:p-5">
-              <OrderFilter />
+              <OrderFilter onClose={() => {}} />
               <div className="mt-4">
                 <OrdersList />
               </div>
             </div>
             
             <ExportDialog 
-              isOpen={isExportDialogOpen} 
-              onClose={() => setIsExportDialogOpen(false)}
+              open={isExportDialogOpen} 
+              onOpenChange={setIsExportDialogOpen}
               title="Exportar Pedidos"
               description="Selecione o formato e os filtros para exportar os pedidos."
             />

@@ -65,9 +65,16 @@ export const createPackage = async (packageData: Omit<Package, 'id' | 'created_a
 // Get all packages
 export const getPackages = async (): Promise<Package[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('packages')
       .select('*')
+      .eq('user_id', user.id)
       .order('name', { ascending: true });
 
     if (error) {
@@ -91,10 +98,17 @@ export const getPackages = async (): Promise<Package[]> => {
 // Get package by ID
 export const getPackageById = async (id: string): Promise<Package | null> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('packages')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -120,6 +134,12 @@ export const getPackageById = async (id: string): Promise<Package | null> => {
 // Update a package
 export const updatePackage = async (packageData: Partial<Package> & { id: string }): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     // Prepare DB-compatible object
     const dbPackage: any = { ...packageData };
     if (packageData.products) {
@@ -129,7 +149,8 @@ export const updatePackage = async (packageData: Partial<Package> & { id: string
     const { error } = await supabase
       .from('packages')
       .update(dbPackage)
-      .eq('id', packageData.id);
+      .eq('id', packageData.id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error updating package:", error);
@@ -146,10 +167,17 @@ export const updatePackage = async (packageData: Partial<Package> & { id: string
 // Delete a package
 export const deletePackage = async (id: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+
     const { error } = await supabase
       .from('packages')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error("Error deleting package:", error);
@@ -166,10 +194,17 @@ export const deletePackage = async (id: string): Promise<boolean> => {
 // Get active packages
 export const getActivePackages = async (): Promise<Package[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('packages')
       .select('*')
       .eq('is_active', true)
+      .eq('user_id', user.id)
       .order('name', { ascending: true });
 
     if (error) {
