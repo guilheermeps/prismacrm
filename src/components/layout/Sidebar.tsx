@@ -63,8 +63,13 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
           {isOpen ? (
             <>
               <div className="flex items-center gap-2">
-                <Rocket className="h-6 w-6 text-studio-orange" />
-                <span className="font-semibold text-lg">FotoFinance</span>
+                <div className="prisma-bars">
+                  <div className="prisma-bar prisma-bar-teal"></div>
+                  <div className="prisma-bar prisma-bar-red"></div>
+                  <div className="prisma-bar prisma-bar-orange"></div>
+                  <div className="prisma-bar prisma-bar-yellow"></div>
+                </div>
+                <span className="font-semibold text-lg text-prisma-text">Prisma CM</span>
               </div>
               <Button 
                 variant="ghost" 
@@ -76,14 +81,22 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
               </Button>
             </>
           ) : (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggle}
-              className="text-studio-light hover:text-white hover:bg-studio-gray hidden md:flex"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
+            <>
+              <div className="prisma-bars scale-75">
+                <div className="prisma-bar prisma-bar-teal"></div>
+                <div className="prisma-bar prisma-bar-red"></div>
+                <div className="prisma-bar prisma-bar-orange"></div>
+                <div className="prisma-bar prisma-bar-yellow"></div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggle}
+                className="text-studio-light hover:text-white hover:bg-studio-gray hidden md:flex"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </>
           )}
         </div>
         
