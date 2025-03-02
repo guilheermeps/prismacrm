@@ -12,6 +12,7 @@ interface ColumnContentProps {
   onConvertToContact: (lead: Lead) => void;
   onArchiveLead?: (lead: Lead) => void;
   onUnarchiveLead?: (lead: Lead) => void;
+  onDiscardLead?: (lead: Lead) => void;
   isArchived: boolean;
 }
 
@@ -24,6 +25,7 @@ const ColumnContent = ({
   onConvertToContact,
   onArchiveLead,
   onUnarchiveLead,
+  onDiscardLead,
   isArchived
 }: ColumnContentProps) => {
   return (
@@ -41,6 +43,7 @@ const ColumnContent = ({
                 onConvertToContact={onConvertToContact}
                 onArchiveLead={onArchiveLead}
                 onUnarchiveLead={onUnarchiveLead}
+                onDiscardLead={onDiscardLead}
                 isArchived={isArchived}
               />
             </div>

@@ -17,5 +17,6 @@ export {
 // Export from leadDeleteConvertHandlers
 export {
   removeLead,
+  discardLead,
   convertLeadToContact
 } from './leadDeleteConvertHandlers';
