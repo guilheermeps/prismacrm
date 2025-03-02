@@ -20,6 +20,8 @@ interface LeadColumnProps {
   onUnarchiveLead?: (lead: Lead) => void;
   onDiscardLead?: (lead: Lead) => void;
   isArchived?: boolean;
+  savingLeadId?: string | null;
+  successLeadId?: string | null;
 }
 
 const LeadColumn = ({
@@ -33,7 +35,9 @@ const LeadColumn = ({
   onArchiveLead,
   onUnarchiveLead,
   onDiscardLead,
-  isArchived = false
+  isArchived = false,
+  savingLeadId = null,
+  successLeadId = null
 }: LeadColumnProps) => {
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -134,6 +138,8 @@ const LeadColumn = ({
         onUnarchiveLead={onUnarchiveLead}
         onDiscardLead={onDiscardLead}
         isArchived={isArchived}
+        savingLeadId={savingLeadId}
+        successLeadId={successLeadId}
       />
 
       {/* New Lead Dialog */}

@@ -1,15 +1,8 @@
 
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
-import { updateLead } from "@/lib/supabase/leadsService";
+import { updateLead, isDevOrDemoMode } from "@/lib/supabase/leadsService";
 import { addHistoryEntry } from "./leadHistoryUtils";
-
-/**
- * Checks if the application is running in development or demo mode
- */
-const isDevOrDemoMode = (): boolean => {
-  return import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
-};
 
 /**
  * Handles lead movement in development/demo mode
@@ -69,7 +62,7 @@ export const moveLead = async (
     const fromStageName = "Desconhecido";
     const toStageName = "Desconhecido"; 
     
-    // Development mode handling
+    // Development mode handling - use our imported function
     if (isDevOrDemoMode()) {
       return await handleDevModeMoveOperation(lead, toStageId, fromStageName, toStageName);
     }

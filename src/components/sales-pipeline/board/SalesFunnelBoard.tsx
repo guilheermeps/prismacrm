@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import LeadColumn from "@/components/sales-pipeline/LeadColumn";
 import { Lead, Stage } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface SalesFunnelBoardProps {
   stages: Stage[];
@@ -32,12 +33,24 @@ const SalesFunnelBoard = ({
 }: SalesFunnelBoardProps) => {
   const [boardLeads, setBoardLeads] = useState<Lead[]>(filteredLeads);
   const [isDragging, setIsDragging] = useState(false);
+  const [savingLeadId, setSavingLeadId] = useState<string | null>(null);
+  const [successLeadId, setSuccessLeadId] = useState<string | null>(null);
 
   // Update local state when props change
   useEffect(() => {
     console.log("Filtered leads updated:", filteredLeads.length);
     setBoardLeads(filteredLeads);
   }, [filteredLeads]);
+
+  // Clear success indicator after a delay
+  useEffect(() => {
+    if (successLeadId) {
+      const timer = setTimeout(() => {
+        setSuccessLeadId(null);
+      }, 2000); // Show success indicator for 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [successLeadId]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -59,6 +72,9 @@ const SalesFunnelBoard = ({
       return;
     }
     
+    // Set this lead as currently saving
+    setSavingLeadId(leadId);
+    
     // Update the lead's stage in our local state first for instant UI update
     const updatedLeads = boardLeads.map(lead => {
       if (lead.id === leadId) {
@@ -73,16 +89,34 @@ const SalesFunnelBoard = ({
     // Then call the parent handler to update backend
     onMoveLead(leadId, fromStageId, toStageId)
       .then(success => {
-        if (!success) {
+        if (success) {
+          // Show success indicator
+          setSuccessLeadId(leadId);
+          console.log("Lead move persisted successfully");
+        } else {
           console.error("Failed to persist lead move, reverting UI");
           // If the backend update fails, revert the UI change
-          setBoardLeads(boardLeads);
+          setBoardLeads(prevLeads => 
+            prevLeads.map(lead => 
+              lead.id === leadId ? { ...lead, stageId: fromStageId } : lead
+            )
+          );
+          toast.error("Não foi possível mover o lead. A visualização foi restaurada.");
         }
       })
       .catch(error => {
         console.error("Error persisting lead move:", error);
         // If there's an error, revert the UI change
-        setBoardLeads(boardLeads);
+        setBoardLeads(prevLeads => 
+          prevLeads.map(lead => 
+            lead.id === leadId ? { ...lead, stageId: fromStageId } : lead
+          )
+        );
+        toast.error("Erro ao mover lead. A visualização foi restaurada.");
+      })
+      .finally(() => {
+        // Clear the saving state
+        setSavingLeadId(null);
       });
   };
 
@@ -140,6 +174,8 @@ const SalesFunnelBoard = ({
               onUnarchiveLead={onUnarchiveLead}
               onDiscardLead={onDiscardLead}
               isArchived={isArchived}
+              savingLeadId={savingLeadId}
+              successLeadId={successLeadId}
             />
           ))}
         </div>
