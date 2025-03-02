@@ -3,6 +3,7 @@ import { Lead } from '../types';
 
 // Function to normalize lead data from Supabase to our application model
 export const normalizeLeadFromSupabase = (data: any): Lead => {
+  console.log("Normalizing lead from Supabase:", data);
   return {
     id: data.id,
     name: data.name,
@@ -19,7 +20,8 @@ export const normalizeLeadFromSupabase = (data: any): Lead => {
 
 // Function to normalize lead data from our application model to Supabase
 export const normalizeLeadForSupabase = (lead: Omit<Lead, 'id'> | Lead): Record<string, any> => {
-  return {
+  console.log("Normalizing lead for Supabase insertion:", lead);
+  const normalizedLead = {
     name: lead.name,
     servicetype: lead.serviceType, // Map from our interface to DB field
     whatsapp: lead.whatsapp || '',
@@ -27,7 +29,14 @@ export const normalizeLeadForSupabase = (lead: Omit<Lead, 'id'> | Lead): Record<
     proposalvalue: lead.proposalValue || 0,
     notes: lead.notes || '',
     history: lead.history || [],
-    isarchived: lead.isArchived === undefined ? false : lead.isArchived,
-    createdat: lead.createdAt // Make sure createdAt is passed to Supabase
+    isarchived: lead.isArchived === undefined ? false : lead.isArchived
   };
+  
+  // Only add createdat if it exists in the lead object
+  if ('createdAt' in lead && lead.createdAt) {
+    normalizedLead['createdat'] = lead.createdAt;
+  }
+  
+  console.log("Normalized lead for Supabase:", normalizedLead);
+  return normalizedLead;
 };

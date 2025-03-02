@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { createLead } from "@/lib/supabase/leadsService";
@@ -10,12 +9,13 @@ export const addNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'histo
   try {
     console.log("Adding new lead to Supabase:", newLead);
     
-    // Use the createLead function directly to save to Supabase
+    // Create a properly formatted lead object with all required properties
     const lead = {
       ...newLead,
-      createdAt: new Date().toISOString(), // Add the createdAt property
       history: []
     };
+    
+    console.log("Formatted lead for Supabase creation:", lead);
     
     // This will create the lead in the Supabase 'leads' table
     const createdLead = await createLead(lead);

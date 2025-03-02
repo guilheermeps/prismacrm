@@ -14,6 +14,7 @@ export async function getLeads() {
     }
     
     const userId = session.user.id;
+    console.log("Fetching leads for user:", userId);
     
     const { data, error } = await supabase
       .from('leads')
@@ -70,7 +71,7 @@ export async function getArchivedLeads() {
 // Create a new lead
 export async function createLead(lead: Omit<Lead, 'id'>) {
   try {
-    console.log("Creating lead in Supabase with data:", lead);
+    console.log("createLead function called with:", lead);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       console.error("No session found when creating lead");
@@ -80,11 +81,21 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
     const userId = session.user.id;
     const normalizedLead = normalizeLeadForSupabase(lead);
 
-    console.log("Normalized lead for Supabase:", normalizedLead);
+    console.log("Creating lead with normalized data:", normalizedLead);
+    console.log("User ID for lead creation:", userId);
+    
+    // Ensure we're inserting with the current timestamp
+    const leadWithTimestamp = {
+      ...normalizedLead,
+      createdat: new Date().toISOString(),
+      user_id: userId
+    };
+    
+    console.log("Final lead object for insertion:", leadWithTimestamp);
     
     const { data, error } = await supabase
       .from('leads')
-      .insert([{ ...normalizedLead, user_id: userId }])
+      .insert([leadWithTimestamp])
       .select()
       .single();
 
@@ -93,7 +104,7 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
       throw error;
     }
 
-    console.log("Lead created successfully in Supabase:", data);
+    console.log("Lead created successfully in Supabase, response:", data);
     return normalizeLeadFromSupabase(data);
   } catch (error) {
     console.error('Error in createLead:', error);

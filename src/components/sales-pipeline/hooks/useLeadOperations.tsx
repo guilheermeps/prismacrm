@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { 
@@ -147,9 +148,19 @@ function useLeadOperationsInternal() {
 
   const handleAddNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     try {
-      console.log("Adding new lead:", newLead);
+      console.log("handleAddNewLead called with:", newLead);
+      
+      // Ensure all required fields are present
+      if (!newLead.name || !newLead.stageId) {
+        console.error("Missing required fields for lead creation");
+        toast.error("Dados incompletos para criação do lead");
+        return false;
+      }
+      
+      console.log("Adding new lead with validated data:", newLead);
       const result = await addNewLead(newLead);
       console.log("Add new lead result:", result);
+      
       if (result) {
         toast.success("Lead adicionado com sucesso!");
         await refreshLeads();
