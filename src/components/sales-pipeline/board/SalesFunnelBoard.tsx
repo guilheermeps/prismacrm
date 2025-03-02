@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import LeadColumn from "@/components/sales-pipeline/LeadColumn";
 import SalesPipelineMenu from "@/components/sales-pipeline/board/SalesPipelineMenu";
@@ -37,7 +36,7 @@ const SalesFunnelBoard = ({
     setLocalFilteredLeads(filteredLeads);
   }, [filteredLeads]);
 
-  // Search functionality
+  // Search functionality - modified to only use properties that exist in Lead type
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setLocalFilteredLeads(boardLeads);
@@ -45,9 +44,9 @@ const SalesFunnelBoard = ({
       const lowercaseSearch = searchTerm.toLowerCase();
       const filtered = boardLeads.filter(lead => 
         lead.name.toLowerCase().includes(lowercaseSearch) || 
-        (lead.email && lead.email.toLowerCase().includes(lowercaseSearch)) ||
-        (lead.phone && lead.phone.toLowerCase().includes(lowercaseSearch)) ||
-        (lead.serviceType && lead.serviceType.toLowerCase().includes(lowercaseSearch))
+        (lead.whatsapp && lead.whatsapp.toLowerCase().includes(lowercaseSearch)) ||
+        (lead.serviceType && lead.serviceType.toLowerCase().includes(lowercaseSearch)) ||
+        (lead.notes && lead.notes.toLowerCase().includes(lowercaseSearch))
       );
       setLocalFilteredLeads(filtered);
     }
