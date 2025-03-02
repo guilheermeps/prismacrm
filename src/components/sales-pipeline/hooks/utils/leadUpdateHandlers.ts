@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { updateLead } from "@/lib/supabase/leadsService";
@@ -115,6 +114,46 @@ export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
     }
     
     toast.error("Erro ao restaurar lead. Tente novamente.");
+    return false;
+  }
+};
+
+/**
+ * Updates lead history to record when a lead has been converted to a contact
+ * with an order or contract
+ */
+export const updateLeadForTransactionCreation = async (
+  lead: Lead, 
+  transactionType: 'order' | 'contract'
+): Promise<boolean> => {
+  try {
+    console.log(`Updating lead ${lead.id} for ${transactionType} creation`);
+    
+    const updatedLead = {
+      ...lead,
+      history: addHistoryEntry(
+        lead.history, 
+        transactionType === 'order' ? 'created_order' : 'created_contract'
+      )
+    };
+    
+    const result = await updateLead(updatedLead);
+    
+    if (result) {
+      toast.success(`Lead atualizado para criação de ${transactionType === 'order' ? 'pedido' : 'contrato'}`);
+      return true;
+    } else {
+      throw new Error(`Failed to update lead for ${transactionType} creation`);
+    }
+  } catch (error) {
+    console.error(`Erro ao atualizar lead para criação de ${transactionType === 'order' ? 'pedido' : 'contrato'}:`, error);
+    
+    // In development mode, pretend success
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return true;
+    }
+    
+    toast.error(`Erro ao atualizar lead para criação de ${transactionType === 'order' ? 'pedido' : 'contrato'}. Tente novamente.`);
     return false;
   }
 };

@@ -6,12 +6,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ContactsList from "@/components/contacts/ContactsList";
 import ContactForm from "@/components/contacts/ContactForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const Contacts = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
+  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -30,6 +32,24 @@ const Contacts = () => {
   const handleCloseForm = () => {
     setIsContactFormOpen(false);
     setSelectedContact(null);
+  };
+
+  const handleCreateOrderFromContact = (contact) => {
+    // Store contact info in sessionStorage for use in OrderForm
+    sessionStorage.setItem('createOrderFromContact', JSON.stringify({
+      contactId: contact.id,
+      contactName: contact.name
+    }));
+    navigate('/orders-contracts');
+  };
+
+  const handleCreateContractFromContact = (contact) => {
+    // Store contact info in sessionStorage for use in ContractForm
+    sessionStorage.setItem('createContractFromContact', JSON.stringify({
+      contactId: contact.id,
+      contactName: contact.name
+    }));
+    navigate('/orders-contracts');
   };
 
   return (
@@ -52,6 +72,8 @@ const Contacts = () => {
                     filterType="all" 
                     onAddContact={handleAddContact} 
                     onEditContact={handleEditContact}
+                    onCreateOrder={handleCreateOrderFromContact}
+                    onCreateContract={handleCreateContractFromContact}
                   />
                 </TabsContent>
                 <TabsContent value="clients">
@@ -59,6 +81,8 @@ const Contacts = () => {
                     filterType="client" 
                     onAddContact={handleAddContact} 
                     onEditContact={handleEditContact}
+                    onCreateOrder={handleCreateOrderFromContact}
+                    onCreateContract={handleCreateContractFromContact}
                   />
                 </TabsContent>
                 <TabsContent value="suppliers">
@@ -66,6 +90,8 @@ const Contacts = () => {
                     filterType="supplier" 
                     onAddContact={handleAddContact} 
                     onEditContact={handleEditContact}
+                    onCreateOrder={handleCreateOrderFromContact}
+                    onCreateContract={handleCreateContractFromContact}
                   />
                 </TabsContent>
               </Tabs>

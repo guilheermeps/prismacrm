@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Plus, Trash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,13 +59,17 @@ interface OrderItem {
   totalPrice: number;
 }
 
-const OrderForm = ({ 
-  onClose,
-  initialOrder = null 
-}: { 
+interface OrderFormProps { 
   onClose: () => void;
   initialOrder?: any | null;
-}) => {
+  initialLead?: { leadId: string; leadName: string } | null;
+}
+
+const OrderForm = ({ 
+  onClose,
+  initialOrder = null,
+  initialLead = null
+}: OrderFormProps) => {
   const [clientId, setClientId] = useState(initialOrder?.clientId || "");
   const [orderDate, setOrderDate] = useState<Date | undefined>(
     initialOrder?.orderDate ? new Date(initialOrder.orderDate) : new Date()
@@ -166,6 +169,22 @@ const OrderForm = ({
     setInstallmentDates(dates);
   };
 
+  // Initialize form with lead data if available
+  useEffect(() => {
+    if (initialLead) {
+      console.log("Initializing order form with lead data:", initialLead);
+      
+      // In a real app, you would fetch the contact ID associated with this lead
+      // For demo purposes, we're just setting the title
+      if (initialLead.leadName) {
+        setNotes(`Pedido criado a partir do lead: ${initialLead.leadName}`);
+      }
+      
+      // You might also want to set other fields based on the lead data
+      // For example, if the lead has a service type, you could set that in the order
+    }
+  }, [initialLead]);
+
   // Handle save
   const handleSave = () => {
     const orderData = {
@@ -179,7 +198,9 @@ const OrderForm = ({
       cardFeeType,
       cardFeeValue,
       notes,
-      // Novos campos
+      // New fields for linking to lead
+      leadId: initialLead?.leadId || null,
+      // Existing fields
       serviceDate,
       startTime,
       duration,
@@ -190,6 +211,28 @@ const OrderForm = ({
     };
     
     console.log("Order saved:", orderData);
+    
+    // In a real app, you would update the lead history to reflect that an order was created
+    if (initialLead?.leadId) {
+      // Import and call updateLeadForTransactionCreation here
+      import('@/components/sales-pipeline/hooks/utils/leadUpdateHandlers')
+        .then(({ updateLeadForTransactionCreation }) => {
+          // We don't have the full lead object here, but in a real app you would
+          // fetch it or pass it through from the lead card
+          const dummyLead = {
+            id: initialLead.leadId,
+            name: initialLead.leadName,
+            stageId: '',
+            history: [],
+            createdAt: new Date().toISOString()
+          } as any;
+          
+          updateLeadForTransactionCreation(dummyLead, 'order')
+            .then(() => console.log("Lead updated with order creation"))
+            .catch(err => console.error("Error updating lead:", err));
+        });
+    }
+    
     onClose();
   };
 

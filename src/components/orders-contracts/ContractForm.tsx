@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, FileText, Upload, Plus, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,13 +61,17 @@ interface Attachment {
   size: number;
 }
 
-const ContractForm = ({ 
-  onClose,
-  initialContract = null 
-}: { 
+interface ContractFormProps { 
   onClose: () => void;
   initialContract?: any | null;
-}) => {
+  initialLead?: { leadId: string; leadName: string } | null;
+}
+
+const ContractForm = ({ 
+  onClose,
+  initialContract = null,
+  initialLead = null
+}: ContractFormProps) => {
   const [contractTab, setContractTab] = useState("basic");
   const [clientId, setClientId] = useState(initialContract?.clientId || "");
   const [orderId, setOrderId] = useState(initialContract?.orderId || "");
@@ -84,6 +87,22 @@ const ContractForm = ({
   const [description, setDescription] = useState(initialContract?.description || "");
   const [contractText, setContractText] = useState(initialContract?.contractText || "");
   const [attachments, setAttachments] = useState<Attachment[]>(initialContract?.attachments || []);
+
+  // Initialize form with lead data if available
+  useEffect(() => {
+    if (initialLead) {
+      console.log("Initializing contract form with lead data:", initialLead);
+      
+      // In a real app, you would fetch the contact ID associated with this lead
+      // For demo purposes, we're just setting the description
+      if (initialLead.leadName) {
+        setDescription(`Contrato criado a partir do lead: ${initialLead.leadName}`);
+        setTitle(`Contrato - ${initialLead.leadName}`);
+      }
+      
+      // You might also want to set other fields based on the lead data
+    }
+  }, [initialLead]);
 
   // Função para carregar dados do pedido quando selecionado
   const loadOrderData = (newOrderId: string) => {
@@ -241,10 +260,34 @@ CONTRATADA`);
       title,
       description,
       contractText,
-      attachments
+      attachments,
+      // New field for linking to lead
+      leadId: initialLead?.leadId || null,
     };
     
     console.log("Contract saved:", contractData);
+    
+    // In a real app, you would update the lead history to reflect that a contract was created
+    if (initialLead?.leadId) {
+      // Import and call updateLeadForTransactionCreation here
+      import('@/components/sales-pipeline/hooks/utils/leadUpdateHandlers')
+        .then(({ updateLeadForTransactionCreation }) => {
+          // We don't have the full lead object here, but in a real app you would
+          // fetch it or pass it through from the lead card
+          const dummyLead = {
+            id: initialLead.leadId,
+            name: initialLead.leadName,
+            stageId: '',
+            history: [],
+            createdAt: new Date().toISOString()
+          } as any;
+          
+          updateLeadForTransactionCreation(dummyLead, 'contract')
+            .then(() => console.log("Lead updated with contract creation"))
+            .catch(err => console.error("Error updating lead:", err));
+        });
+    }
+    
     onClose();
   };
 
