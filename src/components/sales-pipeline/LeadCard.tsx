@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -17,6 +16,7 @@ interface LeadCardProps {
   onConvertToContact: (lead: Lead) => void;
   onArchiveLead?: (lead: Lead) => void;
   onUnarchiveLead?: (lead: Lead) => void;
+  onDiscardLead?: (lead: Lead) => void;
   isArchived?: boolean;
 }
 
@@ -29,6 +29,7 @@ const LeadCard = ({
   onConvertToContact,
   onArchiveLead,
   onUnarchiveLead,
+  onDiscardLead,
   isArchived = false
 }: LeadCardProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -120,6 +121,7 @@ const LeadCard = ({
                 onDelete={onDeleteLead}
                 onArchive={onArchiveLead}
                 onUnarchive={onUnarchiveLead}
+                onDiscard={onDiscardLead}
               />
             </div>
             
