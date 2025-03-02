@@ -1,33 +1,29 @@
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
-import { updateLead } from "@/lib/supabase/services/leadsCrudService";
-import { createContact } from "@/lib/supabase/contactsService";
+import { updateLead, createLead } from "@/lib/supabase/services/leadsCrudService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 import { convertLeadToContact } from "./leadDeleteConvertHandlers";
 
 // Add new lead
 export const addNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>): Promise<boolean> => {
   try {
-    // Generate a unique ID for the new lead
-    const leadId = Math.random().toString(36).substring(2, 15);
+    console.log("Adding new lead to Supabase:", newLead);
     
-    const now = new Date().toISOString();
-
-    const lead: Lead = {
-      id: leadId,
+    // Use the createLead function directly to save to Supabase
+    const lead = {
       ...newLead,
-      createdAt: now,
-      history: [],
-      isArchived: false
+      history: []
     };
     
-    await updateLead(lead);
+    // This will create the lead in the Supabase 'leads' table
+    const createdLead = await createLead(lead);
+    console.log("Lead created successfully in Supabase:", createdLead);
     
     toast.success("Lead adicionado com sucesso");
     return true;
   } catch (error) {
     console.error("Erro ao adicionar lead:", error);
-    toast.error("Erro ao adicionar lead");
+    toast.error("Erro ao adicionar lead: " + (error instanceof Error ? error.message : "Erro desconhecido"));
     return false;
   }
 };

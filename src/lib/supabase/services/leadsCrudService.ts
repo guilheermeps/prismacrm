@@ -27,6 +27,8 @@ export async function getLeads() {
       return [];
     }
     
+    console.log('Fetched leads from Supabase:', data);
+    
     // Normalize the data from Supabase to our application model
     return data.map(normalizeLeadFromSupabase);
   } catch (error) {
@@ -78,7 +80,7 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
     const userId = session.user.id;
     const normalizedLead = normalizeLeadForSupabase(lead);
 
-    console.log("Normalized lead:", normalizedLead);
+    console.log("Normalized lead for Supabase:", normalizedLead);
     
     const { data, error } = await supabase
       .from('leads')
@@ -91,7 +93,7 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
       throw error;
     }
 
-    console.log("Lead created successfully:", data);
+    console.log("Lead created successfully in Supabase:", data);
     return normalizeLeadFromSupabase(data);
   } catch (error) {
     console.error('Error in createLead:', error);
@@ -103,6 +105,7 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
 export async function updateLead(lead: Lead) {
   try {
     const normalizedUpdates = normalizeLeadForSupabase(lead);
+    console.log("Updating lead in Supabase:", lead.id, normalizedUpdates);
 
     const { data, error } = await supabase
       .from('leads')
@@ -116,6 +119,7 @@ export async function updateLead(lead: Lead) {
       throw error;
     }
 
+    console.log("Lead updated successfully in Supabase:", data);
     return normalizeLeadFromSupabase(data);
   } catch (error) {
     console.error('Error in updateLead:', error);

@@ -58,6 +58,12 @@ const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormPr
       ? parseFloat(formData.proposalValue.replace(/[^\d,.-]/g, "").replace(",", "."))
       : 0;
     
+    console.log("Submitting lead data:", {
+      ...formData,
+      whatsapp: formattedWhatsapp,
+      proposalValue
+    });
+    
     onSave({
       ...formData,
       whatsapp: formattedWhatsapp,

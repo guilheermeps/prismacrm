@@ -72,26 +72,26 @@ const SalesFunnel = ({
     );
   }
 
-  // Create wrapper functions to fix type issues
+  // Create wrapper functions to fix type issues - converting return types to void
   const handleAddNewLeadWrapper = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     console.log("Adding new lead from SalesFunnel:", newLead);
-    return await handleAddNewLead(newLead);
+    await handleAddNewLead(newLead);
   };
 
   const handleAddStageWrapper = async (newStage: Omit<Stage, 'id'>) => {
-    return await handleAddStage(newStage);
+    await handleAddStage(newStage);
   };
 
   const handleUpdateStageWrapper = async (updatedStage: Stage) => {
-    return await handleUpdateStage(updatedStage);
+    await handleUpdateStage(updatedStage);
   };
 
   const handleDeleteStageWrapper = async (stageId: string) => {
-    return await handleDeleteStage(stageId);
+    await handleDeleteStage(stageId);
   };
   
   const handleResetLeadsWrapper = async () => {
-    return await handleResetLeads();
+    await handleResetLeads();
   };
 
   return (
