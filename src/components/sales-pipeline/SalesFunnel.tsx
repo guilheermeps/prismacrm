@@ -50,6 +50,27 @@ const SalesFunnel = ({
     return <LoadingState />;
   }
 
+  // Create wrapper functions to fix type issues
+  const handleAddNewLeadWrapper = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
+    await handleAddNewLead(newLead);
+  };
+
+  const handleAddStageWrapper = async (newStage: Omit<Stage, 'id'>) => {
+    await handleAddStage(newStage);
+  };
+
+  const handleUpdateStageWrapper = async (updatedStage: Stage) => {
+    await handleUpdateStage(updatedStage);
+  };
+
+  const handleDeleteStageWrapper = async (stageId: string) => {
+    await handleDeleteStage(stageId);
+  };
+  
+  const handleResetLeadsWrapper = async () => {
+    await handleResetLeads();
+  };
+
   return (
     <div className="space-y-4">
       {/* Action Bar */}
@@ -57,11 +78,11 @@ const SalesFunnel = ({
         <ActionBar 
           stages={stages} 
           isArchived={isArchived}
-          onAddNewLead={handleAddNewLead}
-          onAddStage={handleAddStage}
-          onUpdateStage={handleUpdateStage}
-          onDeleteStage={handleDeleteStage}
-          onResetLeads={handleResetLeads}
+          onAddNewLead={handleAddNewLeadWrapper}
+          onAddStage={handleAddStageWrapper}
+          onUpdateStage={handleUpdateStageWrapper}
+          onDeleteStage={handleDeleteStageWrapper}
+          onResetLeads={handleResetLeadsWrapper}
         />
       </div>
 
