@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { Product } from "./productsService";
+import { Json } from "@/integrations/supabase/types";
 
 // Package types
 export interface PackageProduct {
@@ -27,12 +28,19 @@ export const createPackage = async (packageData: Omit<Package, 'id' | 'created_a
   try {
     const id = uuidv4();
     
+    // Convert packageData.products to JSON-compatible format
+    const dbPackage = {
+      id,
+      name: packageData.name,
+      description: packageData.description,
+      price: packageData.price,
+      products: packageData.products as unknown as Json,
+      is_active: packageData.is_active
+    };
+    
     const { error } = await supabase
       .from('packages')
-      .insert({
-        id,
-        ...packageData
-      });
+      .insert(dbPackage);
 
     if (error) {
       console.error("Error creating package:", error);
@@ -59,7 +67,13 @@ export const getPackages = async (): Promise<Package[]> => {
       throw error;
     }
 
-    return data as Package[];
+    // Convert the data from JSON to our Package type
+    const packages = data.map(item => ({
+      ...item,
+      products: item.products as unknown as PackageProduct[]
+    }));
+
+    return packages as Package[];
   } catch (error) {
     console.error("Error in getPackages:", error);
     return [];
@@ -80,7 +94,15 @@ export const getPackageById = async (id: string): Promise<Package | null> => {
       throw error;
     }
 
-    return data as Package;
+    if (!data) return null;
+
+    // Convert the data from JSON to our Package type
+    const packageItem = {
+      ...data,
+      products: data.products as unknown as PackageProduct[]
+    };
+
+    return packageItem as Package;
   } catch (error) {
     console.error("Error in getPackageById:", error);
     return null;
@@ -90,9 +112,15 @@ export const getPackageById = async (id: string): Promise<Package | null> => {
 // Update a package
 export const updatePackage = async (packageData: Partial<Package> & { id: string }): Promise<boolean> => {
   try {
+    // Prepare DB-compatible object
+    const dbPackage: any = { ...packageData };
+    if (packageData.products) {
+      dbPackage.products = packageData.products as unknown as Json;
+    }
+
     const { error } = await supabase
       .from('packages')
-      .update(packageData)
+      .update(dbPackage)
       .eq('id', packageData.id);
 
     if (error) {
@@ -141,7 +169,13 @@ export const getActivePackages = async (): Promise<Package[]> => {
       throw error;
     }
 
-    return data as Package[];
+    // Convert the data from JSON to our Package type
+    const packages = data.map(item => ({
+      ...item,
+      products: item.products as unknown as PackageProduct[]
+    }));
+
+    return packages as Package[];
   } catch (error) {
     console.error("Error in getActivePackages:", error);
     return [];

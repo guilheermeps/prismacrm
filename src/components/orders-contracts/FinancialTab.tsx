@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { CheckCircle, XCircle, Filter } from "lucide-react";
-import { FinancialTransaction } from "@/pages/Financial";
+import { FinancialTransaction } from "@/lib/supabase/financialService";
 
 interface FinancialTabProps {
   transactions: FinancialTransaction[];

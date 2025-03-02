@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { Json } from "@/integrations/supabase/types";
 
 // Financial transaction types
 export interface FinancialTransaction {
@@ -8,18 +9,20 @@ export interface FinancialTransaction {
   client: string;
   amount: number;
   due_date: string;
-  category?: string;
-  payment_method?: string;
-  total_installments?: number;
   type: 'receivable' | 'payable';
   status: 'pending' | 'completed';
+  payment_method?: string;
+  category?: string;
   source_id?: string;
   source_type?: 'order' | 'contract' | 'manual';
-  created_at: string;
+  total_installments?: number;
+  created_at?: string;
 }
 
 // Create a new financial transaction
-export const createFinancialTransaction = async (transactionData: Omit<FinancialTransaction, 'id' | 'created_at'>): Promise<string | null> => {
+export const createFinancialTransaction = async (
+  transactionData: Omit<FinancialTransaction, 'id' | 'created_at'>
+): Promise<string | null> => {
   try {
     const id = uuidv4();
     
@@ -62,8 +65,8 @@ export const getFinancialTransactions = async (): Promise<FinancialTransaction[]
   }
 };
 
-// Get financial transaction by ID
-export const getFinancialTransactionById = async (id: string): Promise<FinancialTransaction | null> => {
+// Get transaction by ID
+export const getTransactionById = async (id: string): Promise<FinancialTransaction | null> => {
   try {
     const { data, error } = await supabase
       .from('financial_transactions')
@@ -72,19 +75,21 @@ export const getFinancialTransactionById = async (id: string): Promise<Financial
       .single();
 
     if (error) {
-      console.error("Error fetching financial transaction:", error);
+      console.error("Error fetching transaction:", error);
       throw error;
     }
 
     return data as FinancialTransaction;
   } catch (error) {
-    console.error("Error in getFinancialTransactionById:", error);
+    console.error("Error in getTransactionById:", error);
     return null;
   }
 };
 
-// Update a financial transaction
-export const updateFinancialTransaction = async (transaction: Partial<FinancialTransaction> & { id: string }): Promise<boolean> => {
+// Update a transaction
+export const updateTransaction = async (
+  transaction: Partial<FinancialTransaction> & { id: string }
+): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('financial_transactions')
@@ -92,19 +97,19 @@ export const updateFinancialTransaction = async (transaction: Partial<FinancialT
       .eq('id', transaction.id);
 
     if (error) {
-      console.error("Error updating financial transaction:", error);
+      console.error("Error updating transaction:", error);
       throw error;
     }
 
     return true;
   } catch (error) {
-    console.error("Error in updateFinancialTransaction:", error);
+    console.error("Error in updateTransaction:", error);
     return false;
   }
 };
 
-// Delete a financial transaction
-export const deleteFinancialTransaction = async (id: string): Promise<boolean> => {
+// Delete a transaction
+export const deleteTransaction = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('financial_transactions')
@@ -112,26 +117,25 @@ export const deleteFinancialTransaction = async (id: string): Promise<boolean> =
       .eq('id', id);
 
     if (error) {
-      console.error("Error deleting financial transaction:", error);
+      console.error("Error deleting transaction:", error);
       throw error;
     }
 
     return true;
   } catch (error) {
-    console.error("Error in deleteFinancialTransaction:", error);
+    console.error("Error in deleteTransaction:", error);
     return false;
   }
 };
 
-// Get financial transactions by filter
-export const getFinancialTransactionsByFilter = async (
+// Get transactions by filter
+export const getTransactionsByFilter = async (
   filter: {
     type?: 'receivable' | 'payable';
     status?: 'pending' | 'completed';
     client?: string;
     dateFrom?: string;
     dateTo?: string;
-    category?: string;
   }
 ): Promise<FinancialTransaction[]> => {
   try {
@@ -151,10 +155,6 @@ export const getFinancialTransactionsByFilter = async (
       query = query.ilike('client', `%${filter.client}%`);
     }
 
-    if (filter.category) {
-      query = query.eq('category', filter.category);
-    }
-
     if (filter.dateFrom) {
       query = query.gte('due_date', filter.dateFrom);
     }
@@ -166,35 +166,13 @@ export const getFinancialTransactionsByFilter = async (
     const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) {
-      console.error("Error fetching filtered financial transactions:", error);
+      console.error("Error fetching filtered transactions:", error);
       throw error;
     }
 
     return data as FinancialTransaction[];
   } catch (error) {
-    console.error("Error in getFinancialTransactionsByFilter:", error);
-    return [];
-  }
-};
-
-// Get financial transactions by source
-export const getFinancialTransactionsBySource = async (sourceId: string, sourceType: 'order' | 'contract' | 'manual'): Promise<FinancialTransaction[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('financial_transactions')
-      .select('*')
-      .eq('source_id', sourceId)
-      .eq('source_type', sourceType)
-      .order('due_date', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching financial transactions by source:", error);
-      throw error;
-    }
-
-    return data as FinancialTransaction[];
-  } catch (error) {
-    console.error("Error in getFinancialTransactionsBySource:", error);
+    console.error("Error in getTransactionsByFilter:", error);
     return [];
   }
 };

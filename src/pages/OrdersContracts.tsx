@@ -15,7 +15,7 @@ import { createScheduleEvent } from "@/lib/supabase/schedulingService";
 import { format } from "date-fns";
 
 // Extend the Lead type to include necessary fields for order/contract creation
-interface SourceEntity {
+export interface SourceEntity {
   leadId?: string;
   leadName?: string;
   id?: string; // Contact ID
@@ -29,6 +29,14 @@ interface FinancialTabProps {
   transactions: FinancialTransaction[];
   loading: boolean;
   onUpdateStatus: (id: string, status: string) => Promise<void>;
+}
+
+// Define props for OrdersTab and ContractsTab
+interface TabProps {
+  leadData: SourceEntity | null;
+  contactData: SourceEntity | null;
+  onCreateOrder?: (orderId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
+  onCreateContract?: (contractId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
 }
 
 const OrdersContracts = () => {
@@ -419,6 +427,7 @@ const OrdersContracts = () => {
                 <OrdersTab 
                   leadData={selectedLead}
                   contactData={selectedContact}
+                  onCreateOrder={handleCreateOrder}
                 />
               </TabsContent>
               
@@ -426,6 +435,7 @@ const OrdersContracts = () => {
                 <ContractsTab 
                   leadData={selectedLead}
                   contactData={selectedContact}
+                  onCreateContract={handleCreateContract}
                 />
               </TabsContent>
               

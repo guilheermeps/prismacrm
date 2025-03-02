@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { Json } from "@/integrations/supabase/types";
 
 // Contract types
 export interface ContractService {
@@ -36,12 +37,30 @@ export const createContract = async (contractData: Omit<Contract, 'id' | 'create
   try {
     const id = uuidv4();
     
+    // Convert contractData.services to JSON-compatible format
+    const dbContract = {
+      id,
+      client_name: contractData.client_name,
+      client_id: contractData.client_id,
+      contract_number: contractData.contract_number,
+      total_amount: contractData.total_amount,
+      services: contractData.services as unknown as Json,
+      status: contractData.status,
+      payment_method: contractData.payment_method,
+      payment_status: contractData.payment_status,
+      installments: contractData.installments,
+      start_date: contractData.start_date,
+      end_date: contractData.end_date,
+      due_date: contractData.due_date,
+      notes: contractData.notes,
+      terms: contractData.terms,
+      source_id: contractData.source_id,
+      source_type: contractData.source_type
+    };
+    
     const { error } = await supabase
       .from('contracts')
-      .insert({
-        id,
-        ...contractData
-      });
+      .insert(dbContract);
 
     if (error) {
       console.error("Error creating contract:", error);
@@ -68,7 +87,13 @@ export const getContracts = async (): Promise<Contract[]> => {
       throw error;
     }
 
-    return data as Contract[];
+    // Convert the data from JSON to our Contract type
+    const contracts = data.map(item => ({
+      ...item,
+      services: item.services as unknown as ContractService[]
+    }));
+
+    return contracts as Contract[];
   } catch (error) {
     console.error("Error in getContracts:", error);
     return [];
@@ -89,7 +114,15 @@ export const getContractById = async (id: string): Promise<Contract | null> => {
       throw error;
     }
 
-    return data as Contract;
+    if (!data) return null;
+
+    // Convert the data from JSON to our Contract type
+    const contract = {
+      ...data,
+      services: data.services as unknown as ContractService[]
+    };
+
+    return contract as Contract;
   } catch (error) {
     console.error("Error in getContractById:", error);
     return null;
@@ -99,9 +132,15 @@ export const getContractById = async (id: string): Promise<Contract | null> => {
 // Update a contract
 export const updateContract = async (contract: Partial<Contract> & { id: string }): Promise<boolean> => {
   try {
+    // Prepare DB-compatible object
+    const dbContract: any = { ...contract };
+    if (contract.services) {
+      dbContract.services = contract.services as unknown as Json;
+    }
+
     const { error } = await supabase
       .from('contracts')
-      .update(contract)
+      .update(dbContract)
       .eq('id', contract.id);
 
     if (error) {
@@ -178,7 +217,13 @@ export const getContractsByFilter = async (
       throw error;
     }
 
-    return data as Contract[];
+    // Convert the data from JSON to our Contract type
+    const contracts = data.map(item => ({
+      ...item,
+      services: item.services as unknown as ContractService[]
+    }));
+
+    return contracts as Contract[];
   } catch (error) {
     console.error("Error in getContractsByFilter:", error);
     return [];

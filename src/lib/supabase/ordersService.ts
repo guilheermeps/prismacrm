@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { Json } from "@/integrations/supabase/types";
 
 // Order types
 export interface OrderItem {
@@ -32,12 +33,26 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at'>): 
   try {
     const id = uuidv4();
     
+    // Convert orderData.items to JSON-compatible format
+    const dbOrder = {
+      id,
+      client_name: orderData.client_name,
+      client_id: orderData.client_id,
+      total_amount: orderData.total_amount,
+      items: orderData.items as unknown as Json,
+      status: orderData.status,
+      payment_method: orderData.payment_method,
+      payment_status: orderData.payment_status,
+      installments: orderData.installments,
+      due_date: orderData.due_date,
+      notes: orderData.notes,
+      source_id: orderData.source_id,
+      source_type: orderData.source_type
+    };
+    
     const { error } = await supabase
       .from('orders')
-      .insert({
-        id,
-        ...orderData
-      });
+      .insert(dbOrder);
 
     if (error) {
       console.error("Error creating order:", error);
@@ -64,7 +79,13 @@ export const getOrders = async (): Promise<Order[]> => {
       throw error;
     }
 
-    return data as Order[];
+    // Convert the data from JSON to our Order type
+    const orders = data.map(item => ({
+      ...item,
+      items: item.items as unknown as OrderItem[]
+    }));
+
+    return orders as Order[];
   } catch (error) {
     console.error("Error in getOrders:", error);
     return [];
@@ -85,7 +106,15 @@ export const getOrderById = async (id: string): Promise<Order | null> => {
       throw error;
     }
 
-    return data as Order;
+    if (!data) return null;
+
+    // Convert the data from JSON to our Order type
+    const order = {
+      ...data,
+      items: data.items as unknown as OrderItem[]
+    };
+
+    return order as Order;
   } catch (error) {
     console.error("Error in getOrderById:", error);
     return null;
@@ -95,9 +124,15 @@ export const getOrderById = async (id: string): Promise<Order | null> => {
 // Update an order
 export const updateOrder = async (order: Partial<Order> & { id: string }): Promise<boolean> => {
   try {
+    // Prepare DB-compatible object
+    const dbOrder: any = { ...order };
+    if (order.items) {
+      dbOrder.items = order.items as unknown as Json;
+    }
+
     const { error } = await supabase
       .from('orders')
-      .update(order)
+      .update(dbOrder)
       .eq('id', order.id);
 
     if (error) {
@@ -174,7 +209,13 @@ export const getOrdersByFilter = async (
       throw error;
     }
 
-    return data as Order[];
+    // Convert the data from JSON to our Order type
+    const orders = data.map(item => ({
+      ...item,
+      items: item.items as unknown as OrderItem[]
+    }));
+
+    return orders as Order[];
   } catch (error) {
     console.error("Error in getOrdersByFilter:", error);
     return [];

@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { Json } from "@/integrations/supabase/types";
 
 // Contact types
 export interface ContactTag {
@@ -31,12 +32,26 @@ export const createContact = async (contactData: Omit<Contact, 'id' | 'created_a
   try {
     const id = uuidv4();
     
+    // Convert contactData.tags to JSON-compatible format
+    const dbContact = {
+      id,
+      name: contactData.name,
+      email: contactData.email,
+      phone: contactData.phone,
+      whatsapp: contactData.whatsapp,
+      address: contactData.address,
+      city: contactData.city,
+      state: contactData.state,
+      postal_code: contactData.postal_code,
+      notes: contactData.notes,
+      is_active: contactData.is_active,
+      lead_id: contactData.lead_id,
+      tags: contactData.tags as unknown as Json
+    };
+    
     const { error } = await supabase
       .from('contacts')
-      .insert({
-        id,
-        ...contactData
-      });
+      .insert(dbContact);
 
     if (error) {
       console.error("Error creating contact:", error);
@@ -63,7 +78,13 @@ export const getContacts = async (): Promise<Contact[]> => {
       throw error;
     }
 
-    return data as Contact[];
+    // Convert the data from JSON to our Contact type
+    const contacts = data.map(item => ({
+      ...item,
+      tags: item.tags as unknown as ContactTag[]
+    }));
+
+    return contacts as Contact[];
   } catch (error) {
     console.error("Error in getContacts:", error);
     return [];
@@ -84,7 +105,15 @@ export const getContactById = async (id: string): Promise<Contact | null> => {
       throw error;
     }
 
-    return data as Contact;
+    if (!data) return null;
+
+    // Convert the data from JSON to our Contact type
+    const contact = {
+      ...data,
+      tags: data.tags as unknown as ContactTag[]
+    };
+
+    return contact as Contact;
   } catch (error) {
     console.error("Error in getContactById:", error);
     return null;
@@ -94,9 +123,15 @@ export const getContactById = async (id: string): Promise<Contact | null> => {
 // Update a contact
 export const updateContact = async (contact: Partial<Contact> & { id: string }): Promise<boolean> => {
   try {
+    // Prepare DB-compatible object
+    const dbContact: any = { ...contact };
+    if (contact.tags) {
+      dbContact.tags = contact.tags as unknown as Json;
+    }
+
     const { error } = await supabase
       .from('contacts')
-      .update(contact)
+      .update(dbContact)
       .eq('id', contact.id);
 
     if (error) {
@@ -164,7 +199,13 @@ export const getContactsByFilter = async (
       throw error;
     }
 
-    return data as Contact[];
+    // Convert the data from JSON to our Contact type
+    const contacts = data.map(item => ({
+      ...item,
+      tags: item.tags as unknown as ContactTag[]
+    }));
+
+    return contacts as Contact[];
   } catch (error) {
     console.error("Error in getContactsByFilter:", error);
     return [];
@@ -185,7 +226,15 @@ export const getContactByLeadId = async (leadId: string): Promise<Contact | null
       throw error;
     }
 
-    return data as Contact;
+    if (!data) return null;
+
+    // Convert the data from JSON to our Contact type
+    const contact = {
+      ...data,
+      tags: data.tags as unknown as ContactTag[]
+    };
+
+    return contact as Contact;
   } catch (error) {
     console.error("Error in getContactByLeadId:", error);
     return null;
