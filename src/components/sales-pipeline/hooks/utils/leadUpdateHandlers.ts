@@ -9,18 +9,32 @@ export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
     // Log for debugging
     console.log('Updating lead:', updatedLead);
     
-    // If we're in development or demo mode, show message
+    // If we're in development or demo mode, show message but allow realtime updates
     if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
       console.log('Updating lead in development/demo mode:', updatedLead);
-      // Simulate success and return true immediately
+      
+      // In dev mode, we still want to call updateLead to trigger the realtime updates
+      // This helps simulate the production behavior
+      try {
+        await updateLead(updatedLead);
+      } catch (error) {
+        console.log('Dev mode - ignoring update error:', error);
+      }
+      
+      // Show success message
       toast.success("Lead atualizado com sucesso!");
       return true;
     }
     
     // If not in development mode, continue with the update
-    await updateLead(updatedLead);
-    toast.success("Lead atualizado com sucesso!");
-    return true;
+    const result = await updateLead(updatedLead);
+    
+    if (result) {
+      toast.success("Lead atualizado com sucesso!");
+      return true;
+    } else {
+      throw new Error("Failed to update lead");
+    }
   } catch (error) {
     console.error("Erro ao atualizar lead:", error);
     
@@ -44,9 +58,14 @@ export const archiveLead = async (lead: Lead): Promise<boolean> => {
       history: addHistoryEntry(lead.history, "archived")
     };
     
-    await updateLead(updatedLead);
-    toast.success("Lead arquivado com sucesso!");
-    return true;
+    const result = await updateLead(updatedLead);
+    
+    if (result) {
+      toast.success("Lead arquivado com sucesso!");
+      return true;
+    } else {
+      throw new Error("Failed to archive lead");
+    }
   } catch (error) {
     console.error("Erro ao arquivar lead:", error);
     
@@ -70,9 +89,14 @@ export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
       history: addHistoryEntry(lead.history, "unarchived")
     };
     
-    await updateLead(updatedLead);
-    toast.success("Lead restaurado com sucesso!");
-    return true;
+    const result = await updateLead(updatedLead);
+    
+    if (result) {
+      toast.success("Lead restaurado com sucesso!");
+      return true;
+    } else {
+      throw new Error("Failed to unarchive lead");
+    }
   } catch (error) {
     console.error("Erro ao restaurar lead:", error);
     

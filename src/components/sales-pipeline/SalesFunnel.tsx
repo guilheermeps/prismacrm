@@ -6,6 +6,7 @@ import LoadingState from "@/components/sales-pipeline/LoadingState";
 import { useLeadOperations } from "@/components/sales-pipeline/hooks/useLeadOperations";
 import { useStageOperations } from "@/components/sales-pipeline/hooks/useStageOperations";
 import { filterLeads } from "@/components/sales-pipeline/utils/leadFilters";
+import { Lead, Stage } from "@/lib/supabase/types";
 
 interface SalesFunnelProps {
   searchTerm?: string;

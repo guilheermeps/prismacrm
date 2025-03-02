@@ -73,6 +73,7 @@ function useLeadOperationsInternal() {
 
   const fetchLeads = async () => {
     try {
+      console.log("Fetching leads to update global state...");
       const leadsData = await getLeads();
       setLeads(leadsData);
       return leadsData;
@@ -89,20 +90,57 @@ function useLeadOperationsInternal() {
     // Initial load
     fetchLeads();
     
-    // Setup real-time subscription
-    const leadsSubscription = supabase
+    // Setup improved real-time subscription with better error handling
+    const channel = supabase
       .channel('leads-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, async (payload) => {
-        console.log('Real-time lead update detected:', payload);
-        // Refresh leads when changes are detected
-        const updatedLeads = await fetchLeads();
-        setLeads(updatedLeads);
-      })
-      .subscribe();
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'leads' 
+        }, 
+        async (payload) => {
+          console.log('Real-time lead update detected:', payload);
+          
+          // Check the type of change and update state accordingly for better performance
+          if (payload.eventType === 'INSERT') {
+            // For new leads, just append to the current state
+            const newLead = payload.new as Lead;
+            setLeads(currentLeads => [...currentLeads, newLead]);
+          } else if (payload.eventType === 'UPDATE') {
+            // For updates, replace the specific lead
+            const updatedLead = payload.new as Lead;
+            setLeads(currentLeads => 
+              currentLeads.map(lead => 
+                lead.id === updatedLead.id ? updatedLead : lead
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            // For deletions, remove the lead
+            const deletedLeadId = payload.old.id;
+            setLeads(currentLeads => 
+              currentLeads.filter(lead => lead.id !== deletedLeadId)
+            );
+          } else {
+            // For any other changes, refresh the whole list
+            await fetchLeads();
+          }
+        })
+      .subscribe((status) => {
+        console.log(`Supabase real-time subscription status: ${status}`);
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error('Error subscribing to real-time updates. Retrying...');
+          // Auto-retry after a delay
+          setTimeout(() => {
+            fetchLeads();
+          }, 5000);
+        }
+      });
     
     // Cleanup subscription on unmount
     return () => {
-      leadsSubscription.unsubscribe();
+      console.log('Cleaning up Supabase real-time subscription');
+      supabase.removeChannel(channel);
     };
   }, []);
 
