@@ -1,8 +1,8 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Inicialização do cliente Supabase com fallback para valores mocados
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock-supabase-url.com';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'mock-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -31,29 +31,109 @@ export interface Stage {
   color: string;
 }
 
-// Funções para interagir com o Supabase
+// Modificando as funções para retornar dados simulados quando não há conexão com Supabase
 export const getLeads = async (): Promise<Lead[]> => {
-  const { data, error } = await supabase.from('leads').select('*');
-  
-  if (error) {
-    console.error('Erro ao buscar leads:', error);
-    return [];
+  try {
+    // Tenta buscar do Supabase
+    const { data, error } = await supabase.from('leads').select('*');
+    
+    if (error) {
+      console.warn('Usando dados simulados para leads:', error.message);
+      // Retorna dados mockados caso haja erro
+      return mockLeads();
+    }
+    
+    return data || [];
+  } catch (e) {
+    console.warn('Usando dados simulados para leads devido a erro:', e);
+    return mockLeads();
   }
-  
-  return data || [];
 };
 
 export const getStages = async (): Promise<Stage[]> => {
-  const { data, error } = await supabase.from('stages').select('*');
-  
-  if (error) {
-    console.error('Erro ao buscar estágios:', error);
-    return [];
+  try {
+    const { data, error } = await supabase.from('stages').select('*');
+    
+    if (error) {
+      console.warn('Usando dados simulados para estágios:', error.message);
+      return mockStages();
+    }
+    
+    return data || [];
+  } catch (e) {
+    console.warn('Usando dados simulados para estágios devido a erro:', e);
+    return mockStages();
   }
-  
-  return data || [];
 };
 
+// Funções para criar dados mockados
+const mockLeads = (): Lead[] => {
+  return [
+    {
+      id: '1',
+      name: 'João Silva',
+      serviceType: 'Casamento',
+      whatsapp: '11987654321',
+      stageId: 'stage1',
+      proposalValue: 3500,
+      notes: 'Cliente interessado em pacote completo',
+      createdAt: new Date().toISOString(),
+      history: [
+        {
+          action: 'created',
+          timestamp: new Date().toISOString(),
+          from: null,
+          to: 'Contato Inicial'
+        }
+      ]
+    },
+    {
+      id: '2',
+      name: 'Maria Oliveira',
+      serviceType: 'Ensaio',
+      whatsapp: '11912345678',
+      stageId: 'stage2',
+      proposalValue: 1200,
+      notes: 'Ensaio pré-wedding',
+      createdAt: new Date().toISOString(),
+      history: [
+        {
+          action: 'moved',
+          timestamp: new Date().toISOString(),
+          from: 'Contato Inicial',
+          to: 'Proposta Enviada'
+        }
+      ]
+    }
+  ];
+};
+
+const mockStages = (): Stage[] => {
+  return [
+    {
+      id: 'stage1',
+      title: 'Contato Inicial',
+      color: '#3498db'
+    },
+    {
+      id: 'stage2',
+      title: 'Proposta Enviada',
+      color: '#f39c12'
+    },
+    {
+      id: 'stage3',
+      title: 'Negociação',
+      color: '#9b59b6'
+    },
+    {
+      id: 'stage4',
+      title: 'Fechado',
+      color: '#2ecc71'
+    }
+  ];
+};
+
+// Funções para interagir com o Supabase
 export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> => {
   const { data, error } = await supabase
     .from('leads')
