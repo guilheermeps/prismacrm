@@ -20,8 +20,6 @@ const handleDevModeMoveOperation = async (
   fromStageName: string = "Desconhecido",
   toStageName: string = "Desconhecido"
 ): Promise<boolean> => {
-  console.log("Moving lead in dev/demo mode:", lead.id, "to stage", toStageId);
-  
   try {
     // Even in dev mode, we'll update the lead to ensure persistence
     const updatedLead = {
@@ -30,19 +28,12 @@ const handleDevModeMoveOperation = async (
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
-    // In dev mode, we still want to persist changes
     const result = await updateLead(updatedLead);
+    return result !== null;
     
-    // Check if the update was successful
-    if (!result) {
-      console.error("Failed to update lead in database even in dev mode");
-      return false;
-    }
-    
-    return true;
   } catch (error) {
     console.error("Dev mode error:", error);
-    return false; // Return false to indicate failure even in dev mode
+    return false;
   }
 };
 
@@ -62,9 +53,7 @@ export const moveLead = async (
       return true;
     }
     
-    console.log(`Moving lead ${lead.id} from ${lead.stageId} to ${toStageId}`);
-    
-    // Get stage names for better history tracking (this should be improved to get actual names)
+    // Get stage names for better history tracking
     const fromStageName = "Desconhecido";
     const toStageName = "Desconhecido"; 
     
@@ -80,29 +69,20 @@ export const moveLead = async (
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
-    console.log("Updating lead in database with new stage:", updatedLead);
-    
-    // Persist the change to database - await the result to ensure it's saved
+    // Update lead in database and handle result
     const result = await updateLead(updatedLead);
     
     if (!result) {
       console.error("Failed to update lead in database");
-      toast.error("Erro ao persistir a mudança de etapa do lead.");
+      toast.error("Erro ao mover o lead. Tente novamente.");
       return false;
     }
     
-    // Return success
     return true;
   } catch (error) {
     console.error("Erro ao mover lead:", error);
-    
-    // In development mode, allow the UI to update even if the API call fails
-    if (isDevOrDemoMode()) {
-      console.log("Allowing move in development mode despite error");
-      return true;
-    }
-    
-    toast.error("Erro ao mover lead. Tente novamente.");
+    toast.error("Erro ao mover o lead. Tente novamente.");
     return false;
   }
 };
+
