@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LeadCard from "@/components/sales-pipeline/LeadCard";
@@ -33,8 +33,14 @@ const LeadColumn = ({
   onUnarchiveLead,
   isArchived = false
 }: LeadColumnProps) => {
-  const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = React.useState(false);
-  const [isDragOver, setIsDragOver] = React.useState(false);
+  const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [columnLeads, setColumnLeads] = useState<Lead[]>(leads);
+  
+  // Update local state when props change
+  useEffect(() => {
+    setColumnLeads(leads);
+  }, [leads]);
 
   const handleAddNewLead = (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     try {
@@ -51,7 +57,7 @@ const LeadColumn = ({
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
     // Add visual indicator that drop is allowed
     if (!isDragOver) {
       setIsDragOver(true);
@@ -60,14 +66,12 @@ const LeadColumn = ({
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     // Remove visual indicator
     setIsDragOver(false);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     
     // Remove visual indicator
     setIsDragOver(false);
@@ -81,18 +85,33 @@ const LeadColumn = ({
         const leadId = data.leadId;
         const fromStageId = data.stageId;
         
-        console.log("Drop data:", { leadId, fromStageId, toStageId: stage.id });
-        
         if (leadId && fromStageId && fromStageId !== stage.id) {
           console.log(`Moving lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
           
-          // Call the move function
-          onMoveLead(leadId, fromStageId, stage.id);
-          
-          // Update local state immediately for better UX
+          // Find the lead that's being moved
           const leadToMove = leads.find(l => l.id === leadId);
+          
           if (leadToMove) {
+            // Create updated lead with new stageId
             const updatedLead = { ...leadToMove, stageId: stage.id };
+            
+            // Update local state immediately for better UX
+            const updatedLeads = columnLeads.slice();
+            updatedLeads.push(updatedLead);
+            setColumnLeads(updatedLeads);
+            
+            // Also remove from source column in UI
+            const sourceColumn = document.querySelector(`[data-stage-id="${fromStageId}"]`);
+            if (sourceColumn) {
+              const leadCard = sourceColumn.querySelector(`[data-lead-id="${leadId}"]`);
+              if (leadCard) {
+                leadCard.remove();
+              }
+            }
+            
+            // Call the move function to update the backend
+            onMoveLead(leadId, fromStageId, stage.id);
+            
             // This ensures immediate visual feedback
             onUpdateLead(updatedLead);
           }
@@ -105,7 +124,7 @@ const LeadColumn = ({
   };
 
   // Calculate total value of leads in this stage
-  const totalValue = leads.reduce((sum, lead) => sum + (lead.proposalValue || 0), 0);
+  const totalValue = columnLeads.reduce((sum, lead) => sum + (lead.proposalValue || 0), 0);
 
   return (
     <div 
@@ -114,6 +133,7 @@ const LeadColumn = ({
       onDragLeave={handleDragLeave}
       onDragEnter={handleDragOver}
       onDrop={handleDrop}
+      data-stage-id={stage.id}
     >
       {/* Stage Header */}
       <div className="p-3 border-b border-border flex items-center justify-between">
@@ -124,7 +144,7 @@ const LeadColumn = ({
           />
           <h3 className="font-medium">{stage.title}</h3>
           <span className="text-sm text-muted-foreground ml-1">
-            ({leads.length})
+            ({columnLeads.length})
           </span>
         </div>
         
@@ -151,34 +171,35 @@ const LeadColumn = ({
       </div>
 
       {/* Value Summary */}
-      {leads.length > 0 && (
+      {columnLeads.length > 0 && (
         <div className="px-3 py-2 text-sm text-muted-foreground">
           <span className="font-medium">
             {new Intl.NumberFormat('pt-BR', { 
               style: 'currency', 
               currency: 'BRL' 
             }).format(totalValue)}
-          </span> em {leads.length} {leads.length === 1 ? 'lead' : 'leads'}
+          </span> em {columnLeads.length} {columnLeads.length === 1 ? 'lead' : 'leads'}
         </div>
       )}
 
       {/* Leads List */}
       <div className="p-2 flex-1 overflow-y-auto max-h-[calc(100vh-320px)]">
         <div className="space-y-2">
-          {leads.length > 0 ? (
-            leads.map(lead => (
-              <LeadCard
-                key={lead.id}
-                lead={lead}
-                stages={allStages}
-                onMoveLead={onMoveLead}
-                onUpdateLead={onUpdateLead}
-                onDeleteLead={onDeleteLead}
-                onConvertToContact={onConvertToContact}
-                onArchiveLead={onArchiveLead}
-                onUnarchiveLead={onUnarchiveLead}
-                isArchived={isArchived}
-              />
+          {columnLeads.length > 0 ? (
+            columnLeads.map(lead => (
+              <div key={lead.id} data-lead-id={lead.id}>
+                <LeadCard
+                  lead={lead}
+                  stages={allStages}
+                  onMoveLead={onMoveLead}
+                  onUpdateLead={onUpdateLead}
+                  onDeleteLead={onDeleteLead}
+                  onConvertToContact={onConvertToContact}
+                  onArchiveLead={onArchiveLead}
+                  onUnarchiveLead={onUnarchiveLead}
+                  isArchived={isArchived}
+                />
+              </div>
             ))
           ) : (
             <div className="text-center py-6 text-muted-foreground text-sm">

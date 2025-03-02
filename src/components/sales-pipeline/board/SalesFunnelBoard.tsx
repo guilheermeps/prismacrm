@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import LeadColumn from "@/components/sales-pipeline/LeadColumn";
 import { Lead, Stage } from "@/lib/supabase/types";
 
@@ -26,8 +26,33 @@ const SalesFunnelBoard = ({
   onUnarchiveLead, 
   isArchived 
 }: SalesFunnelBoardProps) => {
+  const [boardLeads, setBoardLeads] = useState<Lead[]>(filteredLeads);
+
+  // Update local state when props change
+  useEffect(() => {
+    setBoardLeads(filteredLeads);
+  }, [filteredLeads]);
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  // Create an optimistic update handler
+  const handleOptimisticLeadMove = (leadId: string, fromStageId: string, toStageId: string) => {
+    // Update the lead's stage in our local state first
+    const updatedLeads = boardLeads.map(lead => {
+      if (lead.id === leadId) {
+        return { ...lead, stageId: toStageId };
+      }
+      return lead;
+    });
+    
+    // Update local state
+    setBoardLeads(updatedLeads);
+    
+    // Then call the parent handler to update backend
+    onMoveLead(leadId, fromStageId, toStageId);
   };
 
   return (
@@ -40,9 +65,9 @@ const SalesFunnelBoard = ({
           <LeadColumn
             key={stage.id}
             stage={stage}
-            leads={filteredLeads.filter(lead => lead.stageId === stage.id)}
+            leads={boardLeads.filter(lead => lead.stageId === stage.id)}
             allStages={stages}
-            onMoveLead={onMoveLead}
+            onMoveLead={handleOptimisticLeadMove}
             onUpdateLead={onUpdateLead}
             onDeleteLead={onDeleteLead}
             onConvertToContact={onConvertToContact}

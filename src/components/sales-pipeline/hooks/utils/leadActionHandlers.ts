@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { createLead, updateLead, deleteLead } from "@/lib/supabase/leadsService";
@@ -68,11 +67,7 @@ export const moveLead = async (
       
       console.log("Moving lead in dev/demo mode:", updatedLead);
       
-      // Delay the toast to avoid interfering with drag operation
-      setTimeout(() => {
-        toast.success("Lead movido para nova etapa!");
-      }, 300);
-      
+      // Return success immediately for faster UI update
       return true;
     }
     
@@ -92,17 +87,14 @@ export const moveLead = async (
     
     if (!result && (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true')) {
       console.log("Fallback to local update mode due to API error");
-      // Delay the toast to avoid interfering with drag operation
-      setTimeout(() => {
-        toast.success("Lead movido para nova etapa!");
-      }, 300);
+      // Return success for development mode
       return true;
     }
     
     // Delay the toast to avoid interfering with drag operation
     setTimeout(() => {
       toast.success("Lead movido para nova etapa!");
-    }, 300);
+    }, 500);
     
     return true;
   } catch (error) {

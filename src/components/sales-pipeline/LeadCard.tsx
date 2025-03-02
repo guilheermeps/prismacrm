@@ -45,7 +45,8 @@ const LeadCard = ({
     // Set data in dataTransfer with multiple formats for reliability
     const data = {
       leadId: lead.id,
-      stageId: lead.stageId
+      stageId: lead.stageId,
+      leadObject: JSON.stringify(lead) // Add the entire lead object
     };
     
     // Set as JSON for structured data
@@ -54,11 +55,11 @@ const LeadCard = ({
     // Set individual properties as fallback
     e.dataTransfer.setData("leadId", lead.id);
     e.dataTransfer.setData("stageId", lead.stageId);
+    e.dataTransfer.setData("text/plain", lead.name); // For compatibility
     
     e.dataTransfer.effectAllowed = "move";
     
-    // Add visual feedback immediately (don't use setTimeout)
-    e.currentTarget.classList.add("opacity-50");
+    // Add visual feedback immediately
     setIsDragging(true);
     
     // Log for debugging
@@ -68,7 +69,6 @@ const LeadCard = ({
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
     if (isArchived) return;
     
-    e.currentTarget.classList.remove("opacity-50");
     setIsDragging(false);
     console.log("Drag ended");
   };
