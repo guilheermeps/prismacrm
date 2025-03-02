@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getServiceTypes } from "@/lib/supabase/leadsService";
 
 interface NewLeadFormProps {
   onSave: (lead: any) => void;
@@ -18,17 +19,6 @@ interface NewLeadFormProps {
   stages: any[];
   initialStageId?: string;
 }
-
-const serviceTypes = [
-  "Ensaio Fotográfico",
-  "Casamento",
-  "Evento Corporativo",
-  "Book",
-  "Evento Social",
-  "Formatura",
-  "Aniversário",
-  "Outro"
-];
 
 const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormProps) => {
   const [formData, setFormData] = useState({
@@ -39,6 +29,35 @@ const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormPr
     notes: "",
     stageId: initialStageId || stages[0]?.id || ""
   });
+  
+  const [serviceTypeOptions, setServiceTypeOptions] = useState([
+    "Ensaio Fotográfico",
+    "Casamento",
+    "Evento Corporativo",
+    "Book",
+    "Evento Social",
+    "Formatura",
+    "Aniversário",
+    "Outro"
+  ]);
+
+  // Fetch service types from Supabase when component mounts
+  useEffect(() => {
+    const fetchServiceTypes = async () => {
+      try {
+        const serviceTypes = await getServiceTypes();
+        if (serviceTypes && serviceTypes.length > 0) {
+          // Extract service type names
+          const typeNames = serviceTypes.map(type => type.name);
+          setServiceTypeOptions(typeNames);
+        }
+      } catch (error) {
+        console.error("Error fetching service types:", error);
+      }
+    };
+
+    fetchServiceTypes();
+  }, []);
 
   const handleChange = (field: string, value: any) => {
     setFormData({
@@ -106,7 +125,7 @@ const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormPr
             <SelectValue placeholder="Selecione o tipo de serviço" />
           </SelectTrigger>
           <SelectContent>
-            {serviceTypes.map((type) => (
+            {serviceTypeOptions.map((type) => (
               <SelectItem key={type} value={type}>
                 {type}
               </SelectItem>

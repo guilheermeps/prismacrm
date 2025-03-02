@@ -1,6 +1,7 @@
+
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
-import { updateLead, createLead } from "@/lib/supabase/services/leadsCrudService";
+import { createLead } from "@/lib/supabase/leadsService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 import { convertLeadToContact } from "./leadDeleteConvertHandlers";
 
@@ -12,6 +13,7 @@ export const addNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'histo
     // Use the createLead function directly to save to Supabase
     const lead = {
       ...newLead,
+      createdAt: new Date().toISOString(), // Add the createdAt property
       history: []
     };
     
@@ -31,6 +33,7 @@ export const addNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'histo
 // Update lead data
 export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
   try {
+    const { updateLead } = await import("@/lib/supabase/leadsService");
     await updateLead(updatedLead);
     
     toast.success("Lead atualizado com sucesso");
@@ -56,6 +59,7 @@ export const removeLead = async (leadId: string): Promise<boolean> => {
       history: []
     };
     
+    const { updateLead } = await import("@/lib/supabase/leadsService");
     const updatedLead = {
       ...lead,
       history: addHistoryEntry(lead.history, "deleted", null, null)
@@ -75,6 +79,7 @@ export const removeLead = async (leadId: string): Promise<boolean> => {
 // Archive lead
 export const archiveLead = async (lead: Lead): Promise<boolean> => {
   try {
+    const { updateLead } = await import("@/lib/supabase/leadsService");
     const updatedLead = {
       ...lead,
       isArchived: true,
@@ -95,6 +100,7 @@ export const archiveLead = async (lead: Lead): Promise<boolean> => {
 // Unarchive lead
 export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
   try {
+    const { updateLead } = await import("@/lib/supabase/leadsService");
     const updatedLead = {
       ...lead,
       isArchived: false,
@@ -115,6 +121,7 @@ export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
 // Discard lead
 export const discardLead = async (lead: Lead): Promise<boolean> => {
   try {
+    const { updateLead } = await import("@/lib/supabase/leadsService");
     const updatedLead = {
       ...lead,
       stageId: 'discarded',
@@ -135,6 +142,7 @@ export const discardLead = async (lead: Lead): Promise<boolean> => {
 // Move lead to another stage
 export const moveLead = async (lead: Lead, newStageId: string): Promise<boolean> => {
   try {
+    const { updateLead } = await import("@/lib/supabase/leadsService");
     const updatedLead = {
       ...lead,
       stageId: newStageId,

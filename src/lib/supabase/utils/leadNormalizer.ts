@@ -27,6 +27,7 @@ export const normalizeLeadForSupabase = (lead: Omit<Lead, 'id'> | Lead): Record<
     proposalvalue: lead.proposalValue || 0,
     notes: lead.notes || '',
     history: lead.history || [],
-    isarchived: lead.isArchived === undefined ? false : lead.isArchived
+    isarchived: lead.isArchived === undefined ? false : lead.isArchived,
+    createdat: lead.createdAt // Make sure createdAt is passed to Supabase
   };
 };

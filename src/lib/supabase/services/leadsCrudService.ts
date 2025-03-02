@@ -70,7 +70,7 @@ export async function getArchivedLeads() {
 // Create a new lead
 export async function createLead(lead: Omit<Lead, 'id'>) {
   try {
-    console.log("Creating lead in Supabase:", lead);
+    console.log("Creating lead in Supabase with data:", lead);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       console.error("No session found when creating lead");
