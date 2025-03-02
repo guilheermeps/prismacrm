@@ -36,11 +36,16 @@ const LeadColumn = ({
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = React.useState(false);
 
   const handleAddNewLead = (newLead) => {
-    // Create a new lead in this stage
-    const leadWithStage = { ...newLead, stageId: stage.id };
-    onUpdateLead(leadWithStage);
-    setIsNewLeadDialogOpen(false);
-    toast.success("Lead adicionado com sucesso!");
+    try {
+      // Create a new lead in this stage
+      const leadWithStage = { ...newLead, stageId: stage.id };
+      onUpdateLead(leadWithStage);
+      setIsNewLeadDialogOpen(false);
+      toast.success("Lead adicionado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao adicionar lead:", error);
+      toast.error("Erro ao adicionar lead. Tente novamente.");
+    }
   };
 
   const handleDragOver = (e) => {
@@ -48,11 +53,16 @@ const LeadColumn = ({
   };
 
   const handleDrop = (e) => {
-    const leadId = e.dataTransfer.getData("leadId");
-    const fromStageId = e.dataTransfer.getData("stageId");
-    
-    if (fromStageId !== stage.id) {
-      onMoveLead(leadId, fromStageId, stage.id);
+    try {
+      const leadId = e.dataTransfer.getData("leadId");
+      const fromStageId = e.dataTransfer.getData("stageId");
+      
+      if (fromStageId !== stage.id) {
+        onMoveLead(leadId, fromStageId, stage.id);
+      }
+    } catch (error) {
+      console.error("Erro ao mover lead:", error);
+      toast.error("Erro ao mover lead. Tente novamente.");
     }
   };
 
@@ -125,6 +135,9 @@ const LeadColumn = ({
                 onUpdateLead={onUpdateLead}
                 onDeleteLead={onDeleteLead}
                 onConvertToContact={onConvertToContact}
+                onArchiveLead={onArchiveLead}
+                onUnarchiveLead={onUnarchiveLead}
+                isArchived={isArchived}
               />
             ))
           ) : (
