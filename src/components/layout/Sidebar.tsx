@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
@@ -61,13 +62,12 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
         )}>
           {isOpen ? (
             <>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <img 
                   src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
                   alt="Prisma CM" 
-                  className="h-8 w-auto"
+                  className="h-9 w-9 object-contain"
                 />
-                <span className="font-semibold text-lg text-prisma-text">Prisma CM</span>
               </div>
               <Button 
                 variant="ghost" 
@@ -83,7 +83,7 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
               <img 
                 src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
                 alt="Prisma CM" 
-                className="h-7 w-auto"
+                className="h-8 w-8 object-contain"
               />
               <Button 
                 variant="ghost" 
