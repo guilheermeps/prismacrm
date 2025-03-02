@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,10 +23,10 @@ import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/lib/supabase/client";
 
 interface HeaderProps {
-  toggleSidebar: () => void;
+  toggle: () => void;
 }
 
-const Header = ({ toggleSidebar }: HeaderProps) => {
+const Header = ({ toggle }: HeaderProps) => {
   const { user, signOut } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
@@ -59,13 +60,21 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
         variant="ghost"
         size="icon"
         className="md:hidden"
-        onClick={toggleSidebar}
+        onClick={toggle}
       >
         <Menu className="h-6 w-6" />
         <span className="sr-only">Toggle Menu</span>
       </Button>
 
       <div className="w-full flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <img 
+            src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
+            alt="Prisma CM" 
+            className="h-9 w-auto object-contain hidden md:block"
+          />
+        </div>
+
         <div className="relative hidden md:flex">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input

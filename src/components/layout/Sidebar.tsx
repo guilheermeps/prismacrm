@@ -1,24 +1,37 @@
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+
+import { useLocation, NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   CalendarDays, 
   BarChart,
   Settings, 
-  ChevronLeft, 
-  ChevronRight, 
   FileText,
   Package,
   Users,
   Target,
-  Banknote
+  Banknote,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { userProfile } from '@/utils/mockData';
+import { 
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose
+} from "@/components/ui/sheet";
 
-const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+const mobileNavItems = [
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/sales-pipeline', label: 'Leads', icon: Target },
+  { path: '/contacts', label: 'Contatos', icon: Users },
+  { path: '/schedule', label: 'Agenda', icon: CalendarDays },
+  { path: '/reports', label: 'Relatórios', icon: BarChart },
+];
+
+const desktopNavItems = [
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/sales-pipeline', label: 'Leads', icon: Target },
   { path: '/contacts', label: 'Contatos', icon: Users },
   { path: '/schedule', label: 'Agenda', icon: CalendarDays },
@@ -39,71 +52,98 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
   
   return (
     <>
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black/50 z-20"
-          onClick={toggle}
-        />
-      )}
-    
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed md:sticky top-0 left-0 z-30 h-screen bg-darker border-r border-studio-gray transition-all duration-300 ease-in-out",
-        isOpen ? "w-64" : "w-0 md:w-20",
-        "flex flex-col"
-      )}>
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-darker border-t border-studio-gray">
+        <div className="flex justify-between items-center px-1">
+          {mobileNavItems.map((item) => (
+            <NavLink 
+              key={item.path} 
+              to={item.path} 
+              className={({ isActive }) => cn(
+                "flex flex-col items-center justify-center py-2 px-3",
+                isActive 
+                  ? "text-primary" 
+                  : "text-studio-light hover:text-white"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs mt-1">{item.label}</span>
+            </NavLink>
+          ))}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-studio-light hover:text-white p-2"
+            onClick={toggle}
+          >
+            <span className="sr-only">More</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+            </svg>
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer Menu */}
+      <Sheet open={isOpen && window.innerWidth < 768} onOpenChange={toggle}>
+        <SheetContent side="left" className="w-[80%] p-0 bg-darker border-r border-studio-gray">
+          <SheetHeader className="px-4 py-3 border-b border-studio-gray">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-white">
+                <div className="flex items-center">
+                  <img 
+                    src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
+                    alt="Prisma CM" 
+                    className="h-10 w-auto object-contain"
+                  />
+                </div>
+              </SheetTitle>
+              <SheetClose className="text-studio-light hover:text-white">
+                <X className="h-5 w-5" />
+              </SheetClose>
+            </div>
+          </SheetHeader>
+          <div className="py-4 px-2 overflow-y-auto">
+            <ul className="space-y-1">
+              {desktopNavItems.map((item) => (
+                <li key={item.path}>
+                  <NavLink 
+                    to={item.path} 
+                    className={({ isActive }) => cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm",
+                      isActive 
+                        ? "bg-studio-gray text-white" 
+                        : "text-studio-light hover:bg-studio-gray/80 hover:text-white"
+                    )}
+                    onClick={toggle}
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Sidebar - Hidden on Mobile */}
+      <aside className="hidden md:block fixed md:sticky left-0 top-0 z-30 h-screen w-64 bg-darker border-r border-studio-gray transition-all duration-300 ease-in-out">
         {/* Logo area */}
-        <div className={cn(
-          "h-16 flex items-center justify-between px-4 border-b border-studio-gray",
-          !isOpen && "md:justify-center"
-        )}>
-          {isOpen ? (
-            <>
-              <div className="flex items-center justify-center">
-                <img 
-                  src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
-                  alt="Prisma CM" 
-                  className="h-12 w-auto object-contain"
-                />
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggle}
-                className="text-studio-light hover:text-white hover:bg-studio-gray"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="hidden md:flex items-center justify-center">
-                <img 
-                  src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
-                  alt="Prisma CM" 
-                  className="h-10 w-10 object-contain"
-                />
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggle}
-                className="text-studio-light hover:text-white hover:bg-studio-gray hidden md:flex"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </>
-          )}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-studio-gray">
+          <div className="flex items-center justify-center">
+            <img 
+              src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
+              alt="Prisma CM" 
+              className="h-12 w-auto object-contain"
+            />
+          </div>
         </div>
         
         {/* Navigation */}
-        <nav className={cn(
-          "flex-1 py-4 px-2 overflow-y-auto",
-          !isOpen && "md:px-1"
-        )}>
+        <nav className="flex-1 py-4 px-2 overflow-y-auto">
           <ul className="space-y-1">
-            {navItems.map((item) => (
+            {desktopNavItems.map((item) => (
               <li key={item.path}>
                 <NavLink 
                   to={item.path} 
@@ -111,32 +151,16 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
                     "flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm",
                     isActive 
                       ? "bg-studio-gray text-white" 
-                      : "text-studio-light hover:bg-studio-gray/80 hover:text-white",
-                    !isOpen && "md:justify-center md:px-2"
+                      : "text-studio-light hover:bg-studio-gray/80 hover:text-white"
                   )}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
-                  {isOpen && <span>{item.label}</span>}
+                  <span>{item.label}</span>
                 </NavLink>
               </li>
             ))}
           </ul>
         </nav>
-        
-        {/* Footer - User Profile */}
-        {isOpen && (
-          <div className="p-3 border-t border-studio-gray">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-studio-gray flex items-center justify-center text-white font-medium text-xs">
-                {userProfile.name.substring(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{userProfile.fullName}</p>
-                <p className="text-xs text-muted-foreground truncate">{userProfile.handle}</p>
-              </div>
-            </div>
-          </div>
-        )}
       </aside>
     </>
   );

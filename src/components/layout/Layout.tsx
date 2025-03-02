@@ -15,15 +15,14 @@ export const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
+    <div className="flex flex-col h-screen bg-background">
+      <Header toggle={toggleSidebar} />
       
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header sidebarOpen={isSidebarOpen} setSidebarOpen={setIsSidebarOpen} />
-        <main className="flex-1 overflow-y-auto pb-10">
-          {children}
-        </main>
-      </div>
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-10">
+        {children}
+      </main>
+      
+      <Sidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
     </div>
   );
 };
