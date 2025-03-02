@@ -20,8 +20,6 @@ interface LeadColumnProps {
   onUnarchiveLead?: (lead: Lead) => void;
   onDiscardLead?: (lead: Lead) => void;
   isArchived?: boolean;
-  savingLeadId?: string | null;
-  successLeadId?: string | null;
 }
 
 const LeadColumn = ({
@@ -35,9 +33,7 @@ const LeadColumn = ({
   onArchiveLead,
   onUnarchiveLead,
   onDiscardLead,
-  isArchived = false,
-  savingLeadId = null,
-  successLeadId = null
+  isArchived = false
 }: LeadColumnProps) => {
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -82,8 +78,6 @@ const LeadColumn = ({
     // Remove visual indicator
     setIsDragOver(false);
     
-    if (isArchived) return; // Prevent dropping in archived view
-    
     try {
       // Try to get JSON data
       const jsonData = e.dataTransfer.getData("application/json");
@@ -96,8 +90,33 @@ const LeadColumn = ({
         if (leadId && fromStageId && fromStageId !== stage.id) {
           console.log(`Moving lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
           
-          // Call the move function to update the backend and UI
-          onMoveLead(leadId, fromStageId, stage.id);
+          // Find the lead that's being moved
+          const leadToMove = leads.find(l => l.id === leadId);
+          
+          if (leadToMove) {
+            // Create updated lead with new stageId
+            const updatedLead = { ...leadToMove, stageId: stage.id };
+            
+            // Update local state immediately for better UX
+            const updatedLeads = columnLeads.slice();
+            updatedLeads.push(updatedLead);
+            setColumnLeads(updatedLeads);
+            
+            // Also remove from source column in UI
+            const sourceColumn = document.querySelector(`[data-stage-id="${fromStageId}"]`);
+            if (sourceColumn) {
+              const leadCard = sourceColumn.querySelector(`[data-lead-id="${leadId}"]`);
+              if (leadCard) {
+                leadCard.remove();
+              }
+            }
+            
+            // Call the move function to update the backend
+            onMoveLead(leadId, fromStageId, stage.id);
+            
+            // This ensures immediate visual feedback
+            onUpdateLead(updatedLead);
+          }
         }
       }
     } catch (error) {
@@ -138,8 +157,6 @@ const LeadColumn = ({
         onUnarchiveLead={onUnarchiveLead}
         onDiscardLead={onDiscardLead}
         isArchived={isArchived}
-        savingLeadId={savingLeadId}
-        successLeadId={successLeadId}
       />
 
       {/* New Lead Dialog */}

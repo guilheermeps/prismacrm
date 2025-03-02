@@ -7,7 +7,6 @@ import WhatsAppButton from "./lead-card/WhatsAppButton";
 import LeadActions from "./lead-card/LeadActions";
 import ActionButtons from "./lead-card/ActionButtons";
 import LeadDialogs from "./lead-card/LeadDialogs";
-import { Loader2, CheckCircle2 } from "lucide-react";
 
 interface LeadCardProps {
   lead: Lead;
@@ -18,10 +17,7 @@ interface LeadCardProps {
   onConvertToContact: (lead: Lead) => void;
   onArchiveLead?: (lead: Lead) => void;
   onUnarchiveLead?: (lead: Lead) => void;
-  onDiscardLead?: (lead: Lead) => void;
   isArchived?: boolean;
-  isSaving?: boolean;
-  isSuccess?: boolean;
 }
 
 const LeadCard = ({
@@ -33,10 +29,7 @@ const LeadCard = ({
   onConvertToContact,
   onArchiveLead,
   onUnarchiveLead,
-  onDiscardLead,
-  isArchived = false,
-  isSaving = false,
-  isSuccess = false
+  isArchived = false
 }: LeadCardProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -97,23 +90,11 @@ const LeadCard = ({
   return (
     <>
       <Card 
-        className={`${isDragging ? 'opacity-50' : ''} ${isSuccess ? 'ring-2 ring-green-500 animate-pulse' : ''} cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all relative`}
-        draggable={!isArchived && !isSaving}
+        className={`${isDragging ? 'opacity-50' : ''} cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all`}
+        draggable={!isArchived}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Success or loading indicators */}
-        {isSaving && (
-          <div className="absolute top-2 right-2 z-10 text-primary">
-            <Loader2 className="h-4 w-4 animate-spin" />
-          </div>
-        )}
-        {isSuccess && (
-          <div className="absolute top-2 right-2 z-10 text-green-500">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-        )}
-        
         <CardContent className="p-3">
           <div className="space-y-2">
             {/* Lead Header */}
@@ -139,7 +120,6 @@ const LeadCard = ({
                 onDelete={onDeleteLead}
                 onArchive={onArchiveLead}
                 onUnarchive={onUnarchiveLead}
-                onDiscard={onDiscardLead}
               />
             </div>
             
@@ -165,7 +145,6 @@ const LeadCard = ({
               stages={stages}
               onMoveLead={onMoveLead}
               isArchived={isArchived}
-              disabled={isSaving}
             />
           </div>
         </CardContent>

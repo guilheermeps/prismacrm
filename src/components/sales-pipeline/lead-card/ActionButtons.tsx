@@ -10,7 +10,6 @@ interface ActionButtonsProps {
   stages: Stage[];
   onMoveLead: (leadId: string, fromStageId: string, toStageId: string) => void;
   isArchived: boolean;
-  disabled?: boolean;
 }
 
 const ActionButtons = ({ 
@@ -18,8 +17,7 @@ const ActionButtons = ({
   stageId, 
   stages, 
   onMoveLead, 
-  isArchived,
-  disabled = false
+  isArchived 
 }: ActionButtonsProps) => {
   // Precisamos garantir que temos uma lista de estágios válida
   if (!stages || stages.length === 0) return null;
@@ -34,14 +32,14 @@ const ActionButtons = ({
   const hasPreviousStage = currentStageIndex > 0;
 
   const handleMoveNext = () => {
-    if (hasNextStage && !disabled) {
+    if (hasNextStage) {
       const nextStage = stages[currentStageIndex + 1];
       onMoveLead(leadId, stageId, nextStage.id);
     }
   };
 
   const handleMovePrevious = () => {
-    if (hasPreviousStage && !disabled) {
+    if (hasPreviousStage) {
       const previousStage = stages[currentStageIndex - 1];
       onMoveLead(leadId, stageId, previousStage.id);
     }
@@ -57,7 +55,7 @@ const ActionButtons = ({
         variant="ghost" 
         size="sm" 
         onClick={handleMovePrevious}
-        disabled={!hasPreviousStage || disabled}
+        disabled={!hasPreviousStage}
         className="px-2"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -67,7 +65,7 @@ const ActionButtons = ({
         variant="ghost" 
         size="sm" 
         onClick={handleMoveNext}
-        disabled={!hasNextStage || disabled}
+        disabled={!hasNextStage}
         className="px-2"
       >
         <ArrowRight className="h-4 w-4" />

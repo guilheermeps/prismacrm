@@ -14,8 +14,6 @@ interface ColumnContentProps {
   onUnarchiveLead?: (lead: Lead) => void;
   onDiscardLead?: (lead: Lead) => void;
   isArchived: boolean;
-  savingLeadId?: string | null;
-  successLeadId?: string | null;
 }
 
 const ColumnContent = ({
@@ -28,9 +26,7 @@ const ColumnContent = ({
   onArchiveLead,
   onUnarchiveLead,
   onDiscardLead,
-  isArchived,
-  savingLeadId = null,
-  successLeadId = null
+  isArchived
 }: ColumnContentProps) => {
   return (
     <div className="p-2 flex-1 overflow-y-auto max-h-[calc(100vh-320px)]">
@@ -49,8 +45,6 @@ const ColumnContent = ({
                 onUnarchiveLead={onUnarchiveLead}
                 onDiscardLead={onDiscardLead}
                 isArchived={isArchived}
-                isSaving={savingLeadId === lead.id}
-                isSuccess={successLeadId === lead.id}
               />
             </div>
           ))
