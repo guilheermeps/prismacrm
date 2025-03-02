@@ -1,15 +1,12 @@
-
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   CalendarDays, 
-  CreditCard, 
   BarChart,
   Settings, 
   ChevronLeft, 
   ChevronRight, 
-  Rocket,
   FileText,
   Package,
   Users,
@@ -28,7 +25,6 @@ const navItems = [
   { path: '/products', label: 'Produtos', icon: Package },
   { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
   { path: '/financial', label: 'Financeiro', icon: Banknote },
-  { path: '/payments', label: 'Pagamentos', icon: CreditCard },
   { path: '/reports', label: 'Relatórios', icon: BarChart },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
