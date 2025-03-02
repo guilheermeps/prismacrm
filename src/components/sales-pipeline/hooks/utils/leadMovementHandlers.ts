@@ -4,6 +4,35 @@ import { Lead } from "@/lib/supabase/types";
 import { updateLead } from "@/lib/supabase/leadsService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 
+/**
+ * Checks if the application is running in development or demo mode
+ */
+const isDevOrDemoMode = (): boolean => {
+  return import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
+};
+
+/**
+ * Updates a lead in development/demo mode without calling the API
+ */
+const handleDevModeMoveOperation = (
+  lead: Lead,
+  toStageId: string,
+  fromStageName: string = "Desconhecido",
+  toStageName: string = "Desconhecido"
+): boolean => {
+  // Just update the local lead
+  const updatedLead = {
+    ...lead,
+    stageId: toStageId,
+    history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
+  };
+  
+  console.log("Moving lead in dev/demo mode:", updatedLead);
+  
+  // Return success immediately for faster UI update
+  return true;
+};
+
 export const moveLead = async (
   lead: Lead | undefined,
   toStageId: string
@@ -23,18 +52,8 @@ export const moveLead = async (
     console.log(`Moving lead ${lead.id} from ${lead.stageId} to ${toStageId}`);
     
     // Development mode handling
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      // Just update the local lead
-      const updatedLead = {
-        ...lead,
-        stageId: toStageId,
-        history: addHistoryEntry(lead.history, "moved", "Desconhecido", "Desconhecido")
-      };
-      
-      console.log("Moving lead in dev/demo mode:", updatedLead);
-      
-      // Return success immediately for faster UI update
-      return true;
+    if (isDevOrDemoMode()) {
+      return handleDevModeMoveOperation(lead, toStageId);
     }
     
     const fromStageName = "Desconhecido";
@@ -51,7 +70,7 @@ export const moveLead = async (
     // Try to update in Supabase
     const result = await updateLead(updatedLead);
     
-    if (!result && (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true')) {
+    if (!result && isDevOrDemoMode()) {
       console.log("Fallback to local update mode due to API error");
       // Return success for development mode
       return true;
@@ -67,7 +86,7 @@ export const moveLead = async (
     console.error("Erro ao mover lead:", error);
     
     // In development mode, allow the UI to update even if the API call fails
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+    if (isDevOrDemoMode()) {
       console.log("Allowing move in development mode despite error");
       return true;
     }
