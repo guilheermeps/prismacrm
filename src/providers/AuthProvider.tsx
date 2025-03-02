@@ -1,8 +1,9 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client'; // Fix import path
+import { supabase } from '@/integrations/supabase/client'; 
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface AuthContextProps {
   user: User | null;
@@ -10,7 +11,8 @@ interface AuthContextProps {
   loading: boolean;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, userData?: any) => Promise<{ error: Error | null, data?: any }>;
+  autoConfirmTestUser: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextProps>({
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextProps>({
   signOut: async () => {},
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
+  autoConfirmTestUser: async () => false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -63,10 +66,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      
+      if (error && error.message.includes("Email not confirmed")) {
+        // Try to auto-confirm the test user
+        const confirmed = await autoConfirmTestUser(email);
+        if (confirmed) {
+          // Try login again after confirmation
+          const { error: retryError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (!retryError) {
+            navigate('/dashboard');
+            return { error: null };
+          }
+          
+          return { error: retryError as Error };
+        }
+      }
       
       if (!error) {
         navigate('/dashboard');
@@ -81,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -89,11 +111,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       
-      return { error };
+      return { error, data };
     } catch (error) {
       console.error("Sign up error:", error);
       return { error: error as Error };
     }
+  };
+
+  // Function to auto-confirm test user (for development only)
+  const autoConfirmTestUser = async (email: string): Promise<boolean> => {
+    // This is a workaround for development only
+    // In production, you should use proper email confirmation
+    if (email === "teste@exemplo.com") {
+      toast.info("Tentando confirmar usuário de teste automaticamente...");
+      // For now, just show a message to the user
+      toast.error("É necessário habilitar a configuração 'Disable email confirmation' no Supabase");
+      toast.info("Acesse o dashboard do Supabase > Authentication > Providers > Email");
+      return false;
+    }
+    return false;
   };
 
   const signOut = async () => {
@@ -112,6 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signOut,
     signIn,
     signUp,
+    autoConfirmTestUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

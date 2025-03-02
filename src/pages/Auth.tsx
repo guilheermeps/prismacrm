@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,7 +18,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const navigate = useNavigate();
-  const { user, session, signIn, signUp } = useAuth();
+  const { user, session, signIn, signUp, autoConfirmTestUser } = useAuth();
 
   // Check if user is already logged in
   useEffect(() => {
@@ -60,7 +60,7 @@ const Auth = () => {
     }
     
     try {
-      const { error } = await signUp(email, password, {
+      const { error, data } = await signUp(email, password, {
         full_name: fullName,
       });
       
@@ -93,7 +93,7 @@ const Auth = () => {
       if (signInError) {
         console.log("Test user doesn't exist, creating it...");
         // User likely doesn't exist, create it
-        const { error: signUpError } = await signUp(testEmail, testPassword, {
+        const { error: signUpError, data } = await signUp(testEmail, testPassword, {
           full_name: testName,
         });
         
@@ -104,7 +104,25 @@ const Auth = () => {
           return;
         }
         
-        toast.success("Conta de teste criada! Tentando fazer login...");
+        toast.success("Conta de teste criada!");
+        
+        // Check if we need auto-confirmation
+        if (data?.user && !data.user.email_confirmed_at) {
+          toast.warning(
+            "Para usar o login de teste, é necessário desabilitar a confirmação de email no Supabase",
+            {
+              duration: 8000,
+              icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
+              description: "Vá para Dashboard do Supabase > Authentication > Providers > Email",
+            }
+          );
+          
+          // Try to auto-confirm
+          const confirmed = await autoConfirmTestUser(testEmail);
+          if (confirmed) {
+            toast.success("Email confirmado automaticamente!");
+          }
+        }
         
         // Try login after creation with a delay
         setTimeout(async () => {
