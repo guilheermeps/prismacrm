@@ -9,6 +9,8 @@ interface AuthContextProps {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, userData?: any) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextProps>({
@@ -16,6 +18,8 @@ const AuthContext = createContext<AuthContextProps>({
   session: null,
   loading: true,
   signOut: async () => {},
+  signIn: async () => ({ error: null }),
+  signUp: async () => ({ error: null }),
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -29,10 +33,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setUser(data.session?.user || null);
-      setLoading(false);
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        setUser(data.session?.user || null);
+      } catch (error) {
+        console.error("Error getting session:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getInitialSession();
@@ -40,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
+        console.log("Auth state changed:", _event, !!newSession);
         setSession(newSession);
         setUser(newSession?.user || null);
         setLoading(false);
@@ -51,9 +61,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (!error) {
+        navigate('/dashboard');
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error("Sign in error:", error);
+      return { error: error as Error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, userData?: any) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData,
+        },
+      });
+      
+      return { error };
+    } catch (error) {
+      console.error("Sign up error:", error);
+      return { error: error as Error };
+    }
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+    try {
+      await supabase.auth.signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
   };
 
   const value = {
@@ -61,6 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     session,
     loading,
     signOut,
+    signIn,
+    signUp,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

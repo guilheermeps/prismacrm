@@ -6,9 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -18,41 +18,22 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const navigate = useNavigate();
+  const { user, session, signIn, signUp } = useAuth();
 
   // Check if user is already logged in
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        navigate('/dashboard');
-      }
-    };
-    
-    checkSession();
-    
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session) {
-          navigate('/dashboard');
-        }
-      }
-    );
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
+    console.log("Auth page loaded, checking session:", !!session);
+    if (session) {
+      navigate('/dashboard');
+    }
+  }, [navigate, session]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await signIn(email, password);
       
       if (error) {
         toast.error(error.message || "Erro ao fazer login");
@@ -60,7 +41,7 @@ const Auth = () => {
       }
       
       toast.success("Login realizado com sucesso!");
-      navigate('/dashboard');
+      // Navigation happens in the signIn function
     } catch (error: any) {
       toast.error(error.message || "Erro ao fazer login");
     } finally {
@@ -79,14 +60,8 @@ const Auth = () => {
     }
     
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+      const { error } = await signUp(email, password, {
+        full_name: fullName,
       });
       
       if (error) {
