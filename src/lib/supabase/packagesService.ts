@@ -28,6 +28,13 @@ export const createPackage = async (packageData: Omit<Package, 'id' | 'created_a
   try {
     const id = uuidv4();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+    
     // Convert packageData.products to JSON-compatible format
     const dbPackage = {
       id,
@@ -35,7 +42,8 @@ export const createPackage = async (packageData: Omit<Package, 'id' | 'created_a
       description: packageData.description,
       price: packageData.price,
       products: packageData.products as unknown as Json,
-      is_active: packageData.is_active
+      is_active: packageData.is_active,
+      user_id: user.id
     };
     
     const { error } = await supabase

@@ -18,11 +18,23 @@ export const createProduct = async (productData: Omit<Product, 'id' | 'created_a
   try {
     const id = uuidv4();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+    
     const { error } = await supabase
       .from('products')
       .insert({
         id,
-        ...productData
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        category: productData.category,
+        is_active: productData.is_active,
+        user_id: user.id
       });
 
     if (error) {

@@ -33,6 +33,13 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at'>): 
   try {
     const id = uuidv4();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+    
     // Convert orderData.items to JSON-compatible format
     const dbOrder = {
       id,
@@ -47,7 +54,8 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at'>): 
       due_date: orderData.due_date,
       notes: orderData.notes,
       source_id: orderData.source_id,
-      source_type: orderData.source_type
+      source_type: orderData.source_type,
+      user_id: user.id
     };
     
     const { error } = await supabase

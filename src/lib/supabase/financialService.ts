@@ -26,12 +26,32 @@ export const createFinancialTransaction = async (
   try {
     const id = uuidv4();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+    
+    // Prepare transaction data with user_id
+    const dbTransaction = {
+      id,
+      client: transactionData.client,
+      amount: transactionData.amount,
+      due_date: transactionData.due_date,
+      type: transactionData.type,
+      status: transactionData.status,
+      payment_method: transactionData.payment_method,
+      category: transactionData.category,
+      source_id: transactionData.source_id,
+      source_type: transactionData.source_type,
+      total_installments: transactionData.total_installments,
+      user_id: user.id
+    };
+
     const { error } = await supabase
       .from('financial_transactions')
-      .insert({
-        id,
-        ...transactionData
-      });
+      .insert(dbTransaction);
 
     if (error) {
       console.error("Error creating financial transaction:", error);

@@ -21,11 +21,26 @@ export const createScheduleEvent = async (eventData: Omit<ScheduleEvent, 'id' | 
   try {
     const id = uuidv4();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+    
     const { error } = await supabase
       .from('schedule_events')
       .insert({
         id,
-        ...eventData
+        client: eventData.client,
+        service: eventData.service,
+        date: eventData.date,
+        time: eventData.time,
+        location: eventData.location,
+        notes: eventData.notes,
+        source_id: eventData.source_id,
+        source_type: eventData.source_type,
+        user_id: user.id
       });
 
     if (error) {

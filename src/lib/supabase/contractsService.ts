@@ -37,6 +37,13 @@ export const createContract = async (contractData: Omit<Contract, 'id' | 'create
   try {
     const id = uuidv4();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return null;
+    }
+    
     // Convert contractData.services to JSON-compatible format
     const dbContract = {
       id,
@@ -55,7 +62,8 @@ export const createContract = async (contractData: Omit<Contract, 'id' | 'create
       notes: contractData.notes,
       terms: contractData.terms,
       source_id: contractData.source_id,
-      source_type: contractData.source_type
+      source_type: contractData.source_type,
+      user_id: user.id
     };
     
     const { error } = await supabase
@@ -132,6 +140,13 @@ export const getContractById = async (id: string): Promise<Contract | null> => {
 // Update a contract
 export const updateContract = async (contract: Partial<Contract> & { id: string }): Promise<boolean> => {
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return false;
+    }
+    
     // Prepare DB-compatible object
     const dbContract: any = { ...contract };
     if (contract.services) {

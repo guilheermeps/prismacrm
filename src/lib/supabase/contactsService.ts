@@ -33,6 +33,13 @@ export const createContact = async (contactData: Omit<Contact, 'id' | 'created_a
   try {
     const id = uuidv4();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Usuário não autenticado");
+      return null;
+    }
+    
     // Convert contactData.tags to JSON-compatible format
     const dbContact = {
       id,
@@ -47,7 +54,8 @@ export const createContact = async (contactData: Omit<Contact, 'id' | 'created_a
       notes: contactData.notes,
       is_active: contactData.is_active,
       lead_id: contactData.lead_id,
-      tags: contactData.tags as unknown as Json
+      tags: contactData.tags as unknown as Json,
+      user_id: user.id
     };
     
     const { error } = await supabase
@@ -127,6 +135,13 @@ export const getContactById = async (id: string): Promise<Contact | null> => {
 // Update a contact
 export const updateContact = async (contact: Partial<Contact> & { id: string }): Promise<boolean> => {
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Usuário não autenticado");
+      return false;
+    }
+    
     // Prepare DB-compatible object
     const dbContact: any = { ...contact };
     if (contact.tags) {
