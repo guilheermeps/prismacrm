@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { MoreHorizontal, Edit, Trash, ArrowRight, ArrowLeft, UserCheck, MessageSquare, ExternalLink } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, ArrowRight, ArrowLeft, UserCheck, MessageSquare, ExternalLink, Archive, RefreshCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,6 +24,9 @@ interface LeadCardProps {
   onUpdateLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
   onConvertToContact: (lead: Lead) => void;
+  onArchiveLead?: (lead: Lead) => void;
+  onUnarchiveLead?: (lead: Lead) => void;
+  isArchived?: boolean;
 }
 
 const LeadCard = ({
@@ -32,7 +35,10 @@ const LeadCard = ({
   onMoveLead,
   onUpdateLead,
   onDeleteLead,
-  onConvertToContact
+  onConvertToContact,
+  onArchiveLead,
+  onUnarchiveLead,
+  isArchived = false
 }: LeadCardProps) => {
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -111,6 +117,20 @@ const LeadCard = ({
     navigate("/contacts");
   };
 
+  const handleArchiveLead = () => {
+    if (onArchiveLead) {
+      onArchiveLead(lead);
+      toast.success(`Lead ${lead.name} arquivado com sucesso!`);
+    }
+  };
+
+  const handleUnarchiveLead = () => {
+    if (onUnarchiveLead) {
+      onUnarchiveLead(lead);
+      toast.success(`Lead ${lead.name} reativado com sucesso!`);
+    }
+  };
+
   return (
     <>
       <Card 
@@ -152,6 +172,18 @@ const LeadCard = ({
                     <UserCheck className="mr-2 h-4 w-4" />
                     Converter para Cliente
                   </DropdownMenuItem>
+                  {!isArchived && onArchiveLead && (
+                    <DropdownMenuItem onClick={handleArchiveLead}>
+                      <Archive className="mr-2 h-4 w-4" />
+                      Arquivar
+                    </DropdownMenuItem>
+                  )}
+                  {isArchived && onUnarchiveLead && (
+                    <DropdownMenuItem onClick={handleUnarchiveLead}>
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      Reativar
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() => onDeleteLead(lead.id)}
@@ -187,27 +219,29 @@ const LeadCard = ({
             </div>
             
             {/* Navigation Buttons */}
-            <div className="flex justify-between gap-2 pt-1">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleMovePrevious}
-                disabled={!hasPreviousStage}
-                className="px-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleMoveNext}
-                disabled={!hasNextStage}
-                className="px-2"
-              >
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+            {!isArchived && (
+              <div className="flex justify-between gap-2 pt-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleMovePrevious}
+                  disabled={!hasPreviousStage}
+                  className="px-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleMoveNext}
+                  disabled={!hasNextStage}
+                  className="px-2"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
