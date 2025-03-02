@@ -21,12 +21,12 @@ import { userProfile } from '@/utils/mockData';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/sales-pipeline', label: 'Pipeline de Vendas', icon: Target },
+  { path: '/sales-pipeline', label: 'Leads', icon: Target },
   { path: '/contacts', label: 'Contatos', icon: Users },
   { path: '/schedule', label: 'Agenda', icon: CalendarDays },
   { path: '/products', label: 'Produtos', icon: Package },
   { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
-  { path: '/payments', label: 'Pagamentos', icon: CreditCard },
+  { path: '/payments', label: 'Financeiro', icon: CreditCard },
   { path: '/reports', label: 'Relatórios', icon: BarChart },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
