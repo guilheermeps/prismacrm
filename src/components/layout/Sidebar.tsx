@@ -66,7 +66,7 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
                 <img 
                   src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
                   alt="Prisma CM" 
-                  className="h-12 w-12 object-contain"
+                  className="h-60 w-60 object-contain"
                 />
               </div>
               <Button 
@@ -84,7 +84,7 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
                 <img 
                   src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
                   alt="Prisma CM" 
-                  className="h-11 w-11 object-contain"
+                  className="h-55 w-55 object-contain"
                 />
               </div>
               <Button 
