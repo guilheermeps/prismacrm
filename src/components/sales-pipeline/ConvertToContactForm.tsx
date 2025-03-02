@@ -60,6 +60,8 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
             
             console.log("Link encontrado, URL completa:", fullLink);
             setRegistrationLink(fullLink);
+            // Automaticamente selecionar a opção de formulário externo se já existe um link
+            setUseExternalForm(true);
           } else {
             console.log("Nenhum link encontrado para este lead");
           }
@@ -99,6 +101,7 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
       
       // Navigate to the contacts page
       onSuccess();
+      toast.success("Cliente adicionado com sucesso!");
       navigate('/contacts');
     });
   };
@@ -140,6 +143,12 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
     }
   };
 
+  const openRegistrationLink = () => {
+    if (registrationLink) {
+      window.open(registrationLink, '_blank');
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-start space-x-2">
@@ -169,24 +178,35 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
           </div>
           
           {registrationLink ? (
-            <div className="space-y-2">
-              <Label>Link para compartilhar com o cliente:</Label>
-              <div className="flex">
-                <Input 
-                  value={registrationLink} 
-                  readOnly 
-                  className="flex-1 bg-muted cursor-text"
-                />
-                <Button 
-                  type="button" 
-                  size="icon" 
-                  variant="outline" 
-                  className="ml-2" 
-                  onClick={copyToClipboard}
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Link para compartilhar com o cliente:</Label>
+                <div className="flex">
+                  <Input 
+                    value={registrationLink} 
+                    readOnly 
+                    className="flex-1 bg-muted cursor-text"
+                  />
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="outline" 
+                    className="ml-2" 
+                    onClick={copyToClipboard}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
+              
+              <Button 
+                type="button" 
+                onClick={openRegistrationLink} 
+                className="w-full"
+                variant="secondary"
+              >
+                Abrir formulário em nova aba
+              </Button>
             </div>
           ) : (
             <Button 

@@ -36,7 +36,7 @@ const ClientRegistration = () => {
   });
 
   useEffect(() => {
-    // Adicionamos uma verificação com retry para o caso da validação falhar inicialmente
+    // Melhoramos a verificação do token com mais tentativas de retry
     const validateToken = async () => {
       console.log(`Tentativa ${validationAttempts + 1} de validação do token na página:`, token);
       
@@ -48,15 +48,20 @@ const ClientRegistration = () => {
       }
 
       try {
-        console.log("Chamando validateClientRegistrationToken para token:", token);
-        const { valid, leadId } = await validateClientRegistrationToken(token);
+        // Vamos garantir que o token seja tratado como string e sem espaços extras
+        const cleanToken = String(token).trim();
+        console.log("Chamando validateClientRegistrationToken para token limpo:", cleanToken);
+        
+        const { valid, leadId } = await validateClientRegistrationToken(cleanToken);
         
         console.log("Resultado da validação:", { valid, leadId });
         
         if (valid && leadId) {
+          console.log("Token é válido, definindo isValid como true");
           setIsValid(true);
           // Tentar buscar informações do lead para pré-preencher o formulário
           const leads = await getLeads();
+          console.log("Leads obtidos:", leads);
           const lead = leads.find(l => l.id === leadId);
           
           if (lead) {
@@ -70,12 +75,14 @@ const ClientRegistration = () => {
             }));
           } else {
             console.log("Lead não encontrado para ID:", leadId);
+            // Mesmo se o lead não for encontrado, o token é válido
+            // Então mantemos isValid como true
           }
         } else {
-          console.log("Token inválido ou expirado");
+          console.log("Token inválido ou expirado na tentativa", validationAttempts + 1);
           
           // Se ainda não tentamos muitas vezes e não está válido, tentamos novamente
-          if (validationAttempts < 2) {
+          if (validationAttempts < 3) {
             setValidationAttempts(prev => prev + 1);
             // Aguarda um pouco antes de tentar novamente
             setTimeout(() => validateToken(), 1000);
@@ -89,7 +96,7 @@ const ClientRegistration = () => {
         console.error("Erro ao validar token:", error);
         
         // Se ainda não tentamos muitas vezes, tentamos novamente
-        if (validationAttempts < 2) {
+        if (validationAttempts < 3) {
           setValidationAttempts(prev => prev + 1);
           // Aguarda um pouco antes de tentar novamente
           setTimeout(() => validateToken(), 1000);
@@ -99,14 +106,14 @@ const ClientRegistration = () => {
           setIsValid(false);
         }
       } finally {
-        if (validationAttempts >= 2 || isValid) {
+        if (validationAttempts >= 3 || isValid) {
           setIsLoading(false);
         }
       }
     };
 
     validateToken();
-  }, [token, validationAttempts]);
+  }, [token, validationAttempts, isValid]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -123,6 +130,7 @@ const ClientRegistration = () => {
     setIsLoading(true);
     
     try {
+      console.log("Enviando dados do formulário para token:", token);
       const success = await updateClientRegistrationFormData(token, formData);
       
       if (success) {
@@ -199,6 +207,9 @@ const ClientRegistration = () => {
     );
   }
 
+  // Form is valid, show the registration form
+  console.log("Mostrando formulário de cadastro válido");
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-2xl">
