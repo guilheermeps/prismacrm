@@ -5,11 +5,12 @@ import { mockLeads } from './mockData';
 
 export const getLeads = async (): Promise<Lead[]> => {
   try {
+    console.log('Fetching leads from Supabase...');
     // Try to fetch from Supabase
     const { data, error } = await supabase
       .from('leads')
       .select('*')
-      .order('createdAt', { ascending: false });
+      .order('createdat', { ascending: false });
     
     if (error) {
       console.error('Error fetching leads:', error.message);
@@ -22,11 +23,20 @@ export const getLeads = async (): Promise<Lead[]> => {
       return mockLeads();
     }
     
-    // Ensure all leads have the required fields
+    console.log('Fetched leads:', data);
+    
+    // Ensure all leads have the required fields and normalize field names
     const processedData = data.map(lead => ({
-      ...lead,
-      history: lead.history || [],
-      isArchived: lead.isArchived === undefined ? false : lead.isArchived
+      id: lead.id,
+      name: lead.name,
+      serviceType: lead.servicetype,
+      whatsapp: lead.whatsapp || '',
+      stageId: lead.stageid,
+      proposalValue: lead.proposalvalue || 0,
+      notes: lead.notes || '',
+      createdAt: lead.createdat,
+      isArchived: lead.isarchived === undefined ? false : lead.isarchived,
+      history: lead.history || []
     }));
     
     return processedData;
@@ -40,13 +50,20 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
   try {
     console.log('Creating lead with data:', lead);
     
-    // Ensure the lead has all required fields
+    // Ensure the lead has all required fields and normalize field names for DB
     const leadWithDefaults = {
-      ...lead,
+      name: lead.name,
+      servicetype: lead.serviceType,
+      whatsapp: lead.whatsapp || '',
+      stageid: lead.stageId,
+      proposalvalue: lead.proposalValue || 0,
+      notes: lead.notes || '',
       history: lead.history || [],
-      isArchived: lead.isArchived === undefined ? false : lead.isArchived,
-      createdAt: new Date().toISOString()
+      isarchived: lead.isArchived === undefined ? false : lead.isArchived,
+      createdat: new Date().toISOString()
     };
+    
+    console.log('Sending to Supabase:', leadWithDefaults);
     
     const { data, error } = await supabase
       .from('leads')
@@ -62,7 +79,15 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
         const mockId = crypto.randomUUID();
         const mockLead = {
           id: mockId,
-          ...leadWithDefaults,
+          name: lead.name,
+          serviceType: lead.serviceType,
+          whatsapp: lead.whatsapp || '',
+          stageId: lead.stageId,
+          proposalValue: lead.proposalValue || 0,
+          notes: lead.notes || '',
+          createdAt: new Date().toISOString(),
+          isArchived: lead.isArchived === undefined ? false : lead.isArchived,
+          history: lead.history || []
         };
         console.log('Created mock lead in development mode:', mockLead);
         return mockLead;
@@ -72,7 +97,22 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
     }
     
     console.log('Successfully created lead:', data);
-    return data;
+    
+    // Normalize field names
+    const normalizedLead: Lead = {
+      id: data.id,
+      name: data.name,
+      serviceType: data.servicetype,
+      whatsapp: data.whatsapp || '',
+      stageId: data.stageid,
+      proposalValue: data.proposalvalue || 0,
+      notes: data.notes || '',
+      createdAt: data.createdat,
+      isArchived: data.isarchived === undefined ? false : data.isarchived,
+      history: data.history || []
+    };
+    
+    return normalizedLead;
   } catch (error) {
     console.error('Exception while creating lead:', error);
     return null;
@@ -83,12 +123,19 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
   try {
     console.log('Updating lead:', lead);
     
-    // Ensure the lead has all required fields
+    // Normalize field names for DB
     const leadWithDefaults = {
-      ...lead,
+      name: lead.name,
+      servicetype: lead.serviceType,
+      whatsapp: lead.whatsapp || '',
+      stageid: lead.stageId,
+      proposalvalue: lead.proposalValue || 0,
+      notes: lead.notes || '',
       history: lead.history || [],
-      isArchived: lead.isArchived === undefined ? false : lead.isArchived
+      isarchived: lead.isArchived === undefined ? false : lead.isArchived
     };
+    
+    console.log('Sending to Supabase:', leadWithDefaults);
     
     const { data, error } = await supabase
       .from('leads')
@@ -102,15 +149,30 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
       
       // In demo/development mode, simulate success with mock data
       if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-        console.log('Updated mock lead in development mode:', leadWithDefaults);
-        return leadWithDefaults;
+        console.log('Updated mock lead in development mode:', lead);
+        return lead;
       }
       
       return null;
     }
     
     console.log('Successfully updated lead:', data);
-    return data;
+    
+    // Normalize field names
+    const normalizedLead: Lead = {
+      id: data.id,
+      name: data.name,
+      serviceType: data.servicetype,
+      whatsapp: data.whatsapp || '',
+      stageId: data.stageid,
+      proposalValue: data.proposalvalue || 0,
+      notes: data.notes || '',
+      createdAt: data.createdat,
+      isArchived: data.isarchived === undefined ? false : data.isarchived,
+      history: data.history || []
+    };
+    
+    return normalizedLead;
   } catch (error) {
     console.error('Exception while updating lead:', error);
     return null;

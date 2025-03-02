@@ -21,6 +21,7 @@ const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
     try {
       // Generate WhatsApp URL
       const whatsappUrl = getWhatsAppUrl(lead.whatsapp);
+      console.log("Opening WhatsApp URL:", whatsappUrl);
       
       // Open WhatsApp in new tab
       window.open(whatsappUrl, '_blank');
