@@ -2,7 +2,7 @@
 import React from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Stage } from "@/lib/supabase";
+import { Stage } from "@/lib/supabase/types";
 
 interface ActionButtonsProps {
   leadId: string;
@@ -19,7 +19,15 @@ const ActionButtons = ({
   onMoveLead, 
   isArchived 
 }: ActionButtonsProps) => {
+  // Precisamos garantir que temos uma lista de estágios válida
+  if (!stages || stages.length === 0) return null;
+  
+  // Encontra o índice do estágio atual
   const currentStageIndex = stages.findIndex(stage => stage.id === stageId);
+  
+  // Se não conseguirmos localizar o estágio, não renderizamos os botões
+  if (currentStageIndex === -1) return null;
+  
   const hasNextStage = currentStageIndex < stages.length - 1;
   const hasPreviousStage = currentStageIndex > 0;
 

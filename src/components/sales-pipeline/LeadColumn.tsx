@@ -6,7 +6,7 @@ import LeadCard from "@/components/sales-pipeline/LeadCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import NewLeadForm from "@/components/sales-pipeline/NewLeadForm";
 import { toast } from "sonner";
-import { Lead, Stage } from "@/lib/supabase";
+import { Lead, Stage } from "@/lib/supabase/types";
 
 interface LeadColumnProps {
   stage: Stage;
@@ -35,11 +35,11 @@ const LeadColumn = ({
 }: LeadColumnProps) => {
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = React.useState(false);
 
-  const handleAddNewLead = (newLead) => {
+  const handleAddNewLead = (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     try {
       // Create a new lead in this stage
       const leadWithStage = { ...newLead, stageId: stage.id };
-      onUpdateLead(leadWithStage);
+      onUpdateLead(leadWithStage as Lead);
       setIsNewLeadDialogOpen(false);
       toast.success("Lead adicionado com sucesso!");
     } catch (error) {
@@ -48,11 +48,22 @@ const LeadColumn = ({
     }
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    // Adiciona um estilo visual para indicar que o drop é permitido
+    e.currentTarget.classList.add("bg-accent/50");
   };
 
-  const handleDrop = (e) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Remove o estilo visual quando o item arrastado sai da área
+    e.currentTarget.classList.remove("bg-accent/50");
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // Remove o estilo visual
+    e.currentTarget.classList.remove("bg-accent/50");
+    
     try {
       const leadId = e.dataTransfer.getData("leadId");
       const fromStageId = e.dataTransfer.getData("stageId");
@@ -73,6 +84,7 @@ const LeadColumn = ({
     <div 
       className="flex flex-col bg-secondary/20 rounded-md min-w-[300px] max-w-[300px]"
       onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {/* Stage Header */}

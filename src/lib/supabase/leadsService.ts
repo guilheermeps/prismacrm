@@ -214,6 +214,8 @@ export const deleteLead = async (id: string): Promise<boolean> => {
 
 // Function to format WhatsApp number
 export const formatWhatsAppNumber = (number: string): string => {
+  if (!number) return '';
+  
   // Remove any non-digit characters
   const digits = number.replace(/\D/g, '');
   
@@ -227,6 +229,8 @@ export const formatWhatsAppNumber = (number: string): string => {
 
 // Function to get WhatsApp URL
 export const getWhatsAppUrl = (number: string): string => {
+  if (!number) return '';
+  
   const formattedNumber = formatWhatsAppNumber(number);
   return `https://api.whatsapp.com/send?phone=${formattedNumber}`;
 };

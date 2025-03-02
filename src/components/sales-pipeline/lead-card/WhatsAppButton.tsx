@@ -13,7 +13,7 @@ interface WhatsAppButtonProps {
 
 const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
   const handleOpenWhatsApp = () => {
-    if (!lead.whatsapp) {
+    if (!lead.whatsapp || lead.whatsapp.trim() === '') {
       toast.error("Número de WhatsApp não disponível");
       return;
     }

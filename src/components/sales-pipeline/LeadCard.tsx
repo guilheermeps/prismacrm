@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Lead, Stage } from "@/lib/supabase";
+import { Lead, Stage } from "@/lib/supabase/types";
 import WhatsAppButton from "./lead-card/WhatsAppButton";
 import LeadActions from "./lead-card/LeadActions";
 import ActionButtons from "./lead-card/ActionButtons";
@@ -35,7 +35,7 @@ const LeadCard = ({
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
 
-  const handleDragStart = (e) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData("leadId", lead.id);
     e.dataTransfer.setData("stageId", lead.stageId);
     e.dataTransfer.effectAllowed = "move";
@@ -91,7 +91,7 @@ const LeadCard = ({
             </div>
             
             {/* Lead Value */}
-            {lead.proposalValue && (
+            {lead.proposalValue > 0 && (
               <div className="text-sm font-medium">
                 {new Intl.NumberFormat('pt-BR', { 
                   style: 'currency', 
