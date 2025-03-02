@@ -25,7 +25,8 @@ import {
   Edit,
   Trash,
   FileText,
-  UserRound
+  UserRound,
+  ShoppingCart
 } from "lucide-react";
 import { mockContacts } from "@/utils/mockData";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +35,17 @@ interface ContactsListProps {
   filterType: "all" | "client" | "supplier";
   onAddContact: () => void;
   onEditContact: (contact: any) => void;
+  onCreateOrder?: (contact: any) => void;
+  onCreateContract?: (contact: any) => void;
 }
 
-const ContactsList = ({ filterType, onAddContact, onEditContact }: ContactsListProps) => {
+const ContactsList = ({ 
+  filterType, 
+  onAddContact, 
+  onEditContact,
+  onCreateOrder,
+  onCreateContract
+}: ContactsListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Filter contacts based on type and search query
@@ -125,10 +134,18 @@ const ContactsList = ({ filterType, onAddContact, onEditContact }: ContactsListP
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" />
-                          Ver Pedidos
-                        </DropdownMenuItem>
+                        {onCreateOrder && contact.type === "client" && (
+                          <DropdownMenuItem onClick={() => onCreateOrder(contact)}>
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Criar Pedido
+                          </DropdownMenuItem>
+                        )}
+                        {onCreateContract && contact.type === "client" && (
+                          <DropdownMenuItem onClick={() => onCreateContract(contact)}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Criar Contrato
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem className="text-destructive">
                           <Trash className="mr-2 h-4 w-4" />
                           Excluir

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Filter, MapPin, Plus, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
@@ -11,32 +11,54 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
-import { upcomingSchedule } from '@/utils/mockData';
-
-interface EventType {
-  id: number;
-  client: string;
-  service: string;
-  date: string;
-  time: string;
-  location: string;
-}
+import { getScheduleEvents, ScheduleEvent } from '@/lib/supabase/schedulingService';
+import { toast } from 'sonner';
 
 const Schedule = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [date, setDate] = useState<Date>(new Date());
-  const [events] = useState<EventType[]>(upcomingSchedule);
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [serviceFilter, setServiceFilter] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('all');
+  
+  useEffect(() => {
+    loadScheduleEvents();
+  }, []);
+  
+  const loadScheduleEvents = async () => {
+    setLoading(true);
+    try {
+      const eventsData = await getScheduleEvents();
+      setEvents(eventsData);
+    } catch (error) {
+      console.error("Error loading schedule events:", error);
+      toast.error("Erro ao carregar eventos da agenda");
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
   
-  const filteredEvents = events.filter(event => 
-    event.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEvents = events.filter(event => {
+    const matchesSearch = !searchTerm || 
+      event.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.location.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesService = serviceFilter === 'all' || 
+      event.service.toLowerCase() === serviceFilter.toLowerCase();
+    
+    const matchesLocation = locationFilter === 'all' ||
+      (locationFilter === 'studio' && event.location.toLowerCase().includes('estúdio')) ||
+      (locationFilter === 'external' && !event.location.toLowerCase().includes('estúdio'));
+    
+    return matchesSearch && matchesService && matchesLocation;
+  });
   
   const eventsForSelectedDate = filteredEvents.filter(
     event => event.date === format(date, 'yyyy-MM-dd')
@@ -44,18 +66,16 @@ const Schedule = () => {
   
   // Styling functions
   const getServiceColor = (service: string) => {
-    switch (service) {
-      case 'Casamento':
-        return 'bg-studio-orange';
-      case 'Formatura':
-        return 'bg-purple-500';
-      case 'Gestante':
-        return 'bg-pink-500';
-      case '15 anos':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
-    }
+    const serviceLower = service.toLowerCase();
+    if (serviceLower.includes('casamento')) return 'bg-studio-orange';
+    if (serviceLower.includes('formatura')) return 'bg-purple-500';
+    if (serviceLower.includes('gestante')) return 'bg-pink-500';
+    if (serviceLower.includes('15 anos')) return 'bg-blue-500';
+    return 'bg-gray-500';
+  };
+  
+  const handleApplyFilters = () => {
+    toast.success("Filtros aplicados");
   };
   
   return (
@@ -168,22 +188,22 @@ const Schedule = () => {
                       <div className="p-3 space-y-3">
                         <div className="space-y-1">
                           <label className="text-xs" htmlFor="service-filter">Tipo de Serviço</label>
-                          <Select>
+                          <Select value={serviceFilter} onValueChange={setServiceFilter}>
                             <SelectTrigger id="service-filter" className="border-studio-gray bg-studio-gray">
                               <SelectValue placeholder="Todos" />
                             </SelectTrigger>
                             <SelectContent className="bg-darker border border-studio-gray">
                               <SelectItem value="all">Todos</SelectItem>
-                              <SelectItem value="wedding">Casamento</SelectItem>
-                              <SelectItem value="graduation">Formatura</SelectItem>
-                              <SelectItem value="pregnancy">Gestante</SelectItem>
-                              <SelectItem value="birthday">15 anos</SelectItem>
+                              <SelectItem value="casamento">Casamento</SelectItem>
+                              <SelectItem value="formatura">Formatura</SelectItem>
+                              <SelectItem value="gestante">Gestante</SelectItem>
+                              <SelectItem value="15 anos">15 anos</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs" htmlFor="location-filter">Local</label>
-                          <Select>
+                          <Select value={locationFilter} onValueChange={setLocationFilter}>
                             <SelectTrigger id="location-filter" className="border-studio-gray bg-studio-gray">
                               <SelectValue placeholder="Todos" />
                             </SelectTrigger>
@@ -194,7 +214,10 @@ const Schedule = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button className="w-full bg-studio-orange hover:bg-studio-orange/90 text-white">
+                        <Button 
+                          className="w-full bg-studio-orange hover:bg-studio-orange/90 text-white"
+                          onClick={handleApplyFilters}
+                        >
                           Aplicar Filtros
                         </Button>
                       </div>
@@ -204,7 +227,12 @@ const Schedule = () => {
               </div>
               
               <div className="p-4">
-                {eventsForSelectedDate.length > 0 ? (
+                {loading ? (
+                  <div className="py-8 flex flex-col items-center justify-center text-center">
+                    <div className="animate-spin h-8 w-8 border-2 border-studio-orange border-t-transparent rounded-full"></div>
+                    <p className="mt-4 text-muted-foreground">Carregando agendamentos...</p>
+                  </div>
+                ) : eventsForSelectedDate.length > 0 ? (
                   <div className="space-y-4">
                     {eventsForSelectedDate.map((event) => (
                       <div 
@@ -236,6 +264,11 @@ const Schedule = () => {
                             </Button>
                           </div>
                         </div>
+                        {event.notes && (
+                          <div className="mt-2 pt-2 border-t border-studio-gray text-sm text-muted-foreground">
+                            {event.notes}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

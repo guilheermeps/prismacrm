@@ -9,22 +9,35 @@ import ProductsTab from "@/components/orders-contracts/ProductsTab";
 import FinancialTab from "@/components/orders-contracts/FinancialTab";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { Lead } from "@/lib/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { FinancialTransaction } from "./Financial";
+import { createScheduleEvent } from "@/lib/supabase/schedulingService";
+import { format } from "date-fns";
 
 // Extend the Lead type to include necessary fields for order/contract creation
 interface SourceEntity {
   leadId?: string;
   leadName?: string;
+  id?: string; // Contact ID
+  name?: string; // Contact name
   type: string;
   amount?: number;
+}
+
+// Define props for the Financial Tab
+interface FinancialTabProps {
+  transactions: FinancialTransaction[];
+  loading: boolean;
+  onUpdateStatus: (id: string, status: string) => Promise<void>;
 }
 
 const OrdersContracts = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("orders");
   const [selectedLead, setSelectedLead] = useState<SourceEntity | null>(null);
+  const [selectedContact, setSelectedContact] = useState<SourceEntity | null>(null);
+  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -36,9 +49,11 @@ const OrdersContracts = () => {
       setActiveTab(tab);
     }
     
-    // Check if there's data in sessionStorage about a lead to create order/contract from
+    // Check if there's data in sessionStorage about a lead or contact to create order/contract from
     const orderFromLeadData = sessionStorage.getItem('createOrderFromLead');
     const contractFromLeadData = sessionStorage.getItem('createContractFromLead');
+    const orderFromContactData = sessionStorage.getItem('createOrderFromContact');
+    const contractFromContactData = sessionStorage.getItem('createContractFromContact');
     
     if (orderFromLeadData) {
       try {
@@ -58,8 +73,47 @@ const OrdersContracts = () => {
       } catch (error) {
         console.error("Failed to parse lead data for contract:", error);
       }
+    } else if (orderFromContactData) {
+      try {
+        const contactData = JSON.parse(orderFromContactData);
+        setSelectedContact(contactData);
+        setActiveTab('orders');
+        sessionStorage.removeItem('createOrderFromContact');
+      } catch (error) {
+        console.error("Failed to parse contact data for order:", error);
+      }
+    } else if (contractFromContactData) {
+      try {
+        const contactData = JSON.parse(contractFromContactData);
+        setSelectedContact(contactData);
+        setActiveTab('contracts');
+        sessionStorage.removeItem('createContractFromContact');
+      } catch (error) {
+        console.error("Failed to parse contact data for contract:", error);
+      }
     }
+    
+    // Load transactions for the financial tab
+    loadTransactions();
   }, [location.search]);
+
+  const loadTransactions = async () => {
+    setLoadingTransactions(true);
+    try {
+      const { data, error } = await supabase
+        .from('financial_transactions')
+        .select('*')
+        .order('due_date', { ascending: true });
+      
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+      toast.error('Erro ao carregar transações financeiras');
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -98,9 +152,63 @@ const OrdersContracts = () => {
       }
 
       toast.success('Transação financeira criada com sucesso');
+      // Refresh the transactions list
+      loadTransactions();
     } catch (error: any) {
       console.error('Error creating financial transaction:', error.message);
       toast.error('Erro ao criar transação financeira');
+    }
+  };
+
+  // Create schedule event from order or contract
+  const createScheduleEventFromTransaction = async (
+    clientName: string,
+    service: string,
+    eventDate: string,
+    eventTime: string,
+    location: string,
+    sourceId: string,
+    sourceType: 'order' | 'contract',
+    notes?: string
+  ) => {
+    try {
+      const event = {
+        client: clientName,
+        service,
+        date: eventDate,
+        time: eventTime,
+        location,
+        source_id: sourceId,
+        source_type: sourceType,
+        notes
+      };
+
+      const eventId = await createScheduleEvent(event);
+      
+      if (eventId) {
+        toast.success('Evento adicionado à agenda com sucesso');
+      }
+    } catch (error: any) {
+      console.error('Error creating schedule event:', error.message);
+      toast.error('Erro ao adicionar evento à agenda');
+    }
+  };
+
+  // Handle updating financial transaction status
+  const handleUpdateTransactionStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('financial_transactions')
+        .update({ status })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast.success('Status da transação atualizado com sucesso');
+      loadTransactions();
+    } catch (error) {
+      console.error('Error updating transaction status:', error);
+      toast.error('Erro ao atualizar status da transação');
     }
   };
 
@@ -111,7 +219,13 @@ const OrdersContracts = () => {
     totalAmount: number, 
     dueDate: string,
     paymentMethod: string,
-    installments: number
+    installments: number,
+    // New parameters for scheduling
+    serviceType: string,
+    eventDate: string,
+    eventTime: string,
+    location: string,
+    notes?: string
   ) => {
     createFinancialTransaction(
       clientName,
@@ -121,6 +235,18 @@ const OrdersContracts = () => {
       'order',
       paymentMethod,
       installments
+    );
+    
+    // Create schedule event
+    createScheduleEventFromTransaction(
+      clientName,
+      serviceType,
+      eventDate,
+      eventTime,
+      location,
+      orderId,
+      'order',
+      notes
     );
     
     // Update lead history if order was created from a lead
@@ -133,6 +259,7 @@ const OrdersContracts = () => {
     }
     
     setSelectedLead(null);
+    setSelectedContact(null);
   };
 
   // Handle new contract creation
@@ -142,7 +269,13 @@ const OrdersContracts = () => {
     totalAmount: number, 
     dueDate: string,
     paymentMethod: string,
-    installments: number
+    installments: number,
+    // New parameters for scheduling
+    serviceType: string,
+    eventDate: string,
+    eventTime: string,
+    location: string,
+    notes?: string
   ) => {
     createFinancialTransaction(
       clientName,
@@ -152,6 +285,18 @@ const OrdersContracts = () => {
       'contract',
       paymentMethod,
       installments
+    );
+    
+    // Create schedule event
+    createScheduleEventFromTransaction(
+      clientName,
+      serviceType,
+      eventDate,
+      eventTime,
+      location,
+      contractId,
+      'contract',
+      notes
     );
     
     // Update lead history if contract was created from a lead
@@ -164,6 +309,7 @@ const OrdersContracts = () => {
     }
     
     setSelectedLead(null);
+    setSelectedContact(null);
   };
 
   // Helper function to update lead history
@@ -189,7 +335,9 @@ const OrdersContracts = () => {
       };
       
       // Update the lead with the new history entry
-      const history = leadData.history ? [...leadData.history, historyEntry] : [historyEntry];
+      const history = leadData && Array.isArray(leadData.history) 
+        ? [...leadData.history, historyEntry] 
+        : [historyEntry];
       
       const { error: updateError } = await supabase
         .from('leads')
@@ -258,6 +406,7 @@ const OrdersContracts = () => {
                 <OrdersTab 
                   onCreateOrder={handleCreateOrder}
                   leadData={selectedLead}
+                  contactData={selectedContact}
                 />
               </TabsContent>
               
@@ -265,6 +414,7 @@ const OrdersContracts = () => {
                 <ContractsTab 
                   onCreateContract={handleCreateContract}
                   leadData={selectedLead}
+                  contactData={selectedContact}
                 />
               </TabsContent>
               
@@ -273,7 +423,11 @@ const OrdersContracts = () => {
               </TabsContent>
               
               <TabsContent value="financial" className="bg-card rounded-lg p-4">
-                <FinancialTab />
+                <FinancialTab 
+                  transactions={transactions}
+                  loading={loadingTransactions}
+                  onUpdateStatus={handleUpdateTransactionStatus}
+                />
               </TabsContent>
             </Tabs>
           </div>
