@@ -103,7 +103,7 @@ const Scheduling = () => {
               <CardContent>
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">Não há eventos agendados para os próximos dias</p>
-                </CardContent>
+                </div>
               </CardContent>
             </Card>
           </div>
