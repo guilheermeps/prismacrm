@@ -6,11 +6,19 @@ import { mockLeads } from './mockData';
 export const getLeads = async (): Promise<Lead[]> => {
   try {
     // Try to fetch from Supabase
-    const { data, error } = await supabase.from('leads').select('*');
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('createdAt', { ascending: false });
     
     if (error) {
-      console.warn('Using mock data for leads:', error.message);
+      console.error('Error fetching leads:', error.message);
       // Return mock data if there's an error
+      return mockLeads();
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('No leads found, returning mock data for demonstration');
       return mockLeads();
     }
     
@@ -23,18 +31,21 @@ export const getLeads = async (): Promise<Lead[]> => {
     
     return processedData;
   } catch (e) {
-    console.warn('Using mock data for leads due to error:', e);
+    console.error('Exception while fetching leads:', e);
     return mockLeads();
   }
 };
 
 export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> => {
   try {
+    console.log('Creating lead with data:', lead);
+    
     // Ensure the lead has all required fields
     const leadWithDefaults = {
       ...lead,
       history: lead.history || [],
-      isArchived: lead.isArchived === undefined ? false : lead.isArchived
+      isArchived: lead.isArchived === undefined ? false : lead.isArchived,
+      createdAt: new Date().toISOString()
     };
     
     const { data, error } = await supabase
@@ -44,11 +55,11 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
       .single();
     
     if (error) {
-      console.error('Error creating lead:', error);
+      console.error('Error creating lead in Supabase:', error);
       
       // In demo/development mode, simulate success with mock data
       if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-        const mockId = Math.random().toString(36).substring(2, 15);
+        const mockId = crypto.randomUUID();
         const mockLead = {
           id: mockId,
           ...leadWithDefaults,
@@ -60,6 +71,7 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
       return null;
     }
     
+    console.log('Successfully created lead:', data);
     return data;
   } catch (error) {
     console.error('Exception while creating lead:', error);
@@ -69,6 +81,8 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
 
 export const updateLead = async (lead: Lead): Promise<Lead | null> => {
   try {
+    console.log('Updating lead:', lead);
+    
     // Ensure the lead has all required fields
     const leadWithDefaults = {
       ...lead,
@@ -84,7 +98,7 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
       .single();
     
     if (error) {
-      console.error('Error updating lead:', error);
+      console.error('Error updating lead in Supabase:', error);
       
       // In demo/development mode, simulate success with mock data
       if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
@@ -95,6 +109,7 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
       return null;
     }
     
+    console.log('Successfully updated lead:', data);
     return data;
   } catch (error) {
     console.error('Exception while updating lead:', error);
@@ -104,13 +119,15 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
 
 export const deleteLead = async (id: string): Promise<boolean> => {
   try {
+    console.log('Deleting lead with ID:', id);
+    
     const { error } = await supabase
       .from('leads')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting lead:', error);
+      console.error('Error deleting lead from Supabase:', error);
       
       // In demo/development mode, simulate success
       if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
@@ -121,9 +138,29 @@ export const deleteLead = async (id: string): Promise<boolean> => {
       return false;
     }
     
+    console.log('Successfully deleted lead with ID:', id);
     return true;
   } catch (error) {
     console.error('Exception while deleting lead:', error);
     return false;
   }
+};
+
+// Function to format WhatsApp number
+export const formatWhatsAppNumber = (number: string): string => {
+  // Remove any non-digit characters
+  const digits = number.replace(/\D/g, '');
+  
+  // If it doesn't start with country code, add Brazilian code (55)
+  if (digits.length <= 11) {
+    return `55${digits}`;
+  }
+  
+  return digits;
+};
+
+// Function to get WhatsApp URL
+export const getWhatsAppUrl = (number: string): string => {
+  const formattedNumber = formatWhatsAppNumber(number);
+  return `https://api.whatsapp.com/send?phone=${formattedNumber}`;
 };

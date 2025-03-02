@@ -3,7 +3,8 @@ import React from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Lead } from "@/lib/supabase";
+import { Lead } from "@/lib/supabase/types";
+import { formatWhatsAppNumber, getWhatsAppUrl } from "@/lib/supabase/leadsService";
 
 interface WhatsAppButtonProps {
   lead: Lead;
@@ -11,52 +12,51 @@ interface WhatsAppButtonProps {
 }
 
 const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
-  const openWhatsApp = () => {
+  const handleOpenWhatsApp = () => {
     if (!lead.whatsapp) {
       toast.error("Número de WhatsApp não disponível");
       return;
     }
     
-    // Format the number properly
-    let whatsappNumber = lead.whatsapp;
-    // Remove any non-digit characters if they exist
-    whatsappNumber = whatsappNumber.replace(/\D/g, '');
-    
-    // Check if the number starts with country code
-    if (!whatsappNumber.startsWith('55') && whatsappNumber.length <= 11) {
-      whatsappNumber = '55' + whatsappNumber;
+    try {
+      // Generate WhatsApp URL
+      const whatsappUrl = getWhatsAppUrl(lead.whatsapp);
+      
+      // Open WhatsApp in new tab
+      window.open(whatsappUrl, '_blank');
+      
+      // Add to lead history
+      const updatedLead = {
+        ...lead,
+        history: [
+          ...lead.history,
+          {
+            action: "whatsapp_clicked",
+            timestamp: new Date().toISOString(),
+            from: null,
+            to: null
+          }
+        ]
+      };
+      
+      // Update lead with new history
+      onUpdateLead(updatedLead);
+      
+      toast.success("Abrindo WhatsApp...");
+    } catch (error) {
+      console.error("Erro ao abrir WhatsApp:", error);
+      toast.error("Erro ao abrir WhatsApp. Tente novamente.");
     }
-    
-    // Construct WhatsApp URL with formatted number
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
-    window.open(whatsappUrl, '_blank');
-    
-    // Add to history
-    const updatedLead = {
-      ...lead,
-      history: [
-        ...lead.history,
-        {
-          action: "whatsapp",
-          timestamp: new Date().toISOString(),
-          from: null,
-          to: null
-        }
-      ]
-    };
-    
-    onUpdateLead(updatedLead);
-    toast.success("Redirecionando para o WhatsApp...");
   };
 
   return (
     <Button 
+      onClick={handleOpenWhatsApp} 
       variant="outline" 
-      size="sm" 
-      className="w-full text-green-600 hover:text-green-700 hover:bg-green-50"
-      onClick={openWhatsApp}
+      size="sm"
+      className="w-full bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
     >
-      <MessageSquare className="h-4 w-4 mr-1" />
+      <MessageSquare className="h-4 w-4 mr-2 text-green-600" />
       WhatsApp
     </Button>
   );

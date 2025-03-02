@@ -39,6 +39,63 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          createdat: string | null
+          history: Json | null
+          id: string
+          isarchived: boolean | null
+          name: string
+          notes: string | null
+          proposalvalue: number | null
+          servicetype: string | null
+          stageid: string
+          whatsapp: string | null
+        }
+        Insert: {
+          createdat?: string | null
+          history?: Json | null
+          id?: string
+          isarchived?: boolean | null
+          name: string
+          notes?: string | null
+          proposalvalue?: number | null
+          servicetype?: string | null
+          stageid: string
+          whatsapp?: string | null
+        }
+        Update: {
+          createdat?: string | null
+          history?: Json | null
+          id?: string
+          isarchived?: boolean | null
+          name?: string
+          notes?: string | null
+          proposalvalue?: number | null
+          servicetype?: string | null
+          stageid?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      stages: {
+        Row: {
+          color: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          color?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          color?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
