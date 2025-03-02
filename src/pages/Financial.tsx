@@ -5,12 +5,17 @@ import Sidebar from "@/components/layout/Sidebar";
 import FinancialTab from "@/components/orders-contracts/FinancialTab";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { FinancialTransaction } from "@/lib/supabase/financialService";
+import { FinancialTransaction, deleteTransaction, getTransactions, updateTransaction } from "@/lib/supabase/financialService";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Financial = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -21,33 +26,8 @@ const Financial = () => {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('financial_transactions')
-          .select('*')
-          .order('due_date', { ascending: true });
-
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          // Map the database record format to our FinancialTransaction interface
-          const mappedTransactions: FinancialTransaction[] = data.map(item => ({
-            id: item.id,
-            type: item.type as 'receivable' | 'payable',
-            client: item.client,
-            dueDate: item.due_date,
-            paymentMethod: item.payment_method,
-            sourceId: item.source_id,
-            sourceType: item.source_type as 'order' | 'contract' | 'manual' | undefined,
-            status: item.status as 'pending' | 'completed' | 'canceled',
-            amount: item.amount,
-            category: item.category,
-            totalInstallments: item.total_installments
-          }));
-          
-          setTransactions(mappedTransactions);
-        }
+        const fetchedTransactions = await getTransactions();
+        setTransactions(fetchedTransactions);
       } catch (error: any) {
         console.error("Error fetching financial transactions:", error.message);
         toast.error("Erro ao carregar transações financeiras");
@@ -79,28 +59,43 @@ const Financial = () => {
   }, []);
 
   // Function to update transaction status
-  const updateTransactionStatus = async (id: string, status: 'pending' | 'completed') => {
+  const handleUpdateStatus = async (id: string, status: 'pending' | 'completed' | 'canceled') => {
     try {
-      const { error } = await supabase
-        .from('financial_transactions')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success(`Status da transação atualizado para ${status === 'completed' ? 'Pago' : 'Pendente'}`);
+      const result = await updateTransaction({ id, status });
       
-      // Update local state
-      setTransactions(prev => 
-        prev.map(transaction => 
-          transaction.id === id ? { ...transaction, status } : transaction
-        )
-      );
+      if (result) {
+        toast.success(`Status da transação atualizado para ${status === 'completed' ? 'Pago' : status === 'pending' ? 'Pendente' : 'Cancelado'}`);
+        
+        // Update local state
+        setTransactions(prev => 
+          prev.map(transaction => 
+            transaction.id === id ? { ...transaction, status } : transaction
+          )
+        );
+      } else {
+        throw new Error("Falha ao atualizar status");
+      }
     } catch (error: any) {
       console.error("Error updating transaction status:", error.message);
       toast.error("Erro ao atualizar status da transação");
+    }
+  };
+
+  // Function to delete transaction
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      const result = await deleteTransaction(id);
+      
+      if (result) {
+        toast.success("Transação excluída com sucesso");
+        // Update local state
+        setTransactions(prev => prev.filter(transaction => transaction.id !== id));
+      } else {
+        throw new Error("Falha ao excluir transação");
+      }
+    } catch (error: any) {
+      console.error("Error deleting transaction:", error.message);
+      toast.error("Erro ao excluir transação");
     }
   };
 
@@ -111,13 +106,56 @@ const Financial = () => {
         <Header toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Financeiro</h1>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-xl md:text-2xl font-bold">Financeiro</h1>
+              <Button 
+                onClick={() => navigate("/financial/new")} 
+                size="sm" 
+                className="h-9"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Transação
+              </Button>
+            </div>
+            
             <div className="bg-card rounded-lg p-3 md:p-5">
-              <FinancialTab 
-                transactions={transactions}
-                loading={loading}
-                onUpdateStatus={updateTransactionStatus}
-              />
+              <Tabs defaultValue="all" className="w-full">
+                <TabsList className="grid grid-cols-3 mb-4">
+                  <TabsTrigger value="all">Todas</TabsTrigger>
+                  <TabsTrigger value="receivables">A Receber</TabsTrigger>
+                  <TabsTrigger value="payables">A Pagar</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="all">
+                  <FinancialTab 
+                    transactions={transactions}
+                    loading={loading}
+                    onUpdateStatus={handleUpdateStatus}
+                    onDeleteTransaction={handleDeleteTransaction}
+                    filter="all"
+                  />
+                </TabsContent>
+                
+                <TabsContent value="receivables">
+                  <FinancialTab 
+                    transactions={transactions}
+                    loading={loading}
+                    onUpdateStatus={handleUpdateStatus}
+                    onDeleteTransaction={handleDeleteTransaction}
+                    filter="receivable"
+                  />
+                </TabsContent>
+                
+                <TabsContent value="payables">
+                  <FinancialTab 
+                    transactions={transactions}
+                    loading={loading}
+                    onUpdateStatus={handleUpdateStatus}
+                    onDeleteTransaction={handleDeleteTransaction}
+                    filter="payable"
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </main>

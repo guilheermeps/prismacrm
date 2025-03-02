@@ -18,37 +18,75 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { CheckCircle, XCircle, Filter } from "lucide-react";
+import { CheckCircle, XCircle, Filter, Trash2, AlertCircle } from "lucide-react";
 import { FinancialTransaction } from "@/lib/supabase/financialService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FinancialTabProps {
   transactions: FinancialTransaction[];
   loading: boolean;
-  onUpdateStatus: (id: string, status: 'pending' | 'completed') => Promise<void>;
+  onUpdateStatus: (id: string, status: 'pending' | 'completed' | 'canceled') => Promise<void>;
+  onDeleteTransaction: (id: string) => Promise<void>;
+  filter?: 'all' | 'receivable' | 'payable';
 }
 
 const FinancialTab: React.FC<FinancialTabProps> = ({ 
   transactions, 
   loading,
-  onUpdateStatus 
+  onUpdateStatus,
+  onDeleteTransaction,
+  filter = 'all'
 }) => {
-  const [filter, setFilter] = useState<'all' | 'receivable' | 'payable' | 'pending' | 'completed'>('all');
+  const [localFilter, setLocalFilter] = useState<'all' | 'receivable' | 'payable' | 'pending' | 'completed' | 'canceled'>(
+    filter === 'all' ? 'all' : filter
+  );
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
 
   const filteredTransactions = transactions.filter(transaction => {
-    if (filter === 'all') return true;
-    if (filter === 'receivable') return transaction.type === 'receivable';
-    if (filter === 'payable') return transaction.type === 'payable';
-    if (filter === 'pending') return transaction.status === 'pending';
-    if (filter === 'completed') return transaction.status === 'completed';
+    // First apply the parent filter if it's not 'all'
+    if (filter !== 'all' && transaction.type !== filter) {
+      return false;
+    }
+    
+    // Then apply the local filter
+    if (localFilter === 'all') return true;
+    if (localFilter === 'receivable') return transaction.type === 'receivable';
+    if (localFilter === 'payable') return transaction.type === 'payable';
+    if (localFilter === 'pending') return transaction.status === 'pending';
+    if (localFilter === 'completed') return transaction.status === 'completed';
+    if (localFilter === 'canceled') return transaction.status === 'canceled';
     return true;
   });
 
+  const handleDeleteClick = (id: string) => {
+    setTransactionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (transactionToDelete) {
+      await onDeleteTransaction(transactionToDelete);
+      setDeleteDialogOpen(false);
+      setTransactionToDelete(null);
+    }
+  };
+
   // Calculate totals
-  const totalReceivables = transactions
+  const totalReceivables = filteredTransactions
     .filter(t => t.type === 'receivable' && t.status === 'pending')
     .reduce((sum, t) => sum + Number(t.amount), 0);
   
-  const totalPayables = transactions
+  const totalPayables = filteredTransactions
     .filter(t => t.type === 'payable' && t.status === 'pending')
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -57,6 +95,32 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'outline';
+      case 'pending':
+        return 'secondary';
+      case 'canceled':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'Pago';
+      case 'pending':
+        return 'Pendente';
+      case 'canceled':
+        return 'Cancelado';
+      default:
+        return status;
+    }
   };
 
   return (
@@ -85,8 +149,8 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
         <div className="flex items-center space-x-2">
           <Filter className="h-4 w-4 text-gray-500" />
           <Select 
-            value={filter} 
-            onValueChange={(value) => setFilter(value as any)}
+            value={localFilter} 
+            onValueChange={(value) => setLocalFilter(value as any)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filtrar por" />
@@ -96,7 +160,8 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
               <SelectItem value="receivable">A receber</SelectItem>
               <SelectItem value="payable">A pagar</SelectItem>
               <SelectItem value="pending">Pendentes</SelectItem>
-              <SelectItem value="completed">Concluídas</SelectItem>
+              <SelectItem value="completed">Pagas</SelectItem>
+              <SelectItem value="canceled">Canceladas</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -140,30 +205,49 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
                   </TableCell>
                   <TableCell>{transaction.paymentMethod}</TableCell>
                   <TableCell>
-                    <Badge variant={transaction.status === 'completed' ? 'outline' : 'secondary'}>
-                      {transaction.status === 'completed' ? 'Pago' : 'Pendente'}
+                    <Badge variant={getStatusBadgeVariant(transaction.status)}>
+                      {getStatusDisplay(transaction.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {transaction.status === 'pending' ? (
+                    <div className="flex justify-end gap-2">
+                      {transaction.status === 'pending' ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => onUpdateStatus(transaction.id, 'completed')}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Marcar como pago
+                        </Button>
+                      ) : transaction.status === 'completed' ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => onUpdateStatus(transaction.id, 'pending')}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Marcar como pendente
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => onUpdateStatus(transaction.id, 'pending')}
+                        >
+                          <AlertCircle className="h-4 w-4 mr-1" />
+                          Reativar
+                        </Button>
+                      )}
+                      
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => onUpdateStatus(transaction.id, 'completed')}
+                        onClick={() => handleDeleteClick(transaction.id)}
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Marcar como pago
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => onUpdateStatus(transaction.id, 'pending')}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Marcar como pendente
-                      </Button>
-                    )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -171,6 +255,22 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
           </Table>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir transação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
