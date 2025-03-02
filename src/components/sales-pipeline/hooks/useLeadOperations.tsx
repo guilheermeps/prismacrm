@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { 
@@ -128,7 +127,8 @@ function useLeadOperationsInternal() {
         })
       .subscribe((status) => {
         console.log(`Supabase real-time subscription status: ${status}`);
-        if (status === 'SUBSCRIPTION_ERROR') {
+        // Fix: Use the correct type comparison
+        if (status === 'CHANNEL_ERROR') {
           console.error('Error subscribing to real-time updates. Retrying...');
           // Auto-retry after a delay
           setTimeout(() => {
@@ -158,12 +158,42 @@ function useLeadOperationsInternal() {
   };
 
   const handleMoveLead = async (leadId: string, fromStageId: string, toStageId: string) => {
+    // Find the lead to move from the current state
     const lead = leads.find(l => l.id === leadId);
-    const result = await moveLead(lead, toStageId);
-    if (result) {
-      await refreshLeads();
+    
+    if (!lead) {
+      console.error(`Lead ${leadId} not found in current state`);
+      toast.error("Erro ao mover lead: não encontrado");
+      return false;
     }
-    return result;
+    
+    console.log(`Moving lead ${leadId} from stage ${fromStageId} to ${toStageId}`);
+    
+    // Update local state immediately for better UX
+    const updatedLeads = leads.map(l => {
+      if (l.id === leadId) {
+        return { ...l, stageId: toStageId };
+      }
+      return l;
+    });
+    
+    // Update local state before API call for immediate feedback
+    setLeads(updatedLeads);
+    
+    // Call the move function to update in database
+    const result = await moveLead(lead, toStageId);
+    
+    if (!result) {
+      console.error(`Failed to move lead ${leadId} to stage ${toStageId}`);
+      // Revert local state if API call fails
+      setLeads(leads);
+      toast.error("Erro ao mover lead. Tentar novamente.");
+      return false;
+    }
+    
+    // Refresh all leads to ensure consistency
+    await refreshLeads();
+    return true;
   };
 
   const handleUpdateLead = async (updatedLead: Lead) => {

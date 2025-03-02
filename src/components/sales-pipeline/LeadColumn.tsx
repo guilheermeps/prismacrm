@@ -78,6 +78,12 @@ const LeadColumn = ({
     // Remove visual indicator
     setIsDragOver(false);
     
+    // Prevent drops in archived view
+    if (isArchived) {
+      toast.error("Não é possível mover leads na visão de arquivados");
+      return;
+    }
+    
     try {
       // Try to get JSON data
       const jsonData = e.dataTransfer.getData("application/json");
@@ -88,46 +94,36 @@ const LeadColumn = ({
         const fromStageId = data.stageId;
         
         if (leadId && fromStageId && fromStageId !== stage.id) {
-          console.log(`Moving lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
+          console.log(`Dropping lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
           
-          // Find the lead that's being moved
-          const leadToMove = leads.find(l => l.id === leadId);
-          
-          if (leadToMove) {
-            // Create updated lead with new stageId
-            const updatedLead = { ...leadToMove, stageId: stage.id };
+          // Update immediate visual feedback in the column
+          if (data.leadObject) {
+            const droppedLead = JSON.parse(data.leadObject);
+            droppedLead.stageId = stage.id;
             
-            // Update local state immediately for better UX
-            const updatedLeads = columnLeads.slice();
-            updatedLeads.push(updatedLead);
-            setColumnLeads(updatedLeads);
-            
-            // Also remove from source column in UI
-            const sourceColumn = document.querySelector(`[data-stage-id="${fromStageId}"]`);
-            if (sourceColumn) {
-              const leadCard = sourceColumn.querySelector(`[data-lead-id="${leadId}"]`);
-              if (leadCard) {
-                leadCard.remove();
-              }
-            }
-            
-            // Call the move function to update the backend
-            onMoveLead(leadId, fromStageId, stage.id);
-            
-            // This ensures immediate visual feedback
-            onUpdateLead(updatedLead);
+            // Add to this column's leads
+            setColumnLeads(prevLeads => [...prevLeads, droppedLead]);
           }
+          
+          // Call the move function to update the backend and global state
+          onMoveLead(leadId, fromStageId, stage.id);
+        } else if (fromStageId === stage.id) {
+          console.log(`Lead is already in this stage (${stage.id})`);
+        } else {
+          console.error("Missing required data in drop event");
         }
+      } else {
+        console.error("No JSON data found in drop event");
       }
     } catch (error) {
-      console.error("Erro ao mover lead:", error);
+      console.error("Error processing drop:", error);
       toast.error("Erro ao mover lead. Tente novamente.");
     }
   };
 
   return (
     <div 
-      className={`flex flex-col rounded-md min-w-[300px] max-w-[300px] transition-colors ${isDragOver ? 'bg-primary/10' : 'bg-secondary/20'}`}
+      className={`flex flex-col rounded-md min-w-[300px] max-w-[300px] h-full transition-colors ${isDragOver ? 'bg-primary/20' : 'bg-secondary/20'}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDragEnter={handleDragOver}

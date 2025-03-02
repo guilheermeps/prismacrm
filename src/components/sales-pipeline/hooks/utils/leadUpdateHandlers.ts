@@ -4,6 +4,11 @@ import { Lead } from "@/lib/supabase/types";
 import { updateLead } from "@/lib/supabase/leadsService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 
+/**
+ * Update a lead's data in the database
+ * @param updatedLead The lead with updated data
+ * @returns Promise<boolean> Success status
+ */
 export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
   try {
     // Log for debugging
@@ -16,12 +21,16 @@ export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
       // In dev mode, we still want to call updateLead to trigger the realtime updates
       // This helps simulate the production behavior
       try {
-        await updateLead(updatedLead);
+        const result = await updateLead(updatedLead);
+        if (result) {
+          toast.success("Lead atualizado com sucesso!");
+          return true;
+        }
       } catch (error) {
         console.log('Dev mode - ignoring update error:', error);
       }
       
-      // Show success message
+      // Even if Supabase update fails, show success in dev mode
       toast.success("Lead atualizado com sucesso!");
       return true;
     }
