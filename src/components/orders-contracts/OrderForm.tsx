@@ -26,6 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { mockContacts } from "@/utils/mockData";
+import { updateLeadForTransactionCreation } from "@/lib/supabase/leadsService";
 
 // Mock data para produtos/serviços
 const mockProducts = [
@@ -214,9 +215,8 @@ const OrderForm = ({
     
     // In a real app, you would update the lead history to reflect that an order was created
     if (initialLead?.leadId) {
-      // Import and call updateLeadForTransactionCreation here
-      import('@/components/sales-pipeline/hooks/utils/leadUpdateHandlers')
-        .then(({ updateLeadForTransactionCreation }) => {
+      // Import the renamed function
+      
           // We don't have the full lead object here, but in a real app you would
           // fetch it or pass it through from the lead card
           const dummyLead = {
@@ -230,7 +230,7 @@ const OrderForm = ({
           updateLeadForTransactionCreation(dummyLead, 'order')
             .then(() => console.log("Lead updated with order creation"))
             .catch(err => console.error("Error updating lead:", err));
-        });
+        
     }
     
     onClose();

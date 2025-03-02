@@ -91,8 +91,8 @@ export const updateProposalValue = async (lead: Lead, newValue: number): Promise
   }
 };
 
-// Create order or contract from lead
-export const createTransactionFromLead = async (
+// Create order or contract from lead (renamed from createTransactionFromLead to updateLeadForTransactionCreation)
+export const updateLeadForTransactionCreation = async (
   lead: Lead, 
   transactionType: 'order' | 'contract'
 ): Promise<boolean> => {

@@ -6,3 +6,6 @@ export { type Lead } from './types';  // Ensure Lead type is exported
 
 // Add function to get service types
 export { getServiceTypes } from './services/serviceTypeService';
+
+// Re-export the updateLeadForTransactionCreation function
+export { updateLeadForTransactionCreation } from '@/components/sales-pipeline/hooks/utils/leadUpdateHandlers';

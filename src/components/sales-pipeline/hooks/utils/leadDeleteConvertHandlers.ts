@@ -1,33 +1,21 @@
-
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { updateLead } from "@/lib/supabase/services/leadsCrudService";
 import { createContact } from "@/lib/supabase/contactsService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 
-// Discard a lead (mark as not viable/interested)
+// Discard lead
 export const discardLead = async (lead: Lead): Promise<boolean> => {
   try {
-    if (!lead || !lead.id) {
-      toast.error("Lead inválido");
-      return false;
-    }
-    
-    // Create a new history entry for discarding
     const updatedLead = {
       ...lead,
-      isArchived: true,
       history: addHistoryEntry(lead.history, "discarded", null, null)
     };
     
-    const success = await updateLead(updatedLead);
+    await updateLead(updatedLead);
     
-    if (success) {
-      toast.success("Lead descartado com sucesso!");
-      return true;
-    } else {
-      throw new Error("Falha ao descartar lead");
-    }
+    toast.success("Lead descartado com sucesso");
+    return true;
   } catch (error) {
     console.error("Erro ao descartar lead:", error);
     toast.error("Erro ao descartar lead");
@@ -38,35 +26,36 @@ export const discardLead = async (lead: Lead): Promise<boolean> => {
 // Convert lead to contact
 export const convertLeadToContact = async (lead: Lead): Promise<boolean> => {
   try {
-    // Create a contact from the lead
-    const newContact = {
+    console.log(`Converting lead ${lead.id} to contact`);
+    
+    // Create the contact
+    const contactData = {
       name: lead.name,
-      whatsapp: lead.whatsapp || "",
+      whatsapp: lead.whatsapp,
       leadId: lead.id,
-      notes: lead.notes || ""
+      notes: `Converted from lead: ${lead.name}`,
+      is_active: true  // Add the missing required field
     };
     
-    // Mark the lead as converted and add to history
+    const contactId = await createContact(contactData);
+    
+    if (!contactId) {
+      toast.error("Erro ao criar contato");
+      return false;
+    }
+    
+    // Update lead to mark as converted
     const updatedLead = {
       ...lead,
-      isArchived: true,
-      // Adding a new action type 'converted' to track conversions specifically
-      history: addHistoryEntry(lead.history, "converted", null, null)
+      history: addHistoryEntry(lead.history, "converted_to_contact", null, contactId)
     };
     
     await updateLead(updatedLead);
     
-    // Create the contact
-    const contact = await createContact(newContact);
-    
-    if (contact) {
-      toast.success("Lead convertido para contato com sucesso!");
-      return true;
-    } else {
-      throw new Error("Falha ao converter lead");
-    }
+    toast.success("Lead convertido para contato com sucesso");
+    return true;
   } catch (error) {
-    console.error("Erro ao converter lead para contato:", error);
+    console.error("Erro ao converter lead:", error);
     toast.error("Erro ao converter lead para contato");
     return false;
   }

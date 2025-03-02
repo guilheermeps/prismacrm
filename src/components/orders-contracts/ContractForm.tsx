@@ -269,8 +269,8 @@ CONTRATADA`);
     
     // In a real app, you would update the lead history to reflect that a contract was created
     if (initialLead?.leadId) {
-      // Import and call updateLeadForTransactionCreation here
-      import('@/components/sales-pipeline/hooks/utils/leadUpdateHandlers')
+      // Import the renamed function
+      import('@/lib/supabase/leadsService')
         .then(({ updateLeadForTransactionCreation }) => {
           // We don't have the full lead object here, but in a real app you would
           // fetch it or pass it through from the lead card
