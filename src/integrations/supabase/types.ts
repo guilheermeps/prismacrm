@@ -123,6 +123,45 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_events: {
+        Row: {
+          client: string
+          created_at: string | null
+          date: string
+          id: string
+          location: string
+          notes: string | null
+          service: string
+          source_id: string | null
+          source_type: string | null
+          time: string
+        }
+        Insert: {
+          client: string
+          created_at?: string | null
+          date: string
+          id?: string
+          location: string
+          notes?: string | null
+          service: string
+          source_id?: string | null
+          source_type?: string | null
+          time: string
+        }
+        Update: {
+          client?: string
+          created_at?: string | null
+          date?: string
+          id?: string
+          location?: string
+          notes?: string | null
+          service?: string
+          source_id?: string | null
+          source_type?: string | null
+          time?: string
+        }
+        Relationships: []
+      }
       stages: {
         Row: {
           color: string | null

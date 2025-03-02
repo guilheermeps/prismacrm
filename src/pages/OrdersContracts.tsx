@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/layout/Header";
@@ -220,13 +219,14 @@ const OrdersContracts = () => {
     dueDate: string,
     paymentMethod: string,
     installments: number,
-    // New parameters for scheduling
+    // Schedule parameters
     serviceType: string,
     eventDate: string,
     eventTime: string,
     location: string,
     notes?: string
   ) => {
+    // Create financial transaction
     createFinancialTransaction(
       clientName,
       totalAmount,
@@ -270,13 +270,14 @@ const OrdersContracts = () => {
     dueDate: string,
     paymentMethod: string,
     installments: number,
-    // New parameters for scheduling
+    // Schedule parameters
     serviceType: string,
     eventDate: string,
     eventTime: string,
     location: string,
     notes?: string
   ) => {
+    // Create financial transaction
     createFinancialTransaction(
       clientName,
       totalAmount,

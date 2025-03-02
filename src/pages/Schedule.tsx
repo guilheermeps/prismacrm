@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Filter, MapPin, Plus, Search } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Filter, MapPin, Plus, Search, Trash2, Edit } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +8,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
-import { getScheduleEvents, ScheduleEvent } from '@/lib/supabase/schedulingService';
+import { getScheduleEvents, ScheduleEvent, deleteScheduleEvent } from '@/lib/supabase/schedulingService';
 import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const Schedule = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -78,6 +77,36 @@ const Schedule = () => {
     toast.success("Filtros aplicados");
   };
   
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!eventId) return;
+    
+    try {
+      const success = await deleteScheduleEvent(eventId);
+      if (success) {
+        loadScheduleEvents();
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast.error("Erro ao excluir evento");
+    }
+  };
+  
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  
+  const confirmDelete = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setDeleteDialogOpen(true);
+  };
+  
+  const executeDelete = async () => {
+    if (selectedEventId) {
+      await handleDeleteEvent(selectedEventId);
+      setDeleteDialogOpen(false);
+      setSelectedEventId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen flex w-full bg-dark text-white">
       <Sidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
@@ -256,11 +285,26 @@ const Schedule = () => {
                                 <MapPin className="h-3.5 w-3.5" />
                                 <span>{event.location}</span>
                               </div>
+                              {event.source_type && (
+                                <div className="mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {event.source_type === 'order' ? 'Pedido' : 'Contrato'}
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="flex gap-1">
                             <Button variant="outline" size="sm" className="text-xs border-studio-gray hover:border-studio-orange hover:text-studio-orange">
-                              Detalhes
+                              <Edit className="h-3 w-3 mr-1" /> Editar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs border-studio-gray hover:border-red-500 hover:text-red-500"
+                              onClick={() => event.id && confirmDelete(event.id)}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" /> Excluir
                             </Button>
                           </div>
                         </div>
@@ -289,6 +333,22 @@ const Schedule = () => {
           </div>
         </main>
       </div>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-darker border border-studio-gray">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este evento da agenda? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-studio-gray bg-studio-gray">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={executeDelete} className="bg-red-500 hover:bg-red-600">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
