@@ -14,6 +14,7 @@ import Financial from "@/pages/Financial";
 import Projects from "@/pages/Projects";
 import Products from "@/pages/Products";
 import Settings from "@/pages/Settings";
+import Reports from "@/pages/Reports";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ const AppRoutes = () => {
       <Route path="/financial" element={<Financial />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/products" element={<Products />} />
+      <Route path="/reports" element={<Reports />} />
       <Route path="/settings" element={<Settings />} />
       
       {/* Catch-all route */}
