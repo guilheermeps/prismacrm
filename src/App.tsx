@@ -30,14 +30,14 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/pipeline" element={<SalesPipeline />} />
           <Route path="/contacts" element={<Contacts />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/products" element={<Products />} />
           <Route path="/orders-contracts" element={<OrdersContracts />} />
           <Route path="/orders" element={<Orders />} />
-          <Route path="/products" element={<Products />} />
           <Route path="/contracts" element={<Contracts />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/financial" element={<Financial />} />
-          <Route path="/schedule" element={<Schedule />} />
           <Route path="/scheduling" element={<Scheduling />} />
           
           {/* Rota para páginas não encontradas */}
