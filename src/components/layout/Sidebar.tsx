@@ -1,114 +1,143 @@
-
-import { useLocation, NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   CalendarDays, 
   BarChart,
   Settings, 
+  ChevronLeft, 
+  ChevronRight, 
   FileText,
   Package,
   Users,
   Target,
-  Banknote,
-  MoreHorizontal,
-  ClipboardList
+  Banknote
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { 
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetClose
-} from "@/components/ui/sheet";
-import { useState } from 'react';
+import { userProfile } from '@/utils/mockData';
 
-const mainNavItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+const navItems = [
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/sales-pipeline', label: 'Leads', icon: Target },
   { path: '/contacts', label: 'Contatos', icon: Users },
   { path: '/schedule', label: 'Agenda', icon: CalendarDays },
-  { path: '/reports', label: 'Relatórios', icon: BarChart },
-];
-
-const moreNavItems = [
   { path: '/products', label: 'Produtos', icon: Package },
-  { path: '/orders', label: 'Pedidos', icon: ClipboardList },
-  { path: '/contracts', label: 'Contratos', icon: FileText },
-  { path: '/orders-contracts', label: 'Novo Pedido/Contrato', icon: FileText },
+  { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
   { path: '/financial', label: 'Financeiro', icon: Banknote },
-  { path: '/projects', label: 'Projetos', icon: FileText },
+  { path: '/reports', label: 'Relatórios', icon: BarChart },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
 
-const Sidebar = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  toggle: () => void;
+}
+
+const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
   const location = useLocation();
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   
   return (
     <>
-      {/* Bottom Navigation for All Screen Sizes */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-darker border-t border-studio-gray">
-        <div className="flex justify-between items-center px-1">
-          {mainNavItems.map((item) => (
-            <NavLink 
-              key={item.path} 
-              to={item.path} 
-              className={({ isActive }) => cn(
-                "flex flex-col items-center justify-center py-2 px-3",
-                isActive 
-                  ? "text-primary" 
-                  : "text-studio-light hover:text-white"
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs mt-1">{item.label}</span>
-            </NavLink>
-          ))}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex flex-col items-center justify-center py-2 px-3 text-studio-light hover:text-white"
-            onClick={() => setIsMoreMenuOpen(true)}
-          >
-            <MoreHorizontal className="h-5 w-5" />
-            <span className="text-xs mt-1">Mais</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* More Menu Sheet */}
-      <Sheet open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
-        <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-xl bg-darker border-t border-studio-gray px-2 py-4">
-          <SheetHeader className="px-2 mb-4">
-            <SheetTitle className="text-white text-center">Mais opções</SheetTitle>
-          </SheetHeader>
-          <div className="grid grid-cols-4 gap-4">
-            {moreNavItems.map((item) => (
-              <NavLink 
-                key={item.path} 
-                to={item.path} 
-                className={({ isActive }) => cn(
-                  "flex flex-col items-center justify-center p-3 rounded-md transition-all",
-                  isActive 
-                    ? "bg-studio-gray text-primary" 
-                    : "text-studio-light hover:bg-studio-gray/80 hover:text-white"
-                )}
-                onClick={() => setIsMoreMenuOpen(false)}
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-20"
+          onClick={toggle}
+        />
+      )}
+    
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed md:sticky top-0 left-0 z-30 h-screen bg-darker border-r border-studio-gray transition-all duration-300 ease-in-out",
+        isOpen ? "w-64" : "w-0 md:w-20",
+        "flex flex-col"
+      )}>
+        {/* Logo area */}
+        <div className={cn(
+          "h-16 flex items-center justify-between px-4 border-b border-studio-gray",
+          !isOpen && "md:justify-center"
+        )}>
+          {isOpen ? (
+            <>
+              <div className="flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
+                  alt="Prisma CM" 
+                  className="h-12 w-auto object-contain"
+                />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggle}
+                className="text-studio-light hover:text-white hover:bg-studio-gray"
               >
-                <item.icon className="h-6 w-6 mb-2" />
-                <span className="text-xs text-center">{item.label}</span>
-              </NavLink>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="hidden md:flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
+                  alt="Prisma CM" 
+                  className="h-10 w-10 object-contain"
+                />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggle}
+                className="text-studio-light hover:text-white hover:bg-studio-gray hidden md:flex"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </>
+          )}
+        </div>
+        
+        {/* Navigation */}
+        <nav className={cn(
+          "flex-1 py-4 px-2 overflow-y-auto",
+          !isOpen && "md:px-1"
+        )}>
+          <ul className="space-y-1">
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <NavLink 
+                  to={item.path} 
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm",
+                    isActive 
+                      ? "bg-studio-gray text-white" 
+                      : "text-studio-light hover:bg-studio-gray/80 hover:text-white",
+                    !isOpen && "md:justify-center md:px-2"
+                  )}
+                >
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  {isOpen && <span>{item.label}</span>}
+                </NavLink>
+              </li>
             ))}
+          </ul>
+        </nav>
+        
+        {/* Footer - User Profile */}
+        {isOpen && (
+          <div className="p-3 border-t border-studio-gray">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-studio-gray flex items-center justify-center text-white font-medium text-xs">
+                {userProfile.name.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{userProfile.fullName}</p>
+                <p className="text-xs text-muted-foreground truncate">{userProfile.handle}</p>
+              </div>
+            </div>
           </div>
-          <div className="mt-6 flex justify-center">
-            <SheetClose asChild>
-              <Button variant="secondary" size="sm">Fechar</Button>
-            </SheetClose>
-          </div>
-        </SheetContent>
-      </Sheet>
+        )}
+      </aside>
     </>
   );
 };

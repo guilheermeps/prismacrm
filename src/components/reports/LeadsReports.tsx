@@ -1,193 +1,299 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { format, subDays, subMonths } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, subMonths } from 'date-fns';
+import { getLeads, getServiceTypes } from '@/lib/supabase/leadsService';
 
-// Mock data
-const mockLeads = [
-  { id: 1, name: 'Website Redesign', value: 5000, serviceType: 'Website', status: 'qualified', createdAt: '2023-03-15' },
-  { id: 2, name: 'Marketing Campaign', value: 7500, serviceType: 'Marketing', status: 'discovery', createdAt: '2023-03-20' },
-  { id: 3, name: 'Mobile App Development', value: 12000, serviceType: 'App Development', status: 'proposal', createdAt: '2023-03-10' },
-  { id: 4, name: 'SEO Optimization', value: 3000, serviceType: 'SEO', status: 'qualified', createdAt: '2023-03-05' },
-  { id: 5, name: 'Brand Identity', value: 8000, serviceType: 'Branding', status: 'discovery', createdAt: '2023-02-28' },
-  { id: 6, name: 'E-commerce Setup', value: 10000, serviceType: 'E-commerce', status: 'qualified', createdAt: '2023-02-20' },
-  { id: 7, name: 'Content Creation', value: 2500, serviceType: 'Content', status: 'discovery', createdAt: '2023-02-15' },
-  { id: 8, name: 'Social Media Strategy', value: 4500, serviceType: 'Social Media', status: 'proposal', createdAt: '2023-02-10' },
-];
-
-interface Lead {
-  id: number;
-  name: string;
-  value: number;
-  serviceType: string;
-  status: string;
-  createdAt: string;
-}
-
-const COLORS = ['#FFBA08', '#3E8A80', '#E26530', '#9B2915', '#2A2F3E', '#1A1F2C'];
+// Define COLORS for charts
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#fa4d96'];
 
 const LeadsReports = () => {
-  const [timeRange, setTimeRange] = useState('30');
-  
-  // Filter leads based on time range
-  const filteredLeads = mockLeads.filter(lead => {
-    const date = new Date(lead.createdAt);
-    if (timeRange === '7') {
-      return date >= subDays(new Date(), 7);
-    } else if (timeRange === '30') {
-      return date >= subDays(new Date(), 30);
-    } else if (timeRange === '90') {
-      return date >= subDays(new Date(), 90);
-    } else if (timeRange === '180') {
-      return date >= subDays(new Date(), 180);
-    } else {
-      return date >= subMonths(new Date(), 12);
+  const [period, setPeriod] = useState<string>("6");
+  const [leadsByMonth, setLeadsByMonth] = useState<any[]>([]);
+  const [leadsByService, setLeadsByService] = useState<any[]>([]);
+  const [conversionRate, setConversionRate] = useState<any[]>([]);
+  const [totalLeads, setTotalLeads] = useState<number>(0);
+  const [convertedLeads, setConvertedLeads] = useState<number>(0);
+  const [overallConversionRate, setOverallConversionRate] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Get leads data
+        const leads = await getLeads();
+        const serviceTypes = await getServiceTypes();
+        
+        // Calculate reporting period
+        const months = parseInt(period);
+        const endDate = new Date();
+        const startDate = subMonths(endDate, months);
+        
+        // Filter leads by period
+        const filteredLeads = leads.filter(lead => {
+          const createdAt = new Date(lead.createdat);
+          return createdAt >= startDate && createdAt <= endDate;
+        });
+        
+        // Calculate total and converted leads
+        const total = filteredLeads.length;
+        const converted = filteredLeads.filter(lead => 
+          lead.history && lead.history.some(h => h.action === 'converted')
+        ).length;
+        
+        // Group leads by month
+        const monthMap: Record<string, { month: string, count: number, converted: number, date: Date }> = {};
+        
+        filteredLeads.forEach(lead => {
+          const createdAt = new Date(lead.createdat);
+          const monthKey = format(createdAt, 'yyyy-MM');
+          const monthDisplay = format(createdAt, 'MMM');
+          
+          if (!monthMap[monthKey]) {
+            monthMap[monthKey] = {
+              month: monthDisplay,
+              count: 0,
+              converted: 0,
+              date: createdAt
+            };
+          }
+          
+          monthMap[monthKey].count += 1;
+          
+          // Count converted leads
+          if (lead.history && lead.history.some(h => h.action === 'converted')) {
+            monthMap[monthKey].converted += 1;
+          }
+        });
+        
+        // Convert to array and sort by date
+        const monthlyData = Object.values(monthMap)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .map(item => ({
+            month: item.month,
+            count: item.count,
+            converted: item.converted,
+            rate: item.count > 0 ? Math.round((item.converted / item.count) * 100) : 0
+          }));
+        
+        // Group leads by service type
+        const serviceMap: Record<string, number> = {};
+        
+        filteredLeads.forEach(lead => {
+          const serviceType = lead.servicetype || 'Não especificado';
+          if (!serviceMap[serviceType]) {
+            serviceMap[serviceType] = 0;
+          }
+          serviceMap[serviceType] += 1;
+        });
+        
+        // Convert to array for charting
+        const serviceData = Object.entries(serviceMap).map(([name, value]) => ({
+          name,
+          value
+        }));
+        
+        // Update state
+        setLeadsByMonth(monthlyData);
+        setLeadsByService(serviceData);
+        setTotalLeads(total);
+        setConvertedLeads(converted);
+        setOverallConversionRate(total > 0 ? Math.round((converted / total) * 100) : 0);
+        setConversionRate(monthlyData);
+      } catch (error) {
+        console.error("Error fetching leads data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [period]);
+
+  // Custom tooltip for the charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background border border-border p-3 rounded-md shadow-md">
+          <p className="font-medium">{`${label}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {`${entry.name}: ${entry.value}`}
+              {entry.name === 'Taxa' ? '%' : ''}
+            </p>
+          ))}
+        </div>
+      );
     }
-  });
-
-  // Group leads by status
-  const leadsByStatus = filteredLeads.reduce((acc: any, lead) => {
-    if (!acc[lead.status]) {
-      acc[lead.status] = 0;
-    }
-    acc[lead.status] += 1;
-    return acc;
-  }, {});
-
-  const statusData = Object.keys(leadsByStatus).map(status => ({
-    name: status.charAt(0).toUpperCase() + status.slice(1),
-    value: leadsByStatus[status]
-  }));
-
-  // Sum lead values by service type
-  const leadValueByServiceType = filteredLeads.reduce((acc: any, lead) => {
-    if (!acc[lead.serviceType]) {
-      acc[lead.serviceType] = 0;
-    }
-    acc[lead.serviceType] += lead.value;
-    return acc;
-  }, {});
-
-  const serviceTypeData = Object.keys(leadValueByServiceType).map(type => ({
-    name: type,
-    value: leadValueByServiceType[type]
-  }));
+    return null;
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Análise de Leads</h2>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Selecionar período" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Últimos 7 dias</SelectItem>
-            <SelectItem value="30">Últimos 30 dias</SelectItem>
-            <SelectItem value="90">Últimos 90 dias</SelectItem>
-            <SelectItem value="180">Últimos 180 dias</SelectItem>
-            <SelectItem value="365">Último ano</SelectItem>
-          </SelectContent>
-        </Select>
+        <h2 className="text-2xl font-bold">Relatório de Leads</h2>
+        <div className="w-48">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">Últimos 3 meses</SelectItem>
+              <SelectItem value="6">Últimos 6 meses</SelectItem>
+              <SelectItem value="12">Último ano</SelectItem>
+              <SelectItem value="24">Últimos 2 anos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Leads por Status</CardTitle>
-            <CardDescription>Distribuição de leads por estágio no funil</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Valor de Leads por Tipo de Serviço</CardTitle>
-            <CardDescription>Valor total por categoria de serviço</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={serviceTypeData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 60,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`R$ ${value}`, 'Valor Total']} />
-                  <Bar dataKey="value" fill="#FFBA08" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Leads</CardTitle>
-          <CardDescription>Quantidade de leads ao longo do tempo</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={[
-                  { name: 'Jan', count: 4 },
-                  { name: 'Fev', count: 3 },
-                  { name: 'Mar', count: 8 },
-                  { name: 'Abr', count: 6 },
-                  { name: 'Mai', count: 5 },
-                  { name: 'Jun', count: 9 },
-                ]}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#3E8A80" />
-              </BarChart>
-            </ResponsiveContainer>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <Card className="animate-pulse bg-muted"></Card>
+          <Card className="animate-pulse bg-muted"></Card>
+          <Card className="animate-pulse bg-muted"></Card>
+          <Card className="col-span-1 md:col-span-3 h-80 animate-pulse bg-muted"></Card>
+        </div>
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Total de Leads</CardTitle>
+                <CardDescription>
+                  Últimos {period} meses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{totalLeads}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Leads Convertidos</CardTitle>
+                <CardDescription>
+                  Últimos {period} meses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{convertedLeads}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Taxa de Conversão</CardTitle>
+                <CardDescription>
+                  Últimos {period} meses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{overallConversionRate}%</div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Monthly Leads Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Evolução de Leads</CardTitle>
+              <CardDescription>
+                Total de leads e conversões por mês
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={leadsByMonth}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="count" name="Total" fill="#0088FE" />
+                    <Bar dataKey="converted" name="Convertidos" fill="#00C49F" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Service Type Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribuição por Serviço</CardTitle>
+                <CardDescription>
+                  Leads por tipo de serviço
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-60 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={leadsByService}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {leadsByService.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Conversion Rate Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Taxa de Conversão Mensal</CardTitle>
+                <CardDescription>
+                  Evolução da taxa de conversão
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-60 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={conversionRate}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="month" />
+                      <YAxis unit="%" domain={[0, 100]} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="rate" 
+                        name="Taxa" 
+                        stroke="#fa4d96" 
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 };

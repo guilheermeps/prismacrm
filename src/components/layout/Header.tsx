@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
+  Menu,
   Search,
   Settings,
   LogOut,
@@ -21,7 +21,11 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/lib/supabase/client";
 
-const Header = () => {
+interface HeaderProps {
+  toggleSidebar: () => void;
+}
+
+const Header = ({ toggleSidebar }: HeaderProps) => {
   const { user, signOut } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
@@ -51,15 +55,17 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background px-4">
-      <div className="w-full flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
-            alt="Prisma CM" 
-            className="h-9 w-auto object-contain"
-          />
-        </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={toggleSidebar}
+      >
+        <Menu className="h-6 w-6" />
+        <span className="sr-only">Toggle Menu</span>
+      </Button>
 
+      <div className="w-full flex justify-between items-center">
         <div className="relative hidden md:flex">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
