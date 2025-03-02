@@ -26,7 +26,7 @@ export const discardLead = async (lead: Lead): Promise<boolean> => {
     const updatedLead = {
       ...lead,
       isArchived: true,
-      history: addHistoryEntry(lead.history, "discarded")
+      history: addHistoryEntry(lead.history, "discarded", null, null)
     };
     
     const success = await updateLead(updatedLead);
@@ -50,7 +50,7 @@ export const convertLeadToContact = async (lead: Lead): Promise<boolean> => {
       ...lead,
       isArchived: true,
       // Adding a new action type 'converted' to track conversions specifically
-      history: addHistoryEntry(lead.history, "converted")
+      history: addHistoryEntry(lead.history, "converted", null, null)
     };
     
     await updateLead(updatedLead);

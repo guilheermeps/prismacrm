@@ -1,7 +1,7 @@
 
 import { LeadHistory } from "@/lib/supabase/types";
 
-export const createLeadHistory = (action: string, from: string | null, to: string | null): LeadHistory => {
+export const createLeadHistory = (action: string, from: string | null = null, to: string | null = null): LeadHistory => {
   return {
     action,
     timestamp: new Date().toISOString(),

@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { updateLead } from "@/lib/supabase/leadsService";
@@ -63,7 +64,7 @@ export const archiveLead = async (lead: Lead): Promise<boolean> => {
     const updatedLead = {
       ...lead,
       isArchived: true,
-      history: addHistoryEntry(lead.history, "archived")
+      history: addHistoryEntry(lead.history, "archived", null, null)
     };
     
     const result = await updateLead(updatedLead);
@@ -94,7 +95,7 @@ export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
     const updatedLead = {
       ...lead,
       isArchived: false,
-      history: addHistoryEntry(lead.history, "unarchived")
+      history: addHistoryEntry(lead.history, "unarchived", null, null)
     };
     
     const result = await updateLead(updatedLead);
@@ -133,7 +134,9 @@ export const updateLeadForTransactionCreation = async (
       ...lead,
       history: addHistoryEntry(
         lead.history, 
-        transactionType === 'order' ? 'created_order' : 'created_contract'
+        transactionType === 'order' ? 'created_order' : 'created_contract',
+        null,
+        null
       )
     };
     
