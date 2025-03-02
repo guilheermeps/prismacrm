@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from "react";
-import { PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import LeadCard from "@/components/sales-pipeline/LeadCard";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import NewLeadForm from "@/components/sales-pipeline/NewLeadForm";
+import { Dialog } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Lead, Stage } from "@/lib/supabase/types";
+import ColumnHeader from "@/components/sales-pipeline/column/ColumnHeader";
+import ColumnSummary from "@/components/sales-pipeline/column/ColumnSummary";
+import ColumnContent from "@/components/sales-pipeline/column/ColumnContent";
+import NewLeadDialog from "@/components/sales-pipeline/column/NewLeadDialog";
 
 interface LeadColumnProps {
   stage: Stage;
@@ -123,9 +123,6 @@ const LeadColumn = ({
     }
   };
 
-  // Calculate total value of leads in this stage
-  const totalValue = columnLeads.reduce((sum, lead) => sum + (lead.proposalValue || 0), 0);
-
   return (
     <div 
       className={`flex flex-col rounded-md min-w-[300px] max-w-[300px] transition-colors ${isDragOver ? 'bg-primary/10' : 'bg-secondary/20'}`}
@@ -136,80 +133,40 @@ const LeadColumn = ({
       data-stage-id={stage.id}
     >
       {/* Stage Header */}
-      <div className="p-3 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-3 h-3 rounded-full" 
-            style={{ backgroundColor: stage.color }} 
-          />
-          <h3 className="font-medium">{stage.title}</h3>
-          <span className="text-sm text-muted-foreground ml-1">
-            ({columnLeads.length})
-          </span>
-        </div>
-        
-        {!isArchived && (
-          <Dialog open={isNewLeadDialogOpen} onOpenChange={setIsNewLeadDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <PlusCircle className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Adicionar Lead em {stage.title}</DialogTitle>
-              </DialogHeader>
-              <NewLeadForm 
-                onSave={handleAddNewLead} 
-                stages={allStages}
-                initialStageId={stage.id}
-                onCancel={() => setIsNewLeadDialogOpen(false)} 
-              />
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+      <ColumnHeader 
+        stage={stage} 
+        leadsCount={columnLeads.length}
+        isArchived={isArchived}
+        onAddNewLead={() => setIsNewLeadDialogOpen(true)}
+      />
 
       {/* Value Summary */}
-      {columnLeads.length > 0 && (
-        <div className="px-3 py-2 text-sm text-muted-foreground">
-          <span className="font-medium">
-            {new Intl.NumberFormat('pt-BR', { 
-              style: 'currency', 
-              currency: 'BRL' 
-            }).format(totalValue)}
-          </span> em {columnLeads.length} {columnLeads.length === 1 ? 'lead' : 'leads'}
-        </div>
-      )}
+      <ColumnSummary leads={columnLeads} />
 
       {/* Leads List */}
-      <div className="p-2 flex-1 overflow-y-auto max-h-[calc(100vh-320px)]">
-        <div className="space-y-2">
-          {columnLeads.length > 0 ? (
-            columnLeads.map(lead => (
-              <div key={lead.id} data-lead-id={lead.id}>
-                <LeadCard
-                  lead={lead}
-                  stages={allStages}
-                  onMoveLead={onMoveLead}
-                  onUpdateLead={onUpdateLead}
-                  onDeleteLead={onDeleteLead}
-                  onConvertToContact={onConvertToContact}
-                  onArchiveLead={onArchiveLead}
-                  onUnarchiveLead={onUnarchiveLead}
-                  isArchived={isArchived}
-                />
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-6 text-muted-foreground text-sm">
-              {isArchived 
-                ? "Nenhum lead arquivado nesta etapa." 
-                : "Nenhum lead nesta etapa. Adicione um novo!"}
-            </div>
-          )}
-        </div>
-      </div>
+      <ColumnContent 
+        leads={columnLeads}
+        stages={allStages}
+        onMoveLead={onMoveLead}
+        onUpdateLead={onUpdateLead}
+        onDeleteLead={onDeleteLead}
+        onConvertToContact={onConvertToContact}
+        onArchiveLead={onArchiveLead}
+        onUnarchiveLead={onUnarchiveLead}
+        isArchived={isArchived}
+      />
+
+      {/* New Lead Dialog */}
+      <Dialog open={isNewLeadDialogOpen} onOpenChange={setIsNewLeadDialogOpen}>
+        <NewLeadDialog 
+          isOpen={isNewLeadDialogOpen}
+          onOpenChange={setIsNewLeadDialogOpen}
+          onSave={handleAddNewLead}
+          stages={allStages}
+          stageId={stage.id}
+          stageTitle={stage.title}
+        />
+      </Dialog>
     </div>
   );
 };
