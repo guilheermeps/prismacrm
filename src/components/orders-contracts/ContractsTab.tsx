@@ -13,18 +13,27 @@ import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { createContract } from "@/lib/supabase/contractsService";
-import { SourceEntity } from "@/lib/types";
-
-interface ContractService {
-  id: string;
-  name: string;
-  price: number;
-}
+import { ContractService, SourceEntity } from "@/lib/types";
 
 interface ContractsTabProps {
   leadData?: SourceEntity;
   contactData?: SourceEntity;
   onCreateContract?: (contractId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
+}
+
+interface ContractFormData {
+  id: string;
+  client_id?: string;
+  client_name: string;
+  total_amount: number;
+  due_date?: string;
+  payment_method: string;
+  payment_status: string;
+  installments: number;
+  start_date: string;
+  notes?: string;
+  services: ContractService[];
+  status: string;
 }
 
 const ContractsTab = ({ leadData, contactData, onCreateContract }: ContractsTabProps) => {
@@ -70,17 +79,19 @@ const ContractsTab = ({ leadData, contactData, onCreateContract }: ContractsTabP
     const formattedEventDate = format(eventDate, 'yyyy-MM-dd');
 
     try {
-      const newContract = {
+      const newContract: ContractFormData = {
         id: contractId,
-        client_id: leadData?.id || contactData?.id || null,
+        client_id: leadData?.id || contactData?.id,
         client_name: clientName,
         total_amount: totalAmount,
         due_date: formattedDueDate,
         payment_method: paymentMethod,
+        payment_status: 'pending',
         installments: installments,
         start_date: formattedEventDate,
         notes: notes,
         services: services,
+        status: 'active'
       };
 
       const created = await createContract(newContract);

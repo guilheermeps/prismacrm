@@ -8,6 +8,7 @@ import ContactForm from "@/components/contacts/ContactForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 // Create a client
 const queryClient = new QueryClient({

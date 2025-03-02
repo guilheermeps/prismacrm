@@ -3,9 +3,9 @@ import { toast } from "sonner";
 import { 
   createLead, 
   updateLead, 
-  deleteLead,
-  type Lead 
+  deleteLead
 } from "@/lib/supabase/leadsService";
+import { Lead } from "@/lib/supabase/types";
 import { createContact, getContactByLeadId } from "@/lib/supabase/contactsService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 
@@ -32,6 +32,34 @@ export const addNewLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'hist
   } catch (error) {
     console.error("Error in addNewLead:", error);
     toast.error("Erro ao adicionar lead. Tente novamente.");
+    return false;
+  }
+};
+
+// Move a lead to another stage
+export const moveLead = async (lead: Lead, toStageId: string): Promise<boolean> => {
+  try {
+    console.log(`Moving lead ${lead.id} to stage ${toStageId}`);
+    
+    // Add movement to history
+    const updatedLead = {
+      ...lead,
+      stageId: toStageId,
+      history: addHistoryEntry(lead.history, "moved", lead.stageId, toStageId)
+    };
+    
+    const result = await updateLead(updatedLead);
+    
+    if (result) {
+      toast.success("Lead movido com sucesso!");
+      return true;
+    } else {
+      toast.error("Erro ao mover lead. Tente novamente.");
+      return false;
+    }
+  } catch (error) {
+    console.error("Error in moveLead:", error);
+    toast.error("Erro ao mover lead. Tente novamente.");
     return false;
   }
 };

@@ -7,13 +7,13 @@ import {
 } from "@/lib/supabase";
 import { 
   addNewLead, 
-  moveLead,
   updateLeadData,
   removeLead,
   archiveLead,
   unarchiveLead,
   convertLeadToContact,
-  discardLead
+  discardLead,
+  moveLead
 } from "./utils/leadActionHandlers";
 import { resetAllLeads } from "./utils/leadBulkOperations";
 

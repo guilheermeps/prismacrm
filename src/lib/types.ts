@@ -46,3 +46,8 @@ export interface FinancialTransaction {
   sourceId?: string;
   totalInstallments?: number;
 }
+
+// Re-export common interfaces used with Supabase
+export { type Lead } from '@/lib/supabase/types';
+export { type Contract } from '@/lib/supabase/contractsService';
+export { type Order } from '@/lib/supabase/ordersService';
