@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { UserCheck, Edit, MessageSquare, Phone } from "lucide-react";
+import { UserCheck, Edit, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -32,7 +32,17 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
   })) : [];
 
   const handleOpenWhatsApp = () => {
-    const whatsappUrl = `https://wa.me/${lead.whatsapp}`;
+    if (!lead.whatsapp) {
+      toast.error("Número de WhatsApp não disponível");
+      return;
+    }
+    
+    // Format the number properly
+    let whatsappNumber = lead.whatsapp;
+    // Remove any non-digit characters if they exist
+    whatsappNumber = whatsappNumber.replace(/\D/g, '');
+    
+    const whatsappUrl = `https://wa.me/${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -85,7 +95,7 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
           
           <div>
             <p className="text-muted-foreground">WhatsApp</p>
-            <p>{lead.whatsapp}</p>
+            <p>{lead.whatsapp || "Não informado"}</p>
           </div>
         </div>
       </div>
@@ -105,21 +115,25 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
       <div className="space-y-2">
         <h4 className="text-sm font-medium">Histórico</h4>
         <div className="space-y-2 max-h-40 overflow-y-auto text-sm">
-          {formattedHistory.map((item, index) => (
-            <div key={index} className="border-l-2 pl-3 py-1 border-muted">
-              {item.action === "created" ? (
-                <p>
-                  <span className="font-medium">Lead criado</span> em {item.formattedTime}
-                </p>
-              ) : item.action === "moved" ? (
-                <p>
-                  <span className="font-medium">Movido</span> de <span className="italic">{item.from}</span> para <span className="italic">{item.to}</span> em {item.formattedTime}
-                </p>
-              ) : (
-                <p>{item.action} - {item.formattedTime}</p>
-              )}
-            </div>
-          ))}
+          {formattedHistory.length > 0 ? (
+            formattedHistory.map((item, index) => (
+              <div key={index} className="border-l-2 pl-3 py-1 border-muted">
+                {item.action === "created" ? (
+                  <p>
+                    <span className="font-medium">Lead criado</span> em {item.formattedTime}
+                  </p>
+                ) : item.action === "moved" ? (
+                  <p>
+                    <span className="font-medium">Movido</span> de <span className="italic">{item.from}</span> para <span className="italic">{item.to}</span> em {item.formattedTime}
+                  </p>
+                ) : (
+                  <p>{item.action} - {item.formattedTime}</p>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-muted-foreground italic">Nenhum histórico disponível</p>
+          )}
         </div>
       </div>
       

@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { PlusCircle, Search, Filter, Settings } from "lucide-react";
+import { PlusCircle, Search, Filter, Settings, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +15,17 @@ import NewLeadForm from "@/components/sales-pipeline/NewLeadForm";
 import EditStageForm from "@/components/sales-pipeline/EditStageForm";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Initial mock data for stages
 const initialStages = [
@@ -25,173 +37,36 @@ const initialStages = [
   { id: "6", title: "Fechado (Perdido)", color: "#ff595e" },
 ];
 
-// Mock leads data
-const initialLeads = [
-  {
-    id: "l1",
-    name: "Maria Silva",
-    whatsapp: "5511999887766",
-    phone: "11 3322-4455",
-    serviceType: "Ensaio Fotográfico",
-    proposalValue: 1200,
-    notes: "Cliente interessada em ensaio pré-wedding",
-    stageId: "1",
-    createdAt: new Date().toISOString(),
-    history: [
-      { 
-        action: "created", 
-        timestamp: new Date().toISOString(), 
-        from: null, 
-        to: "Novo Lead"
-      }
-    ]
-  },
-  {
-    id: "l2",
-    name: "João Pereira",
-    whatsapp: "5511988776655",
-    phone: "",
-    serviceType: "Casamento",
-    proposalValue: 5000,
-    notes: "Casamento marcado para Dezembro 2024",
-    stageId: "2",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    history: [
-      { 
-        action: "created", 
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: null, 
-        to: "Novo Lead"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Novo Lead", 
-        to: "Proposta Enviada"
-      }
-    ]
-  },
-  {
-    id: "l3",
-    name: "Camila Oliveira",
-    whatsapp: "5511977665544",
-    phone: "11 2233-4455",
-    serviceType: "Evento Corporativo",
-    proposalValue: 3500,
-    notes: "Evento para 100 pessoas",
-    stageId: "3",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    history: [
-      { 
-        action: "created", 
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: null, 
-        to: "Novo Lead"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Novo Lead", 
-        to: "Proposta Enviada"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Proposta Enviada", 
-        to: "Reunião Agendada"
-      }
-    ]
-  },
-  {
-    id: "l4",
-    name: "Ricardo Santos",
-    whatsapp: "5511966554433",
-    phone: "",
-    serviceType: "Ensaio Fotográfico",
-    proposalValue: 800,
-    notes: "Ensaio para LinkedIn",
-    stageId: "4",
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    history: [
-      { 
-        action: "created", 
-        timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: null, 
-        to: "Novo Lead"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Novo Lead", 
-        to: "Proposta Enviada"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Proposta Enviada", 
-        to: "Reunião Agendada"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Reunião Agendada", 
-        to: "Negociação"
-      }
-    ]
-  },
-  {
-    id: "l5",
-    name: "Fernando Lima",
-    whatsapp: "5511955443322",
-    phone: "11 4455-6677",
-    serviceType: "Casamento",
-    proposalValue: 6500,
-    notes: "Casamento na praia",
-    stageId: "5",
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    history: [
-      { 
-        action: "created", 
-        timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: null, 
-        to: "Novo Lead"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Novo Lead", 
-        to: "Proposta Enviada"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Proposta Enviada", 
-        to: "Reunião Agendada"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Reunião Agendada", 
-        to: "Negociação"
-      },
-      { 
-        action: "moved", 
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
-        from: "Negociação", 
-        to: "Fechado (Ganho)"
-      }
-    ]
-  }
-];
+// Empty initial leads array
+const emptyLeads = [];
 
 const SalesFunnel = () => {
   const navigate = useNavigate();
-  const [stages, setStages] = useState(initialStages);
-  const [leads, setLeads] = useState(initialLeads);
+  const [stages, setStages] = useState(() => {
+    const savedStages = localStorage.getItem("salesPipelineStages");
+    return savedStages ? JSON.parse(savedStages) : initialStages;
+  });
+  
+  const [leads, setLeads] = useState(() => {
+    const savedLeads = localStorage.getItem("salesPipelineLeads");
+    return savedLeads ? JSON.parse(savedLeads) : emptyLeads;
+  });
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [isEditStageDialogOpen, setIsEditStageDialogOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState(null);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+
+  // Save stages to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("salesPipelineStages", JSON.stringify(stages));
+  }, [stages]);
+
+  // Save leads to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("salesPipelineLeads", JSON.stringify(leads));
+  }, [leads]);
 
   // Filter leads by search term
   const filteredLeads = leads.filter(lead =>
@@ -200,7 +75,7 @@ const SalesFunnel = () => {
   );
 
   const handleAddNewLead = (newLead) => {
-    const id = `l${leads.length + 1}`;
+    const id = `l${Date.now()}`;
     const createdAt = new Date().toISOString();
     
     const stageName = stages.find(stage => stage.id === newLead.stageId)?.title || "Desconhecido";
@@ -261,7 +136,7 @@ const SalesFunnel = () => {
   };
 
   const handleAddStage = (newStage) => {
-    const id = `${stages.length + 1}`;
+    const id = `${Date.now()}`;
     setStages([...stages, { ...newStage, id }]);
     toast.success("Etapa adicionada com sucesso!");
   };
@@ -301,6 +176,12 @@ const SalesFunnel = () => {
     if (wonStage) {
       handleMoveLead(lead.id, lead.stageId, wonStage.id);
     }
+  };
+
+  const handleResetLeads = () => {
+    setLeads([]);
+    setIsResetConfirmOpen(false);
+    toast.success("Todos os leads foram removidos com sucesso!");
   };
 
   return (
@@ -385,6 +266,30 @@ const SalesFunnel = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Reset Leads Button */}
+          <AlertDialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="flex gap-2">
+                <Trash2 className="h-4 w-4" />
+                Limpar Leads
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação removerá permanentemente todos os leads do pipeline de vendas. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetLeads}>
+                  Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {/* Search */}
