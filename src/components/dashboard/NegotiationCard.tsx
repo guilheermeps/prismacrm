@@ -1,6 +1,4 @@
 
-import { negotiations } from '@/utils/mockData';
-
 interface NegotiationCardProps {
   title?: string;
   data?: {
@@ -14,11 +12,15 @@ interface NegotiationCardProps {
 
 const NegotiationCard = ({ 
   title = "Em negociação", 
-  data = negotiations,
+  data = { total: 0, currency: "R$", count: 0 },
   onClick,
   isHighlighted
 }: NegotiationCardProps) => {
   const { total, currency, count } = data;
+  
+  const formattedValue = currency 
+    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)
+    : `${total}%`;
   
   return (
     <div 
@@ -28,7 +30,7 @@ const NegotiationCard = ({
       <p className="text-muted-foreground">{title}</p>
       <div>
         <span className={`text-4xl font-bold ${isHighlighted ? 'text-studio-yellow' : ''}`}>
-          {currency}{total.toLocaleString()}
+          {currency ? formattedValue : `${total}%`}
         </span>
         <p className="text-sm text-muted-foreground mt-1">
           {count} {count === 1 ? 'cliente' : 'clientes'}
