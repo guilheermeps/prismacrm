@@ -34,6 +34,7 @@ const LeadColumn = ({
   isArchived = false
 }: LeadColumnProps) => {
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = React.useState(false);
+  const [isDragOver, setIsDragOver] = React.useState(false);
 
   const handleAddNewLead = (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     try {
@@ -50,23 +51,45 @@ const LeadColumn = ({
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     // Add visual indicator that drop is allowed
-    e.currentTarget.classList.add("bg-accent/50", "transition-colors");
+    setIsDragOver(true);
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     // Remove visual indicator
-    e.currentTarget.classList.remove("bg-accent/50", "transition-colors");
+    setIsDragOver(false);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     // Remove visual indicator
-    e.currentTarget.classList.remove("bg-accent/50", "transition-colors");
+    setIsDragOver(false);
     
     try {
-      const leadId = e.dataTransfer.getData("leadId");
-      const fromStageId = e.dataTransfer.getData("stageId");
+      // Try to get JSON data first (more reliable)
+      let leadId, fromStageId;
+      
+      try {
+        const jsonData = e.dataTransfer.getData("application/json");
+        if (jsonData) {
+          const data = JSON.parse(jsonData);
+          leadId = data.leadId;
+          fromStageId = data.stageId;
+        }
+      } catch (err) {
+        console.log("Couldn't parse JSON data, falling back to text data", err);
+      }
+      
+      // Fallback to individual text data
+      if (!leadId) leadId = e.dataTransfer.getData("leadId");
+      if (!fromStageId) fromStageId = e.dataTransfer.getData("stageId");
+      
+      console.log("Drop data:", { leadId, fromStageId, toStageId: stage.id });
       
       if (leadId && fromStageId && fromStageId !== stage.id) {
         console.log(`Moving lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
@@ -83,9 +106,10 @@ const LeadColumn = ({
 
   return (
     <div 
-      className="flex flex-col bg-secondary/20 rounded-md min-w-[300px] max-w-[300px] transition-colors"
+      className={`flex flex-col rounded-md min-w-[300px] max-w-[300px] transition-colors ${isDragOver ? 'bg-primary/10' : 'bg-secondary/20'}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      onDragEnter={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Stage Header */}

@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { createLead, updateLead, deleteLead } from "@/lib/supabase/leadsService";
@@ -60,7 +61,12 @@ export const moveLead = async (
       };
       
       console.log("Moving lead in dev/demo mode:", updatedLead);
-      toast.success(`Lead movido para nova etapa!`);
+      
+      // Delay the toast to avoid interfering with drag operation
+      setTimeout(() => {
+        toast.success("Lead movido para nova etapa!");
+      }, 100);
+      
       return true;
     }
     
@@ -74,7 +80,12 @@ export const moveLead = async (
     };
     
     await updateLead(updatedLead);
-    toast.success(`Lead movido para nova etapa!`);
+    
+    // Delay the toast to avoid interfering with drag operation
+    setTimeout(() => {
+      toast.success("Lead movido para nova etapa!");
+    }, 100);
+    
     return true;
   } catch (error) {
     console.error("Erro ao mover lead:", error);

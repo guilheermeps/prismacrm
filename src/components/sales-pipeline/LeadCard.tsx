@@ -37,8 +37,16 @@ const LeadCard = ({
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData("leadId", lead.id);
-    e.dataTransfer.setData("stageId", lead.stageId);
+    if (isArchived) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Set data in dataTransfer
+    e.dataTransfer.setData("application/json", JSON.stringify({
+      leadId: lead.id,
+      stageId: lead.stageId
+    }));
     e.dataTransfer.effectAllowed = "move";
     setIsDragging(true);
     
@@ -52,6 +60,8 @@ const LeadCard = ({
   };
   
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    if (isArchived) return;
+    
     e.currentTarget.classList.remove("opacity-50");
     setIsDragging(false);
     console.log("Drag ended");
@@ -74,7 +84,7 @@ const LeadCard = ({
   return (
     <>
       <Card 
-        className={`cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all ${isDragging ? 'opacity-50' : ''}`}
+        className={`${isDragging ? 'opacity-50' : ''} cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all`}
         draggable={!isArchived}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}

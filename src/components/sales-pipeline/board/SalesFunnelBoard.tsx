@@ -31,8 +31,11 @@ const SalesFunnelBoard = ({
   };
 
   return (
-    <div className="overflow-x-auto pb-4" onDragOver={handleDragOver}>
-      <div className="flex gap-4 min-w-max">
+    <div 
+      className="overflow-x-auto pb-4 min-h-[500px]" 
+      onDragOver={handleDragOver}
+    >
+      <div className="flex gap-4 min-w-max h-full">
         {stages.map(stage => (
           <LeadColumn
             key={stage.id}
