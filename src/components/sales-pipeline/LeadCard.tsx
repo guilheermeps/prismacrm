@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { MoreHorizontal, Edit, Trash, ArrowRight, ArrowLeft, UserCheck, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,14 +15,15 @@ import LeadDetails from "@/components/sales-pipeline/LeadDetails";
 import ConvertToContactForm from "@/components/sales-pipeline/ConvertToContactForm";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { Lead, Stage } from "@/lib/supabase";
 
 interface LeadCardProps {
-  lead: any;
-  stages: any[];
+  lead: Lead;
+  stages: Stage[];
   onMoveLead: (leadId: string, fromStageId: string, toStageId: string) => void;
-  onUpdateLead: (lead: any) => void;
+  onUpdateLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
-  onConvertToContact: (lead: any) => void;
+  onConvertToContact: (lead: Lead) => void;
 }
 
 const LeadCard = ({
@@ -45,18 +47,6 @@ const LeadCard = ({
     if (hasNextStage) {
       const nextStage = stages[currentStageIndex + 1];
       onMoveLead(lead.id, lead.stageId, nextStage.id);
-      // Update localStorage after moving
-      const savedLeads = localStorage.getItem("salesPipelineLeads");
-      if (savedLeads) {
-        const leadsData = JSON.parse(savedLeads);
-        const updatedLeads = leadsData.map(l => {
-          if (l.id === lead.id) {
-            return {...l, stageId: nextStage.id};
-          }
-          return l;
-        });
-        localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
-      }
     }
   };
 
@@ -64,18 +54,6 @@ const LeadCard = ({
     if (hasPreviousStage) {
       const previousStage = stages[currentStageIndex - 1];
       onMoveLead(lead.id, lead.stageId, previousStage.id);
-      // Update localStorage after moving
-      const savedLeads = localStorage.getItem("salesPipelineLeads");
-      if (savedLeads) {
-        const leadsData = JSON.parse(savedLeads);
-        const updatedLeads = leadsData.map(l => {
-          if (l.id === lead.id) {
-            return {...l, stageId: previousStage.id};
-          }
-          return l;
-        });
-        localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
-      }
     }
   };
 

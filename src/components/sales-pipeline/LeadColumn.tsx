@@ -6,19 +6,16 @@ import LeadCard from "@/components/sales-pipeline/LeadCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import NewLeadForm from "@/components/sales-pipeline/NewLeadForm";
 import { toast } from "sonner";
+import { Lead, Stage } from "@/lib/supabase";
 
 interface LeadColumnProps {
-  stage: {
-    id: string;
-    title: string;
-    color: string;
-  };
-  leads: any[];
-  allStages: any[];
+  stage: Stage;
+  leads: Lead[];
+  allStages: Stage[];
   onMoveLead: (leadId: string, fromStageId: string, toStageId: string) => void;
-  onUpdateLead: (lead: any) => void;
+  onUpdateLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
-  onConvertToContact: (lead: any) => void;
+  onConvertToContact: (lead: Lead) => void;
 }
 
 const LeadColumn = ({

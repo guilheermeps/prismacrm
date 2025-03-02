@@ -26,8 +26,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { 
+  supabase, 
+  getLeads, 
+  getStages, 
+  createLead, 
+  updateLead, 
+  deleteLead, 
+  createStage, 
+  updateStage, 
+  deleteStage,
+  type Lead,
+  type Stage
+} from "@/lib/supabase";
 
-// Initial mock data for stages
+// Initial mock data for stages, used only if no stages are found in Supabase
 const initialStages = [
   { id: "1", title: "Novo Lead", color: "#4361ee" },
   { id: "2", title: "Proposta Enviada", color: "#3a86ff" },
@@ -37,36 +50,79 @@ const initialStages = [
   { id: "6", title: "Fechado (Perdido)", color: "#ff595e" },
 ];
 
-// Empty initial leads array
-const emptyLeads = [];
-
 const SalesFunnel = () => {
   const navigate = useNavigate();
-  const [stages, setStages] = useState(() => {
-    const savedStages = localStorage.getItem("salesPipelineStages");
-    return savedStages ? JSON.parse(savedStages) : initialStages;
-  });
-  
-  const [leads, setLeads] = useState(() => {
-    const savedLeads = localStorage.getItem("salesPipelineLeads");
-    return savedLeads ? JSON.parse(savedLeads) : emptyLeads;
-  });
+  const [stages, setStages] = useState<Stage[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [isEditStageDialogOpen, setIsEditStageDialogOpen] = useState(false);
-  const [selectedStage, setSelectedStage] = useState(null);
+  const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
-  // Save stages to localStorage whenever they change
+  // Carregar dados do Supabase ao montar o componente
   useEffect(() => {
-    localStorage.setItem("salesPipelineStages", JSON.stringify(stages));
-  }, [stages]);
-
-  // Save leads to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("salesPipelineLeads", JSON.stringify(leads));
-  }, [leads]);
+    const loadData = async () => {
+      setLoading(true);
+      
+      try {
+        // Buscar estágios
+        const stagesData = await getStages();
+        
+        // Se não houver estágios, inicializar com dados iniciais
+        if (stagesData.length === 0) {
+          // Criar estágios iniciais no Supabase
+          const promises = initialStages.map(stage => 
+            supabase.from('stages').insert(stage).select()
+          );
+          
+          await Promise.all(promises);
+          
+          // Buscar novamente os estágios
+          const newStagesData = await getStages();
+          setStages(newStagesData);
+        } else {
+          setStages(stagesData);
+        }
+        
+        // Buscar leads
+        const leadsData = await getLeads();
+        setLeads(leadsData);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        toast.error("Erro ao carregar dados. Tente novamente.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+    
+    // Configurar inscrição em tempo real para mudanças
+    const leadsSubscription = supabase
+      .channel('leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+        // Atualizar os leads quando houver mudanças
+        getLeads().then(setLeads);
+      })
+      .subscribe();
+      
+    const stagesSubscription = supabase
+      .channel('stages-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stages' }, (payload) => {
+        // Atualizar os estágios quando houver mudanças
+        getStages().then(setStages);
+      })
+      .subscribe();
+    
+    // Limpar inscrições ao desmontar
+    return () => {
+      leadsSubscription.unsubscribe();
+      stagesSubscription.unsubscribe();
+    };
+  }, []);
 
   // Filter leads by search term
   const filteredLeads = leads.filter(lead =>
@@ -74,129 +130,185 @@ const SalesFunnel = () => {
     lead.serviceType.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddNewLead = (newLead) => {
-    const id = `l${Date.now()}`;
-    const createdAt = new Date().toISOString();
-    
-    const stageName = stages.find(stage => stage.id === newLead.stageId)?.title || "Desconhecido";
-    
-    const leadWithMetadata = {
-      ...newLead,
-      id,
-      createdAt,
-      history: [
-        {
-          action: "created",
-          timestamp: createdAt,
-          from: null,
-          to: stageName
-        }
-      ]
-    };
-    
-    const updatedLeads = [...leads, leadWithMetadata];
-    setLeads(updatedLeads);
-    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
-    setIsNewLeadDialogOpen(false);
-    toast.success("Lead adicionado com sucesso!");
-  };
-
-  const handleMoveLead = (leadId, fromStageId, toStageId) => {
-    const updatedLeads = leads.map(lead => {
-      if (lead.id === leadId) {
-        const fromStageName = stages.find(stage => stage.id === fromStageId)?.title || "Desconhecido";
-        const toStageName = stages.find(stage => stage.id === toStageId)?.title || "Desconhecido";
-        
-        return {
-          ...lead,
-          stageId: toStageId,
-          history: [
-            ...lead.history,
-            {
-              action: "moved",
-              timestamp: new Date().toISOString(),
-              from: fromStageName,
-              to: toStageName
-            }
-          ]
-        };
+  const handleAddNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history'>) => {
+    try {
+      const createdAt = new Date().toISOString();
+      const stageName = stages.find(stage => stage.id === newLead.stageId)?.title || "Desconhecido";
+      
+      const leadWithMetadata = {
+        ...newLead,
+        createdAt,
+        history: [
+          {
+            action: "created",
+            timestamp: createdAt,
+            from: null,
+            to: stageName
+          }
+        ]
+      };
+      
+      const result = await createLead(leadWithMetadata as Omit<Lead, 'id'>);
+      
+      if (result) {
+        setIsNewLeadDialogOpen(false);
+        toast.success("Lead adicionado com sucesso!");
       }
-      return lead;
-    });
-    
-    setLeads(updatedLeads);
-    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
-  };
-
-  const handleUpdateLead = (updatedLead) => {
-    const updatedLeads = leads.map(lead => lead.id === updatedLead.id ? updatedLead : lead);
-    setLeads(updatedLeads);
-    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
-    toast.success("Lead atualizado com sucesso!");
-  };
-
-  const handleDeleteLead = (leadId) => {
-    const updatedLeads = leads.filter(lead => lead.id !== leadId);
-    setLeads(updatedLeads);
-    localStorage.setItem("salesPipelineLeads", JSON.stringify(updatedLeads));
-    toast.success("Lead removido com sucesso!");
-  };
-
-  const handleAddStage = (newStage) => {
-    const id = `${Date.now()}`;
-    const updatedStages = [...stages, { ...newStage, id }];
-    setStages(updatedStages);
-    localStorage.setItem("salesPipelineStages", JSON.stringify(updatedStages));
-    toast.success("Etapa adicionada com sucesso!");
-  };
-
-  const handleUpdateStage = (updatedStage) => {
-    const updatedStages = stages.map(stage => stage.id === updatedStage.id ? updatedStage : stage);
-    setStages(updatedStages);
-    localStorage.setItem("salesPipelineStages", JSON.stringify(updatedStages));
-    setSelectedStage(null);
-    setIsEditStageDialogOpen(false);
-    toast.success("Etapa atualizada com sucesso!");
-  };
-
-  const handleDeleteStage = (stageId) => {
-    // Check if there are leads in this stage
-    const hasLeadsInStage = leads.some(lead => lead.stageId === stageId);
-    
-    if (hasLeadsInStage) {
-      toast.error("Não é possível excluir uma etapa que contém leads!");
-      return;
+    } catch (error) {
+      console.error("Erro ao adicionar lead:", error);
+      toast.error("Erro ao adicionar lead. Tente novamente.");
     }
-    
-    const updatedStages = stages.filter(stage => stage.id !== stageId);
-    setStages(updatedStages);
-    localStorage.setItem("salesPipelineStages", JSON.stringify(updatedStages));
-    setSelectedStage(null);
-    setIsEditStageDialogOpen(false);
-    toast.success("Etapa removida com sucesso!");
   };
 
-  const openEditStageDialog = (stage) => {
+  const handleMoveLead = async (leadId: string, fromStageId: string, toStageId: string) => {
+    try {
+      const lead = leads.find(l => l.id === leadId);
+      
+      if (!lead) return;
+      
+      const fromStageName = stages.find(stage => stage.id === fromStageId)?.title || "Desconhecido";
+      const toStageName = stages.find(stage => stage.id === toStageId)?.title || "Desconhecido";
+      
+      const updatedLead = {
+        ...lead,
+        stageId: toStageId,
+        history: [
+          ...lead.history,
+          {
+            action: "moved",
+            timestamp: new Date().toISOString(),
+            from: fromStageName,
+            to: toStageName
+          }
+        ]
+      };
+      
+      await updateLead(updatedLead);
+    } catch (error) {
+      console.error("Erro ao mover lead:", error);
+      toast.error("Erro ao mover lead. Tente novamente.");
+    }
+  };
+
+  const handleUpdateLead = async (updatedLead: Lead) => {
+    try {
+      await updateLead(updatedLead);
+      toast.success("Lead atualizado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar lead:", error);
+      toast.error("Erro ao atualizar lead. Tente novamente.");
+    }
+  };
+
+  const handleDeleteLead = async (leadId: string) => {
+    try {
+      const success = await deleteLead(leadId);
+      
+      if (success) {
+        toast.success("Lead removido com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao remover lead:", error);
+      toast.error("Erro ao remover lead. Tente novamente.");
+    }
+  };
+
+  const handleAddStage = async (newStage: Omit<Stage, 'id'>) => {
+    try {
+      const result = await createStage(newStage);
+      
+      if (result) {
+        toast.success("Etapa adicionada com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao adicionar etapa:", error);
+      toast.error("Erro ao adicionar etapa. Tente novamente.");
+    }
+  };
+
+  const handleUpdateStage = async (updatedStage: Stage) => {
+    try {
+      const result = await updateStage(updatedStage);
+      
+      if (result) {
+        setSelectedStage(null);
+        setIsEditStageDialogOpen(false);
+        toast.success("Etapa atualizada com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar etapa:", error);
+      toast.error("Erro ao atualizar etapa. Tente novamente.");
+    }
+  };
+
+  const handleDeleteStage = async (stageId: string) => {
+    try {
+      // Verificar se há leads nesta etapa
+      const hasLeadsInStage = leads.some(lead => lead.stageId === stageId);
+      
+      if (hasLeadsInStage) {
+        toast.error("Não é possível excluir uma etapa que contém leads!");
+        return;
+      }
+      
+      const success = await deleteStage(stageId);
+      
+      if (success) {
+        setSelectedStage(null);
+        setIsEditStageDialogOpen(false);
+        toast.success("Etapa removida com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao remover etapa:", error);
+      toast.error("Erro ao remover etapa. Tente novamente.");
+    }
+  };
+
+  const openEditStageDialog = (stage: Stage) => {
     setSelectedStage(stage);
     setIsEditStageDialogOpen(true);
   };
 
-  const convertToContact = (lead) => {
-    // In a real application, this would create a contact in the Contacts module
-    
-    // You could then move the lead to the "Closed (Won)" stage
-    const wonStage = stages.find(stage => stage.title === "Fechado (Ganho)");
-    if (wonStage) {
-      handleMoveLead(lead.id, lead.stageId, wonStage.id);
+  const convertToContact = async (lead: Lead) => {
+    try {
+      // Em uma aplicação real, isto criaria um contato no módulo Contatos
+      
+      // Mover o lead para a etapa "Fechado (Ganho)"
+      const wonStage = stages.find(stage => stage.title === "Fechado (Ganho)");
+      if (wonStage) {
+        await handleMoveLead(lead.id, lead.stageId, wonStage.id);
+      }
+    } catch (error) {
+      console.error("Erro ao converter para contato:", error);
+      toast.error("Erro ao converter para contato. Tente novamente.");
     }
   };
 
-  const handleResetLeads = () => {
-    setLeads([]);
-    localStorage.setItem("salesPipelineLeads", JSON.stringify([]));
-    setIsResetConfirmOpen(false);
-    toast.success("Todos os leads foram removidos com sucesso!");
+  const handleResetLeads = async () => {
+    try {
+      // Excluir todos os leads
+      const { error } = await supabase.from('leads').delete().neq('id', '0');
+      
+      if (error) {
+        throw error;
+      }
+      
+      setIsResetConfirmOpen(false);
+      toast.success("Todos os leads foram removidos com sucesso!");
+    } catch (error) {
+      console.error("Erro ao remover todos os leads:", error);
+      toast.error("Erro ao remover todos os leads. Tente novamente.");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <span className="ml-2">Carregando pipeline de vendas...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -236,7 +348,7 @@ const SalesFunnel = () => {
                 <DialogTrigger asChild>
                   <DropdownMenuItem onSelect={(e) => {
                     e.preventDefault();
-                    setSelectedStage({ title: "", color: "#4361ee" });
+                    setSelectedStage({ title: "", color: "#4361ee" } as Stage);
                     setIsEditStageDialogOpen(true);
                   }}>
                     <PlusCircle className="h-4 w-4 mr-2" />
