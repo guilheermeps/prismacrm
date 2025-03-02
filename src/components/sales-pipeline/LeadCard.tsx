@@ -42,21 +42,27 @@ const LeadCard = ({
       return;
     }
     
-    // Set data in dataTransfer
-    e.dataTransfer.setData("application/json", JSON.stringify({
+    // Set data in dataTransfer with multiple formats for reliability
+    const data = {
       leadId: lead.id,
       stageId: lead.stageId
-    }));
+    };
+    
+    // Set as JSON for structured data
+    e.dataTransfer.setData("application/json", JSON.stringify(data));
+    
+    // Set individual properties as fallback
+    e.dataTransfer.setData("leadId", lead.id);
+    e.dataTransfer.setData("stageId", lead.stageId);
+    
     e.dataTransfer.effectAllowed = "move";
+    
+    // Add visual feedback immediately (don't use setTimeout)
+    e.currentTarget.classList.add("opacity-50");
     setIsDragging(true);
     
     // Log for debugging
     console.log(`Started dragging lead: ${lead.id} from stage: ${lead.stageId}`);
-    
-    // Add a small delay to allow the drag image to be captured
-    setTimeout(() => {
-      e.currentTarget.classList.add("opacity-50");
-    }, 0);
   };
   
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {

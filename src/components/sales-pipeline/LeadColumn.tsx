@@ -53,7 +53,9 @@ const LeadColumn = ({
     e.preventDefault();
     e.stopPropagation();
     // Add visual indicator that drop is allowed
-    setIsDragOver(true);
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
@@ -71,29 +73,30 @@ const LeadColumn = ({
     setIsDragOver(false);
     
     try {
-      // Try to get JSON data first (more reliable)
-      let leadId, fromStageId;
+      // Try to get JSON data
+      const jsonData = e.dataTransfer.getData("application/json");
       
-      try {
-        const jsonData = e.dataTransfer.getData("application/json");
-        if (jsonData) {
-          const data = JSON.parse(jsonData);
-          leadId = data.leadId;
-          fromStageId = data.stageId;
+      if (jsonData) {
+        const data = JSON.parse(jsonData);
+        const leadId = data.leadId;
+        const fromStageId = data.stageId;
+        
+        console.log("Drop data:", { leadId, fromStageId, toStageId: stage.id });
+        
+        if (leadId && fromStageId && fromStageId !== stage.id) {
+          console.log(`Moving lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
+          
+          // Call the move function
+          onMoveLead(leadId, fromStageId, stage.id);
+          
+          // Update local state immediately for better UX
+          const leadToMove = leads.find(l => l.id === leadId);
+          if (leadToMove) {
+            const updatedLead = { ...leadToMove, stageId: stage.id };
+            // This ensures immediate visual feedback
+            onUpdateLead(updatedLead);
+          }
         }
-      } catch (err) {
-        console.log("Couldn't parse JSON data, falling back to text data", err);
-      }
-      
-      // Fallback to individual text data
-      if (!leadId) leadId = e.dataTransfer.getData("leadId");
-      if (!fromStageId) fromStageId = e.dataTransfer.getData("stageId");
-      
-      console.log("Drop data:", { leadId, fromStageId, toStageId: stage.id });
-      
-      if (leadId && fromStageId && fromStageId !== stage.id) {
-        console.log(`Moving lead ${leadId} from stage ${fromStageId} to stage ${stage.id}`);
-        onMoveLead(leadId, fromStageId, stage.id);
       }
     } catch (error) {
       console.error("Erro ao mover lead:", error);

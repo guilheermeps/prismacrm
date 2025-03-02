@@ -49,6 +49,12 @@ export const moveLead = async (
       return false;
     }
     
+    // Skip if already in the target stage
+    if (lead.stageId === toStageId) {
+      console.log(`Lead ${lead.id} already in stage ${toStageId}`);
+      return true;
+    }
+    
     console.log(`Moving lead ${lead.id} from ${lead.stageId} to ${toStageId}`);
     
     // Development mode handling
@@ -65,7 +71,7 @@ export const moveLead = async (
       // Delay the toast to avoid interfering with drag operation
       setTimeout(() => {
         toast.success("Lead movido para nova etapa!");
-      }, 100);
+      }, 300);
       
       return true;
     }
@@ -79,16 +85,35 @@ export const moveLead = async (
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
-    await updateLead(updatedLead);
+    console.log("Updating lead:", updatedLead);
+    
+    // Try to update in Supabase
+    const result = await updateLead(updatedLead);
+    
+    if (!result && (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true')) {
+      console.log("Fallback to local update mode due to API error");
+      // Delay the toast to avoid interfering with drag operation
+      setTimeout(() => {
+        toast.success("Lead movido para nova etapa!");
+      }, 300);
+      return true;
+    }
     
     // Delay the toast to avoid interfering with drag operation
     setTimeout(() => {
       toast.success("Lead movido para nova etapa!");
-    }, 100);
+    }, 300);
     
     return true;
   } catch (error) {
     console.error("Erro ao mover lead:", error);
+    
+    // In development mode, allow the UI to update even if the API call fails
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log("Allowing move in development mode despite error");
+      return true;
+    }
+    
     toast.error("Erro ao mover lead. Tente novamente.");
     return false;
   }
@@ -101,6 +126,12 @@ export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error("Erro ao atualizar lead:", error);
+    
+    // In development mode, pretend it succeeded
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return true;
+    }
+    
     toast.error("Erro ao atualizar lead. Tente novamente.");
     return false;
   }
