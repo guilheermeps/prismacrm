@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
 import { createLead } from "@/lib/supabase/leadsService";
@@ -12,6 +13,7 @@ export const addNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'histo
     // Create a properly formatted lead object with all required properties
     const lead = {
       ...newLead,
+      createdAt: new Date().toISOString(), // Explicitly add createdAt
       history: []
     };
     

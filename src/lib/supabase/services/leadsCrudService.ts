@@ -25,7 +25,7 @@ export async function getLeads() {
       
     if (error) {
       console.error('Error fetching leads:', error);
-      return [];
+      throw error;
     }
     
     console.log('Fetched leads from Supabase:', data);
@@ -58,7 +58,7 @@ export async function getArchivedLeads() {
       
     if (error) {
       console.error('Error fetching archived leads:', error);
-      return [];
+      throw error;
     }
     
     return data.map(normalizeLeadFromSupabase);
@@ -79,23 +79,28 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
     }
 
     const userId = session.user.id;
+    
+    // Ensure createdat is present in the normalized lead data
+    if (!lead.createdAt) {
+      lead.createdAt = new Date().toISOString();
+    }
+    
     const normalizedLead = normalizeLeadForSupabase(lead);
 
     console.log("Creating lead with normalized data:", normalizedLead);
     console.log("User ID for lead creation:", userId);
     
-    // Ensure we're inserting with the current timestamp
-    const leadWithTimestamp = {
+    // Prepare the lead data for insertion
+    const leadWithUserId = {
       ...normalizedLead,
-      createdat: new Date().toISOString(),
       user_id: userId
     };
     
-    console.log("Final lead object for insertion:", leadWithTimestamp);
+    console.log("Final lead object for insertion:", leadWithUserId);
     
     const { data, error } = await supabase
       .from('leads')
-      .insert([leadWithTimestamp])
+      .insert([leadWithUserId])
       .select()
       .single();
 
