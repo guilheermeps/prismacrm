@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,8 +14,6 @@ import Financial from "@/pages/Financial";
 import Projects from "@/pages/Projects";
 import Products from "@/pages/Products";
 import Settings from "@/pages/Settings";
-import Auth from "@/pages/Auth";
-import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -28,54 +26,22 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
-// Public route that redirects if user is authenticated
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
-  }
-  
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-      <Route path="/" element={<Navigate to="/auth" replace />} />
-      
-      {/* Protected routes */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/sales-pipeline" element={<ProtectedRoute><SalesPipeline /></ProtectedRoute>} />
-      <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
-      <Route path="/orders-contracts" element={<ProtectedRoute><OrdersContracts /></ProtectedRoute>} />
-      <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-      <Route path="/contracts" element={<ProtectedRoute><Contracts /></ProtectedRoute>} />
-      <Route path="/schedule" element={<ProtectedRoute><Scheduling /></ProtectedRoute>} />
-      <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
-      <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-      <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      {/* Direct access to dashboard without authentication */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/sales-pipeline" element={<SalesPipeline />} />
+      <Route path="/contacts" element={<Contacts />} />
+      <Route path="/orders-contracts" element={<OrdersContracts />} />
+      <Route path="/orders" element={<Orders />} />
+      <Route path="/contracts" element={<Contracts />} />
+      <Route path="/schedule" element={<Scheduling />} />
+      <Route path="/financial" element={<Financial />} />
+      <Route path="/projects" element={<Projects />} />
+      <Route path="/products" element={<Products />} />
+      <Route path="/settings" element={<Settings />} />
       
       {/* Catch-all route */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -87,10 +53,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <AuthProvider>
-          <AppRoutes />
-          <Toaster position="top-right" richColors />
-        </AuthProvider>
+        <AppRoutes />
+        <Toaster position="top-right" richColors />
       </Router>
     </QueryClientProvider>
   );
