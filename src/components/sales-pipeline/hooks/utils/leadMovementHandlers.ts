@@ -12,17 +12,31 @@ const isDevOrDemoMode = (): boolean => {
 };
 
 /**
- * Updates a lead in development/demo mode without calling the API
+ * Handles lead movement in development/demo mode
  */
-const handleDevModeMoveOperation = (
+const handleDevModeMoveOperation = async (
   lead: Lead,
   toStageId: string,
   fromStageName: string = "Desconhecido",
   toStageName: string = "Desconhecido"
-): boolean => {
+): Promise<boolean> => {
   console.log("Moving lead in dev/demo mode:", lead.id, "to stage", toStageId);
-  // Return success immediately for faster UI update
-  return true;
+  
+  try {
+    // Even in dev mode, we'll update the lead to ensure persistence
+    const updatedLead = {
+      ...lead,
+      stageId: toStageId,
+      history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
+    };
+    
+    // In dev mode, we still want to persist changes
+    await updateLead(updatedLead);
+    return true;
+  } catch (error) {
+    console.error("Dev mode error:", error);
+    return true; // Still return true in dev mode for UI responsiveness
+  }
 };
 
 export const moveLead = async (
@@ -43,28 +57,34 @@ export const moveLead = async (
     
     console.log(`Moving lead ${lead.id} from ${lead.stageId} to ${toStageId}`);
     
-    // Development mode handling - immediate return for UI responsiveness
-    if (isDevOrDemoMode()) {
-      return handleDevModeMoveOperation(lead, toStageId);
-    }
-    
+    // Get stage names for better history tracking (this should be improved to get actual names)
     const fromStageName = "Desconhecido";
     const toStageName = "Desconhecido"; 
     
+    // Development mode handling
+    if (isDevOrDemoMode()) {
+      return await handleDevModeMoveOperation(lead, toStageId, fromStageName, toStageName);
+    }
+    
+    // Create updated lead with new stage and history entry
     const updatedLead = {
       ...lead,
       stageId: toStageId,
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
-    // Try to update in Supabase - but don't wait for the response to update UI
-    updateLead(updatedLead).then(result => {
-      if (!result && !isDevOrDemoMode()) {
-        toast.error("Erro ao persistir a mudança de etapa do lead.");
-      }
-    });
+    // Persist the change to database - await the result to ensure it's saved
+    const result = await updateLead(updatedLead);
     
-    // Return true immediately for UI responsiveness
+    if (!result) {
+      console.error("Failed to update lead in database");
+      if (!isDevOrDemoMode()) {
+        toast.error("Erro ao persistir a mudança de etapa do lead.");
+        return false;
+      }
+    }
+    
+    // Return success
     return true;
   } catch (error) {
     console.error("Erro ao mover lead:", error);

@@ -8,13 +8,13 @@ import { RefreshCw } from "lucide-react";
 interface SalesFunnelBoardProps {
   stages: Stage[];
   filteredLeads: Lead[];
-  onMoveLead: (leadId: string, fromStageId: string, toStageId: string) => void;
-  onUpdateLead: (lead: Lead) => void;
-  onDeleteLead: (leadId: string) => void;
-  onConvertToContact: (lead: Lead) => void;
-  onArchiveLead: (lead: Lead) => void;
-  onUnarchiveLead: (lead: Lead) => void;
-  onDiscardLead?: (lead: Lead) => void;
+  onMoveLead: (leadId: string, fromStageId: string, toStageId: string) => Promise<boolean>;
+  onUpdateLead: (lead: Lead) => Promise<boolean>;
+  onDeleteLead: (leadId: string) => Promise<boolean>;
+  onConvertToContact: (lead: Lead) => Promise<boolean>;
+  onArchiveLead: (lead: Lead) => Promise<boolean>;
+  onUnarchiveLead: (lead: Lead) => Promise<boolean>;
+  onDiscardLead?: (lead: Lead) => Promise<boolean>;
   isArchived: boolean;
 }
 
@@ -35,6 +35,7 @@ const SalesFunnelBoard = ({
 
   // Update local state when props change
   useEffect(() => {
+    console.log("Filtered leads updated:", filteredLeads.length);
     setBoardLeads(filteredLeads);
   }, [filteredLeads]);
 
@@ -48,6 +49,8 @@ const SalesFunnelBoard = ({
     // Prevent moving in archived view
     if (isArchived) return;
     
+    console.log(`Optimistically moving lead ${leadId} from ${fromStageId} to ${toStageId}`);
+    
     // Update the lead's stage in our local state first for instant UI update
     const updatedLeads = boardLeads.map(lead => {
       if (lead.id === leadId) {
@@ -60,7 +63,19 @@ const SalesFunnelBoard = ({
     setBoardLeads(updatedLeads);
     
     // Then call the parent handler to update backend
-    onMoveLead(leadId, fromStageId, toStageId);
+    onMoveLead(leadId, fromStageId, toStageId)
+      .then(success => {
+        if (!success) {
+          console.error("Failed to persist lead move, reverting UI");
+          // If the backend update fails, revert the UI change
+          setBoardLeads(boardLeads);
+        }
+      })
+      .catch(error => {
+        console.error("Error persisting lead move:", error);
+        // If there's an error, revert the UI change
+        setBoardLeads(boardLeads);
+      });
   };
 
   // Handle refreshing the board

@@ -31,6 +31,7 @@ const SalesFunnel = ({
     handleDeleteLead,
     handleArchiveLead,
     handleUnarchiveLead,
+    handleDiscardLead,
     convertToContact,
     handleResetLeads
   } = useLeadOperations();
@@ -53,27 +54,22 @@ const SalesFunnel = ({
   // Create wrapper functions to fix type issues
   const handleAddNewLeadWrapper = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     await handleAddNewLead(newLead);
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   const handleAddStageWrapper = async (newStage: Omit<Stage, 'id'>) => {
     await handleAddStage(newStage);
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   const handleUpdateStageWrapper = async (updatedStage: Stage) => {
     await handleUpdateStage(updatedStage);
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   const handleDeleteStageWrapper = async (stageId: string) => {
     await handleDeleteStage(stageId);
-    // No explicit return, which implicitly returns undefined -> void
   };
   
   const handleResetLeadsWrapper = async () => {
     await handleResetLeads();
-    // No explicit return, which implicitly returns undefined -> void
   };
 
   return (
@@ -101,6 +97,7 @@ const SalesFunnel = ({
         onConvertToContact={convertToContact}
         onArchiveLead={handleArchiveLead}
         onUnarchiveLead={handleUnarchiveLead}
+        onDiscardLead={handleDiscardLead}
         isArchived={isArchived}
       />
     </div>
