@@ -42,7 +42,7 @@ export interface ClientRegistrationLink {
   form_data: any;
 }
 
-// Cache local para links de registro
+// Cache local para links de registro - será usado quando estamos em modo offline
 const mockClientLinks: Record<string, ClientRegistrationLink> = {};
 
 // Modificando as funções para retornar dados simulados quando não há conexão com Supabase
@@ -260,19 +260,43 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
         throw new Error('Modo offline');
       }
       
+      // Mesmo que já exista um link, vamos regenerar com um novo token
+      // para garantir que funcione caso o anterior tenha expirado
+      // Define expiração para 7 dias no futuro
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      
       if (existingLink) {
-        // Se já existe um link, retorna ele
-        console.log("Link existente encontrado no Supabase:", existingLink);
-        return existingLink as ClientRegistrationLink;
+        // Atualiza o link existente
+        console.log("Link existente encontrado, atualizando com novo token:", existingLink);
+        
+        const { data: updatedLink, error: updateError } = await supabase
+          .from('client_registration_links')
+          .update({ 
+            token: token,
+            is_used: false,
+            expires_at: expiresAt.toISOString()
+          })
+          .eq('id', existingLink.id)
+          .select()
+          .single();
+        
+        if (updateError) {
+          console.error("Erro ao atualizar link:", updateError);
+          throw new Error(updateError.message);
+        }
+        
+        console.log("Link atualizado no Supabase:", updatedLink);
+        return updatedLink as ClientRegistrationLink;
       }
       
-      // Criar novo link
+      // Criar novo link se não existir
       const { data, error } = await supabase
         .from('client_registration_links')
         .insert({ 
           lead_id: leadId, 
           token: token,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 dias
+          expires_at: expiresAt.toISOString() // 7 dias
         })
         .select()
         .single();
@@ -287,17 +311,12 @@ export const generateClientRegistrationLink = async (leadId: string): Promise<Cl
     } catch (e) {
       console.warn('Usando dados simulados para links de registro:', e);
       
-      // Se já existe um link mockado para este lead, retorna ele
-      if (mockClientLinks[leadId]) {
-        console.log("Link mockado existente encontrado:", mockClientLinks[leadId]);
-        return mockClientLinks[leadId];
-      }
-      
-      // Criar novo link mockado
+      // Define expiração para 7 dias no futuro
       const now = new Date();
       const expiresAt = new Date(now);
-      expiresAt.setDate(expiresAt.getDate() + 7); // Adiciona 7 dias
+      expiresAt.setDate(expiresAt.getDate() + 7);
       
+      // Sempre gerar um novo token em modo offline
       const mockLink: ClientRegistrationLink = {
         id: Math.random().toString(36).substring(2, 15),
         lead_id: leadId,
@@ -460,6 +479,7 @@ export const validateClientRegistrationToken = async (token: string): Promise<{v
       }
       
       // Teste: criar um mock link para este token se não encontrarmos
+      // Este é um "failsafe" para garantir que a demonstração funcione
       if (Object.keys(mockClientLinks).length === 0) {
         const mockLeadId = '1'; // Usar um ID de lead fixo para teste
         const now = new Date();

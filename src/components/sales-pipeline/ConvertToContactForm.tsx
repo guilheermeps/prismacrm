@@ -110,6 +110,7 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
     console.log("Iniciando geração de link para lead:", lead.id);
     setIsGeneratingLink(true);
     try {
+      // Forçar a regeneração do link (mesmo se já existir um)
       const result = await generateClientRegistrationLink(lead.id);
       console.log("Resultado da geração de link:", result);
       
@@ -145,7 +146,11 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
 
   const openRegistrationLink = () => {
     if (registrationLink) {
-      window.open(registrationLink, '_blank');
+      // Abrir em uma nova aba
+      window.open(registrationLink, '_blank', 'noopener,noreferrer');
+      toast.success("Formulário aberto em nova aba!");
+    } else {
+      toast.error("Não foi possível abrir o formulário.");
     }
   };
 
@@ -206,6 +211,16 @@ const ConvertToContactForm = ({ lead, onClose, onSuccess }: ConvertToContactForm
                 variant="secondary"
               >
                 Abrir formulário em nova aba
+              </Button>
+              
+              <Button 
+                type="button" 
+                onClick={generateLink} 
+                disabled={isGeneratingLink}
+                className="w-full"
+                variant="outline"
+              >
+                {isGeneratingLink ? "Regenerando..." : "Regenerar Link"}
               </Button>
             </div>
           ) : (

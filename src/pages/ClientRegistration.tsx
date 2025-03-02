@@ -36,7 +36,7 @@ const ClientRegistration = () => {
   });
 
   useEffect(() => {
-    // Melhoramos a verificação do token com mais tentativas de retry
+    // Validação do token com máximo de 3 tentativas
     const validateToken = async () => {
       console.log(`Tentativa ${validationAttempts + 1} de validação do token na página:`, token);
       
@@ -48,7 +48,7 @@ const ClientRegistration = () => {
       }
 
       try {
-        // Vamos garantir que o token seja tratado como string e sem espaços extras
+        // Garantir que o token seja tratado como string e sem espaços extras
         const cleanToken = String(token).trim();
         console.log("Chamando validateClientRegistrationToken para token limpo:", cleanToken);
         
@@ -113,7 +113,7 @@ const ClientRegistration = () => {
     };
 
     validateToken();
-  }, [token, validationAttempts, isValid]);
+  }, [token, validationAttempts]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({
