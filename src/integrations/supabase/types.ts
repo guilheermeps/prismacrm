@@ -39,6 +39,51 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category: string | null
+          client: string
+          created_at: string | null
+          due_date: string
+          id: string
+          payment_method: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string
+          total_installments: number | null
+          type: string
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          client: string
+          created_at?: string | null
+          due_date: string
+          id?: string
+          payment_method?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          total_installments?: number | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          client?: string
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          payment_method?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          total_installments?: number | null
+          type?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           createdat: string | null
