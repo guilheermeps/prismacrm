@@ -68,7 +68,7 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
                 <img 
                   src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
                   alt="Prisma CM" 
-                  className="h-60 w-60 object-contain"
+                  className="h-12 w-auto object-contain"
                 />
               </div>
               <Button 
@@ -82,11 +82,11 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
             </>
           ) : (
             <>
-              <div className="flex items-center justify-center">
+              <div className="hidden md:flex items-center justify-center">
                 <img 
                   src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
                   alt="Prisma CM" 
-                  className="h-55 w-55 object-contain"
+                  className="h-10 w-10 object-contain"
                 />
               </div>
               <Button 
@@ -103,16 +103,16 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
         
         {/* Navigation */}
         <nav className={cn(
-          "flex-1 py-6 px-2 overflow-y-auto",
+          "flex-1 py-4 px-2 overflow-y-auto",
           !isOpen && "md:px-1"
         )}>
-          <ul className="space-y-2">
+          <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.path}>
                 <NavLink 
                   to={item.path} 
                   className={({ isActive }) => cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all",
+                    "flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm",
                     isActive 
                       ? "bg-studio-gray text-white" 
                       : "text-studio-light hover:bg-studio-gray/80 hover:text-white",
@@ -129,13 +129,13 @@ const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
         
         {/* Footer - User Profile */}
         {isOpen && (
-          <div className="p-4 border-t border-studio-gray">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-studio-gray flex items-center justify-center text-white font-medium">
+          <div className="p-3 border-t border-studio-gray">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-studio-gray flex items-center justify-center text-white font-medium text-xs">
                 {userProfile.name.substring(0, 2).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{userProfile.fullName}</p>
+                <p className="text-xs font-medium truncate">{userProfile.fullName}</p>
                 <p className="text-xs text-muted-foreground truncate">{userProfile.handle}</p>
               </div>
             </div>

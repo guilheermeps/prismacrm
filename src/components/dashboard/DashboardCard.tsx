@@ -22,14 +22,14 @@ const DashboardCard = ({
   return (
     <div 
       className={cn(
-        "bg-card rounded-xl p-5 shadow-lg overflow-hidden",
+        "bg-card rounded-lg md:rounded-xl p-4 md:p-5 shadow-lg overflow-hidden",
         fullWidth ? "col-span-full" : "",
         animate ? "animate-slide-up" : "",
         className
       )}
       style={{ animationDelay: delay }}
     >
-      <h3 className="text-lg font-medium mb-4">{title}</h3>
+      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4">{title}</h3>
       <div className="h-full">{children}</div>
     </div>
   );
