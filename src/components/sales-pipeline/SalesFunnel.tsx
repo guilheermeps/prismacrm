@@ -53,22 +53,27 @@ const SalesFunnel = ({
   // Create wrapper functions to fix type issues
   const handleAddNewLeadWrapper = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>) => {
     await handleAddNewLead(newLead);
+    // Explicitly return void by not returning anything
   };
 
   const handleAddStageWrapper = async (newStage: Omit<Stage, 'id'>) => {
     await handleAddStage(newStage);
+    // Explicitly return void by not returning anything
   };
 
   const handleUpdateStageWrapper = async (updatedStage: Stage) => {
     await handleUpdateStage(updatedStage);
+    // Explicitly return void by not returning anything
   };
 
   const handleDeleteStageWrapper = async (stageId: string) => {
     await handleDeleteStage(stageId);
+    // Explicitly return void by not returning anything
   };
   
   const handleResetLeadsWrapper = async () => {
     await handleResetLeads();
+    // Explicitly return void by not returning anything
   };
 
   return (
