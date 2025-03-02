@@ -39,53 +39,8 @@ import {
 } from "@/components/ui/dialog";
 import ProductForm from "@/components/orders-contracts/ProductForm";
 
-// Mock data para produtos
-const mockProducts = [
-  {
-    id: 1,
-    name: "Ensaio com 10 fotos",
-    description: "Ensaio fotográfico com entrega de 10 fotos digitais tratadas",
-    price: 450,
-    category: "photo",
-    categoryName: "Ensaio",
-    cost: 150,
-    availableIndividually: true,
-    createdAt: "2023-10-15"
-  },
-  {
-    id: 2,
-    name: "Álbum 20x30cm",
-    description: "Álbum fotográfico capa dura 20x30cm com 20 páginas",
-    price: 350,
-    category: "print",
-    categoryName: "Impressão",
-    cost: 200,
-    availableIndividually: true,
-    createdAt: "2023-11-03"
-  },
-  {
-    id: 3,
-    name: "Cobertura de Evento (4h)",
-    description: "Cobertura de evento por 4 horas com entrega de todas as fotos",
-    price: 1200,
-    category: "event",
-    categoryName: "Evento",
-    cost: 450,
-    availableIndividually: true,
-    createdAt: "2023-09-22"
-  },
-  {
-    id: 4,
-    name: "Ensaio Pré-Wedding",
-    description: "Ensaio pré-wedding completo em locação externa",
-    price: 800,
-    category: "wedding",
-    categoryName: "Casamento",
-    cost: 300,
-    availableIndividually: false,
-    createdAt: "2023-12-05"
-  }
-];
+// Mock data vazio para produtos
+const mockProducts = [];
 
 interface ProductsListProps {
   searchTerm?: string;
@@ -97,9 +52,10 @@ const ProductsList = ({ searchTerm = "", categoryFilter }: ProductsListProps) =>
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Filter products based on search term and category
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProducts = mockProducts.filter((product: any) => {
+    const matchesSearch = !searchTerm || 
+                          product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          product.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = !categoryFilter || categoryFilter === "all" || product.category === categoryFilter;
     
@@ -138,7 +94,7 @@ const ProductsList = ({ searchTerm = "", categoryFilter }: ProductsListProps) =>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product: any) => (
                 <TableRow key={product.id}>
                   <TableCell>
                     <div>

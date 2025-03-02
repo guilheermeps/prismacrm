@@ -40,38 +40,30 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { upcomingPayments } from "@/utils/mockData";
 
-// Dados de exemplo baseados em pedidos e contratos
-// Em um sistema real, estes dados seriam derivados da API
-const mockFinancialData = {
-  transactions: [
-    { id: 1, date: "2024-05-01", type: "Pedido", reference: "#PED001", client: "Ana Silva", amount: 1250.00, status: "paid" },
-    { id: 2, date: "2024-05-03", type: "Pedido", reference: "#PED002", client: "João Costa", amount: 850.00, status: "pending" },
-    { id: 3, date: "2024-05-05", type: "Contrato", reference: "#CONT003", client: "Empresa XYZ", amount: 3500.00, status: "paid" },
-    { id: 4, date: "2024-05-07", type: "Pedido", reference: "#PED004", client: "Maria Souza", amount: 975.00, status: "overdue" },
-    { id: 5, date: "2024-05-10", type: "Contrato", reference: "#CONT005", client: "Carlos Mendes", amount: 2800.00, status: "pending" },
-    { id: 6, date: "2024-05-12", type: "Pedido", reference: "#PED006", client: "Laura Oliveira", amount: 1450.00, status: "paid" },
-    { id: 7, date: "2024-05-15", type: "Contrato", reference: "#CONT007", client: "Marcelo Lima", amount: 5000.00, status: "pending" },
-  ],
+// Dados financeiros vazios para inicialização
+const emptyFinancialData = {
+  transactions: [],
   summary: {
-    total: 15825.00,
-    paid: 6200.00,
-    pending: 8650.00,
-    overdue: 975.00
+    total: 0,
+    paid: 0,
+    pending: 0,
+    overdue: 0
   },
   byCategory: [
-    { name: "Casamento", value: 7500 },
-    { name: "Ensaio", value: 3200 },
-    { name: "Evento", value: 4125 },
-    { name: "Impressão", value: 1000 }
+    { name: "Casamento", value: 0 },
+    { name: "Ensaio", value: 0 },
+    { name: "Evento", value: 0 },
+    { name: "Impressão", value: 0 }
   ],
   monthly: [
-    { month: "Jan", received: 3500, expected: 4200 },
-    { month: "Fev", received: 4200, expected: 4200 },
-    { month: "Mar", received: 3800, expected: 4000 },
-    { month: "Abr", received: 4500, expected: 4500 },
-    { month: "Mai", received: 6200, expected: 15825 },
-    { month: "Jun", received: 0, expected: 8500 },
+    { month: "Jan", received: 0, expected: 0 },
+    { month: "Fev", received: 0, expected: 0 },
+    { month: "Mar", received: 0, expected: 0 },
+    { month: "Abr", received: 0, expected: 0 },
+    { month: "Mai", received: 0, expected: 0 },
+    { month: "Jun", received: 0, expected: 0 },
   ]
 };
 
@@ -91,12 +83,48 @@ const FinancialTab = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
+  // Usar dados de pagamentos da mockData
+  const transactions = upcomingPayments.map((payment, index) => ({
+    id: payment.id || index + 1,
+    date: payment.dueDate,
+    type: payment.type === 'receivable' ? 'Pedido' : 'Despesa',
+    reference: `#PAY${payment.id || index + 1}`,
+    client: payment.client,
+    amount: payment.amount,
+    status: payment.status
+  }));
+
+  // Calcular resumo financeiro
+  const summary = {
+    total: transactions.reduce((sum, t) => sum + t.amount, 0),
+    paid: transactions.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.amount, 0),
+    pending: transactions.filter(t => t.status === 'pending').reduce((sum, t) => sum + t.amount, 0),
+    overdue: transactions.filter(t => t.status === 'overdue').reduce((sum, t) => sum + t.amount, 0)
+  };
+
+  // Agrupar por categoria (serviço)
+  const byCategory = Object.entries(
+    transactions.reduce((acc: Record<string, number>, t) => {
+      const category = t.type;
+      acc[category] = (acc[category] || 0) + t.amount;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+  // Dados financeiros derivados dos pagamentos
+  const financialData = {
+    transactions,
+    summary,
+    byCategory: byCategory.length > 0 ? byCategory : emptyFinancialData.byCategory,
+    monthly: emptyFinancialData.monthly
+  };
+
   // Filtrar transações com base nos filtros selecionados
-  const filteredTransactions = mockFinancialData.transactions.filter(transaction => {
+  const filteredTransactions = financialData.transactions.filter(transaction => {
     const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
     const matchesType = typeFilter === "all" || 
                         (typeFilter === "order" && transaction.type === "Pedido") ||
-                        (typeFilter === "contract" && transaction.type === "Contrato");
+                        (typeFilter === "contract" && transaction.type === "Despesa");
     return matchesStatus && matchesType;
   });
 
@@ -112,7 +140,7 @@ const FinancialTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(mockFinancialData.summary.total)}
+              {formatCurrency(financialData.summary.total)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Valor total de pedidos e contratos
@@ -128,10 +156,12 @@ const FinancialTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(mockFinancialData.summary.paid)}
+              {formatCurrency(financialData.summary.paid)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.round((mockFinancialData.summary.paid / mockFinancialData.summary.total) * 100)}% do valor total
+              {financialData.summary.total > 0 
+                ? Math.round((financialData.summary.paid / financialData.summary.total) * 100)
+                : 0}% do valor total
             </p>
           </CardContent>
         </Card>
@@ -144,10 +174,12 @@ const FinancialTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {formatCurrency(mockFinancialData.summary.pending)}
+              {formatCurrency(financialData.summary.pending)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.round((mockFinancialData.summary.pending / mockFinancialData.summary.total) * 100)}% do valor total
+              {financialData.summary.total > 0 
+                ? Math.round((financialData.summary.pending / financialData.summary.total) * 100)
+                : 0}% do valor total
             </p>
           </CardContent>
         </Card>
@@ -160,10 +192,12 @@ const FinancialTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(mockFinancialData.summary.overdue)}
+              {formatCurrency(financialData.summary.overdue)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.round((mockFinancialData.summary.overdue / mockFinancialData.summary.total) * 100)}% do valor total
+              {financialData.summary.total > 0 
+                ? Math.round((financialData.summary.overdue / financialData.summary.total) * 100)
+                : 0}% do valor total
             </p>
           </CardContent>
         </Card>
@@ -180,20 +214,27 @@ const FinancialTab = () => {
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={mockFinancialData.monthly}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(value) => `R$${value/1000}k`} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Legend />
-                  <Bar dataKey="received" name="Recebido" fill="#4ade80" />
-                  <Bar dataKey="expected" name="Esperado" fill="#94a3b8" />
-                </BarChart>
-              </ResponsiveContainer>
+              {financialData.monthly.every(m => m.received === 0 && m.expected === 0) ? (
+                <div className="h-full flex items-center justify-center flex-col text-muted-foreground">
+                  <CreditCard className="h-12 w-12 mb-4" />
+                  <p>Sem dados financeiros disponíveis</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={financialData.monthly}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `R$${value/1000}k`} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Legend />
+                    <Bar dataKey="received" name="Recebido" fill="#4ade80" />
+                    <Bar dataKey="expected" name="Esperado" fill="#94a3b8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -207,26 +248,33 @@ const FinancialTab = () => {
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={mockFinancialData.byCategory}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                    label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {mockFinancialData.byCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                </PieChart>
-              </ResponsiveContainer>
+              {financialData.byCategory.every(c => c.value === 0) ? (
+                <div className="h-full flex items-center justify-center flex-col text-muted-foreground">
+                  <CreditCard className="h-12 w-12 mb-4" />
+                  <p>Sem dados de categorias disponíveis</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={financialData.byCategory}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      nameKey="name"
+                      label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {financialData.byCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -248,7 +296,7 @@ const FinancialTab = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
+                  <SelectItem value="completed">Pago</SelectItem>
                   <SelectItem value="pending">Pendente</SelectItem>
                   <SelectItem value="overdue">Atrasado</SelectItem>
                 </SelectContent>
@@ -265,7 +313,7 @@ const FinancialTab = () => {
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="order">Pedidos</SelectItem>
-                  <SelectItem value="contract">Contratos</SelectItem>
+                  <SelectItem value="contract">Despesas</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -333,11 +381,11 @@ const FinancialTab = () => {
                     </TableCell>
                     <TableCell>
                       <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        transaction.status === 'paid' ? 'bg-green-100 text-green-800' :
+                        transaction.status === 'completed' ? 'bg-green-100 text-green-800' :
                         transaction.status === 'pending' ? 'bg-amber-100 text-amber-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {transaction.status === 'paid' ? 'Pago' :
+                        {transaction.status === 'completed' ? 'Pago' :
                          transaction.status === 'pending' ? 'Pendente' :
                          'Atrasado'}
                       </div>

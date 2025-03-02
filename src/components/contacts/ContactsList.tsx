@@ -24,7 +24,8 @@ import {
   Mail,
   Edit,
   Trash,
-  FileText
+  FileText,
+  UserRound
 } from "lucide-react";
 import { mockContacts } from "@/utils/mockData";
 import { Badge } from "@/components/ui/badge";
@@ -41,9 +42,10 @@ const ContactsList = ({ filterType, onAddContact, onEditContact }: ContactsListP
   // Filter contacts based on type and search query
   const filteredContacts = mockContacts.filter(contact => {
     const matchesType = filterType === "all" || contact.type === filterType;
-    const matchesSearch = contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          contact.phone.includes(searchQuery);
+    const matchesSearch = !searchQuery || 
+                          contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          contact.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          contact.phone?.includes(searchQuery);
     return matchesType && matchesSearch;
   });
 
@@ -67,8 +69,13 @@ const ContactsList = ({ filterType, onAddContact, onEditContact }: ContactsListP
       </div>
 
       {filteredContacts.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          Nenhum contato encontrado.
+        <div className="text-center py-16 border rounded-md">
+          <UserRound className="h-12 w-12 mx-auto text-muted-foreground" />
+          <p className="mt-4 text-muted-foreground">Nenhum contato encontrado.</p>
+          <Button onClick={onAddContact} variant="outline" className="mt-4">
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar Contato
+          </Button>
         </div>
       ) : (
         <div className="border rounded-md">
