@@ -7,8 +7,12 @@ import ContactsList from "@/components/contacts/ContactsList";
 import ContactForm from "@/components/contacts/ContactForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const Contacts = () => {
+// Create a client
+const queryClient = new QueryClient();
+
+const ContactsPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
@@ -32,6 +36,8 @@ const Contacts = () => {
   const handleCloseForm = () => {
     setIsContactFormOpen(false);
     setSelectedContact(null);
+    // Invalidate contacts query to refresh the list
+    queryClient.invalidateQueries({ queryKey: ['contacts'] });
   };
 
   const handleCreateOrderFromContact = (contact) => {
@@ -64,8 +70,8 @@ const Contacts = () => {
               <Tabs defaultValue="all" onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
                   <TabsTrigger value="all" className="text-xs md:text-base">Todos</TabsTrigger>
-                  <TabsTrigger value="clients" className="text-xs md:text-base">Clientes</TabsTrigger>
-                  <TabsTrigger value="suppliers" className="text-xs md:text-base">Fornecedores</TabsTrigger>
+                  <TabsTrigger value="client" className="text-xs md:text-base">Clientes</TabsTrigger>
+                  <TabsTrigger value="supplier" className="text-xs md:text-base">Fornecedores</TabsTrigger>
                 </TabsList>
                 <TabsContent value="all">
                   <ContactsList 
@@ -102,10 +108,28 @@ const Contacts = () => {
 
       <Dialog open={isContactFormOpen} onOpenChange={setIsContactFormOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <ContactForm onClose={handleCloseForm} initialContact={selectedContact} />
+          <ContactForm 
+            onClose={handleCloseForm} 
+            initialContact={selectedContact}
+            onSuccess={() => {
+              // Invalidate and refetch contacts after successful operation
+              queryClient.invalidateQueries({ queryKey: ['contacts'] });
+              setIsContactFormOpen(false);
+              setSelectedContact(null);
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+// Wrap the component with QueryClientProvider
+const Contacts = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ContactsPage />
+    </QueryClientProvider>
   );
 };
 

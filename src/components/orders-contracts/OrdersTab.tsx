@@ -1,170 +1,196 @@
-
-import React, { useState } from "react";
-import { 
-  PlusCircle, 
-  FileText, 
-  Filter, 
-  Printer,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Edit,
-  Trash,
-  Search
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
+import React, { useState } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { CalendarIcon } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import DashboardCard from "@/components/dashboard/DashboardCard";
-import OrderForm from "@/components/orders-contracts/OrderForm";
-import OrderFilter from "@/components/orders-contracts/OrderFilter";
-import OrdersList from "@/components/orders-contracts/OrdersList";
-import ExportDialog from "@/components/orders-contracts/ExportDialog";
+  SelectValue,
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner";
+import { SourceEntity } from '@/lib/types';
 
-// Mock data para demonstração
-const mockOrderStats = [
-  { title: "Pedidos Ativos", count: 15, value: 12500, status: "active" },
-  { title: "Pedidos Pendentes", count: 8, value: 5700, status: "pending" },
-  { title: "Pedidos Concluídos", count: 32, value: 28900, status: "completed" },
-  { title: "Pedidos Cancelados", count: 4, value: 3200, status: "canceled" }
-];
+// Add these props to the OrdersTab component
+interface OrdersTabProps {
+  leadData?: SourceEntity;
+  contactData?: SourceEntity;
+  onCreateOrder: (orderId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
+}
 
-const OrdersTab = () => {
-  const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isExportOpen, setIsExportOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
+// Make sure the component accepts these props
+const OrdersTab: React.FC<OrdersTabProps> = ({ leadData, contactData, onCreateOrder }) => {
+  const [orderId, setOrderId] = useState('');
+  const [clientName, setClientName] = useState(contactData?.name || leadData?.name || '');
+  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [installments, setInstallments] = useState<number>(1);
+  const [serviceType, setServiceType] = useState('');
+  const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
+  const [eventTime, setEventTime] = useState('');
+  const [location, setLocation] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const handleSubmit = () => {
+    if (!orderId || !clientName || !totalAmount || !dueDate || !paymentMethod || !installments || !serviceType || !eventDate || !eventTime || !location) {
+      toast.error('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    onCreateOrder(
+      orderId,
+      clientName,
+      totalAmount,
+      format(dueDate, 'yyyy-MM-dd'),
+      paymentMethod,
+      installments,
+      serviceType,
+      format(eventDate, 'yyyy-MM-dd'),
+      eventTime,
+      location,
+      notes
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Dashboard de estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {mockOrderStats.map((stat, index) => (
-          <DashboardCard 
-            key={index}
-            title={stat.title}
-            delay={`${index * 0.1}s`}
-          >
-            <div className="flex flex-col">
-              <span className="text-3xl font-bold">
-                {stat.count}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {new Intl.NumberFormat('pt-BR', { 
-                  style: 'currency', 
-                  currency: 'BRL' 
-                }).format(stat.value)}
-              </span>
-            </div>
-          </DashboardCard>
-        ))}
-      </div>
-
-      {/* Barra de ações */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-          <Dialog open={isNewOrderOpen} onOpenChange={setIsNewOrderOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex gap-2">
-                <PlusCircle className="h-4 w-4" />
-                Criar Pedido
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Novo Pedido</DialogTitle>
-              </DialogHeader>
-              <OrderForm onClose={() => setIsNewOrderOpen(false)} />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex gap-2">
-                <Filter className="h-4 w-4" />
-                Filtros
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Filtrar Pedidos</DialogTitle>
-              </DialogHeader>
-              <OrderFilter onClose={() => setIsFilterOpen(false)} />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex gap-2">
-                <Printer className="h-4 w-4" />
-                Exportar
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Exportar Pedidos</DialogTitle>
-              </DialogHeader>
-              <ExportDialog type="pedidos" onClose={() => setIsExportOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-2">
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar pedidos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 w-full"
-            />
+    <Card>
+      <CardHeader>
+        <CardTitle>Novo Pedido</CardTitle>
+        <CardDescription>Preencha os detalhes do pedido abaixo.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="orderId">ID do Pedido</Label>
+            <Input id="orderId" value={orderId} onChange={(e) => setOrderId(e.target.value)} />
           </div>
-          
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending">Pendente</SelectItem>
-              <SelectItem value="in-progress">Em Andamento</SelectItem>
-              <SelectItem value="completed">Concluído</SelectItem>
-              <SelectItem value="canceled">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <Label htmlFor="clientName">Nome do Cliente</Label>
+            <Input id="clientName" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+          </div>
         </div>
-      </div>
-
-      {/* Lista de pedidos */}
-      <OrdersList searchTerm={searchTerm} statusFilter={selectedStatus} />
-    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="totalAmount">Valor Total</Label>
+            <Input type="number" id="totalAmount" value={totalAmount.toString()} onChange={(e) => setTotalAmount(Number(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="dueDate">Data de Vencimento</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dueDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dueDate ? format(dueDate, "PPP") : <span>Escolha a data</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  onSelect={setDueDate}
+                  disabled={(date) =>
+                    date > new Date()
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Método de Pagamento</Label>
+            <Select onValueChange={setPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o método" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                <SelectItem value="debit_card">Cartão de Débito</SelectItem>
+                <SelectItem value="boleto">Boleto</SelectItem>
+                <SelectItem value="pix">PIX</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="installments">Parcelas</Label>
+            <Input type="number" id="installments" value={installments.toString()} onChange={(e) => setInstallments(Number(e.target.value))} />
+          </div>
+        </div>
+        <Separator />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="serviceType">Tipo de Serviço</Label>
+            <Input id="serviceType" value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="eventDate">Data do Evento</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !eventDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {eventDate ? format(eventDate, "PPP") : <span>Escolha a data</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                <Calendar
+                  mode="single"
+                  selected={eventDate}
+                  onSelect={setEventDate}
+                  disabled={(date) =>
+                    date < new Date()
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="eventTime">Horário do Evento</Label>
+            <Input id="eventTime" value={eventTime} onChange={(e) => setEventTime(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Localização</Label>
+            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="notes">Observações</Label>
+          <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
+        <Button onClick={handleSubmit}>Criar Pedido</Button>
+      </CardContent>
+    </Card>
   );
 };
 

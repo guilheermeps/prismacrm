@@ -1,7 +1,7 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Select, 
   SelectContent, 
@@ -9,41 +9,80 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link2, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
+import { generateClientRegistrationLink, getClientRegistrationLink } from "@/lib/supabase";
+import { Contact, createContact, updateContact, ContactTag } from "@/lib/supabase/contactsService";
+import { useQueryClient } from "@tanstack/react-query";
+
+// Ensure we have the correct props for ContactForm
+// We need to add an onSuccess prop to be called after successful operation
 
 interface ContactFormProps {
   onClose: () => void;
-  initialContact?: any | null;
+  initialContact?: Contact | null;
+  onSuccess?: () => void;  // Add this prop
 }
 
-const ContactForm = ({ onClose, initialContact }: ContactFormProps) => {
-  const [formData, setFormData] = useState({
-    name: initialContact?.name || "",
-    email: initialContact?.email || "",
-    phone: initialContact?.phone || "",
-    type: initialContact?.type || "client",
-    document: initialContact?.document || "",
-    identity: initialContact?.identity || "",
-    street: initialContact?.street || "",
-    number: initialContact?.number || "",
-    complement: initialContact?.complement || "",
-    neighborhood: initialContact?.neighborhood || "",
-    city: initialContact?.city || "",
-    state: initialContact?.state || "",
-    zipCode: initialContact?.zipCode || "",
-    notes: initialContact?.notes || ""
+const ContactForm = (props: ContactFormProps) => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [registrationLink, setRegistrationLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [useExternalForm, setUseExternalForm] = useState(false);
+  
+  const [formData, setFormData] = useState<Omit<Contact, 'id' | 'created_at'>>({
+    name: props.initialContact?.name || "",
+    email: props.initialContact?.email || "",
+    phone: props.initialContact?.phone || "",
+    whatsapp: props.initialContact?.whatsapp || "",
+    address: props.initialContact?.address || "",
+    city: props.initialContact?.city || "",
+    state: props.initialContact?.state || "SP",
+    postal_code: props.initialContact?.postal_code || "",
+    notes: props.initialContact?.notes || "",
+    is_active: props.initialContact?.is_active || true,
+    lead_id: props.initialContact?.lead_id || "",
+    tags: props.initialContact?.tags || []
   });
+
+  // Verificar se já existe um link para este lead
+  useEffect(() => {
+    const checkExistingLink = async () => {
+      console.log("Verificando link existente para lead:", props.initialContact);
+      if (props.initialContact && props.initialContact.lead_id) {
+        try {
+          console.log("Buscando link para lead_id:", props.initialContact.lead_id);
+          const link = await getClientRegistrationLink(props.initialContact.lead_id);
+          console.log("Resultado da busca de link:", link);
+          
+          if (link) {
+            // Certifica-se de que estamos usando o protocolo correto (http/https)
+            const protocol = window.location.protocol;
+            const hostname = window.location.host; // inclui host e porta
+            const fullLink = `${protocol}//${hostname}/register/${link.token}`;
+            
+            console.log("Link encontrado, URL completa:", fullLink);
+            setRegistrationLink(fullLink);
+            // Automaticamente selecionar a opção de formulário externo se já existe um link
+            setUseExternalForm(true);
+          } else {
+            console.log("Nenhum link encontrado para este lead");
+          }
+        } catch (error) {
+          console.error("Erro ao verificar link existente:", error);
+        }
+      }
+    };
+    
+    if (props.initialContact?.lead_id) {
+      checkExistingLink();
+    }
+  }, [props.initialContact]);
 
   const handleChange = (field: string, value: string) => {
     setFormData({
@@ -52,152 +91,272 @@ const ContactForm = ({ onClose, initialContact }: ContactFormProps) => {
     });
   };
 
-  const handleSubmit = () => {
-    console.log("Contact saved:", formData);
-    onClose();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (props.initialContact) {
+        // Update existing contact
+        const updatedContact = {
+          id: props.initialContact.id,
+          ...formData
+        };
+        const success = await updateContact(updatedContact);
+        if (success) {
+          toast.success("Contato atualizado com sucesso!");
+          if (props.onSuccess) {
+            props.onSuccess();
+          }
+        } else {
+          toast.error("Erro ao atualizar contato");
+        }
+      } else {
+        // Create new contact
+        const newContact = {
+          ...formData
+        };
+        const contactId = await createContact(newContact);
+        if (contactId) {
+          toast.success("Contato criado com sucesso!");
+          if (props.onSuccess) {
+            props.onSuccess();
+          }
+        } else {
+          toast.error("Erro ao criar contato");
+        }
+      }
+      
+      props.onClose();
+      
+    } catch (error) {
+      console.error("Error saving contact:", error);
+      toast.error("Erro ao salvar contato");
+    }
   };
 
-  // Mock orders for history display
-  const mockOrders = initialContact?.orders || [];
+  const generateLink = async () => {
+    console.log("Iniciando geração de link para lead:", props.initialContact?.lead_id);
+    setIsGeneratingLink(true);
+    try {
+      // Forçar a regeneração do link (mesmo se já existir um)
+      if (props.initialContact?.lead_id) {
+        const result = await generateClientRegistrationLink(props.initialContact.lead_id);
+        console.log("Resultado da geração de link:", result);
+        
+        if (result) {
+          // Certifica-se de que estamos usando o protocolo correto (http/https)
+          const protocol = window.location.protocol;
+          const hostname = window.location.host; // inclui host e porta
+          const fullLink = `${protocol}//${hostname}/register/${result.token}`;
+          
+          console.log("Link gerado com sucesso, URL completa:", fullLink);
+          setRegistrationLink(fullLink);
+          toast.success("Link de cadastro gerado com sucesso!");
+        } else {
+          console.error("Falha ao gerar link - resultado nulo");
+          toast.error("Erro ao gerar link de cadastro.");
+        }
+      } else {
+        toast.error("Lead ID não encontrado.");
+      }
+    } catch (error) {
+      console.error("Erro ao gerar link:", error);
+      toast.error("Erro ao gerar link de cadastro.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (registrationLink) {
+      navigator.clipboard.writeText(registrationLink);
+      setCopied(true);
+      toast.success("Link copiado para a área de transferência!");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const openRegistrationLink = () => {
+    if (registrationLink) {
+      // Abrir em uma nova aba
+      window.open(registrationLink, '_blank', 'noopener,noreferrer');
+      toast.success("Formulário aberto em nova aba!");
+    } else {
+      toast.error("Não foi possível abrir o formulário.");
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">
-          {initialContact ? "Editar Contato" : "Novo Contato"}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {initialContact ? "Atualize as informações do contato" : "Preencha os dados para cadastrar um novo contato"}
-        </p>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex items-start space-x-2">
+        <Checkbox 
+          id="useExternalForm" 
+          checked={useExternalForm}
+          onCheckedChange={(checked) => setUseExternalForm(checked as boolean)}
+        />
+        <div className="grid gap-1.5 leading-none">
+          <Label 
+            htmlFor="useExternalForm" 
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Usar formulário externo
+          </Label>
+          <p className="text-sm text-muted-foreground">
+            Gerar um link para que o cliente preencha seus dados
+          </p>
+        </div>
       </div>
 
-      <Tabs defaultValue="basic">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
-          <TabsTrigger value="advanced">Informações Avançadas</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="basic" className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="Nome do contato"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Tipo de Contato</Label>
-              <Select 
-                value={formData.type} 
-                onValueChange={(value) => handleChange("type", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="client">Cliente</SelectItem>
-                  <SelectItem value="supplier">Fornecedor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                placeholder="email@exemplo.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                placeholder="(00) 00000-0000"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="document">CPF/CNPJ</Label>
-              <Input
-                id="document"
-                value={formData.document}
-                onChange={(e) => handleChange("document", e.target.value)}
-                placeholder="000.000.000-00 ou 00.000.000/0000-00"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="identity">RG/Inscrição Estadual</Label>
-              <Input
-                id="identity"
-                value={formData.identity}
-                onChange={(e) => handleChange("identity", e.target.value)}
-                placeholder="00.000.000-0"
-              />
-            </div>
+      {useExternalForm ? (
+        <div className="space-y-4 rounded-md border p-4">
+          <div className="text-sm">
+            <p>Ao gerar um link, você poderá compartilhá-lo com o cliente para que ele preencha seus próprios dados.</p>
+            <p className="mt-1 text-muted-foreground">O link será válido por 7 dias.</p>
           </div>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-4 pt-4">
-          <h3 className="text-md font-semibold mb-2">Endereço</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="street">Rua/Avenida</Label>
-              <Input
-                id="street"
-                value={formData.street}
-                onChange={(e) => handleChange("street", e.target.value)}
-                placeholder="Nome da rua"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+          
+          {registrationLink ? (
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="number">Número</Label>
-                <Input
-                  id="number"
-                  value={formData.number}
-                  onChange={(e) => handleChange("number", e.target.value)}
-                  placeholder="Nº"
-                />
+                <Label>Link para compartilhar com o cliente:</Label>
+                <div className="flex">
+                  <Input 
+                    value={registrationLink} 
+                    readOnly 
+                    className="flex-1 bg-muted cursor-text"
+                  />
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="outline" 
+                    className="ml-2" 
+                    onClick={copyToClipboard}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="complement">Complemento</Label>
-                <Input
-                  id="complement"
-                  value={formData.complement}
-                  onChange={(e) => handleChange("complement", e.target.value)}
-                  placeholder="Apto, Bloco, etc."
-                />
-              </div>
+              
+              <Button 
+                type="button" 
+                onClick={openRegistrationLink} 
+                className="w-full"
+                variant="secondary"
+              >
+                Abrir formulário em nova aba
+              </Button>
+              
+              <Button 
+                type="button" 
+                onClick={generateLink} 
+                disabled={isGeneratingLink}
+                className="w-full"
+                variant="outline"
+              >
+                {isGeneratingLink ? "Regenerando..." : "Regenerar Link"}
+              </Button>
             </div>
+          ) : (
+            <Button 
+              type="button" 
+              onClick={generateLink} 
+              disabled={isGeneratingLink}
+              className="w-full"
+            >
+              <Link2 className="mr-2 h-4 w-4" />
+              {isGeneratingLink ? "Gerando..." : "Gerar Link de Cadastro"}
+            </Button>
+          )}
+          
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={props.onClose}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={props.onSuccess}>
+              Concluir
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome Completo *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="Nome do contato"
+              required
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="neighborhood">Bairro</Label>
-              <Input
-                id="neighborhood"
-                value={formData.neighborhood}
-                onChange={(e) => handleChange("neighborhood", e.target.value)}
-                placeholder="Nome do bairro"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              placeholder="email@exemplo.com"
+            />
+          </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="phone">WhatsApp/Telefone *</Label>
+            <Input
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              placeholder="(00) 00000-0000"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp</Label>
+            <Input
+              id="whatsapp"
+              value={formData.whatsapp || ""}
+              onChange={(e) => handleChange("whatsapp", e.target.value)}
+              placeholder="(00) 00000-0000"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Endereço</Label>
+            <Input
+              id="address"
+              value={formData.address || ""}
+              onChange={(e) => handleChange("address", e.target.value)}
+              placeholder="Rua, número, complemento"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="postal_code">CEP</Label>
+            <Input
+              id="postal_code"
+              value={formData.postal_code || ""}
+              onChange={(e) => handleChange("postal_code", e.target.value)}
+              placeholder="00000-000"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Observações</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes || ""}
+              onChange={(e) => handleChange("notes", e.target.value)}
+              placeholder="Observações sobre o contato"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">Cidade</Label>
               <Input
                 id="city"
-                value={formData.city}
+                value={formData.city || ""}
                 onChange={(e) => handleChange("city", e.target.value)}
                 placeholder="Nome da cidade"
               />
@@ -243,95 +402,19 @@ const ContactForm = ({ onClose, initialContact }: ContactFormProps) => {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="zipCode">CEP</Label>
-              <Input
-                id="zipCode"
-                value={formData.zipCode}
-                onChange={(e) => handleChange("zipCode", e.target.value)}
-                placeholder="00000-000"
-              />
-            </div>
           </div>
 
-          <div className="space-y-2 mt-4">
-            <Label htmlFor="notes">Observações</Label>
-            <Textarea
-              id="notes"
-              rows={4}
-              value={formData.notes}
-              onChange={(e) => handleChange("notes", e.target.value)}
-              placeholder="Informações adicionais sobre o contato..."
-            />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={props.onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit">
+              Salvar Contato
+            </Button>
           </div>
-        </TabsContent>
-      </Tabs>
-
-      {initialContact && (
-        <div className="pt-4 border-t">
-          <h3 className="text-md font-semibold mb-4">Histórico de Pedidos</h3>
-          {mockOrders.length > 0 ? (
-            <div className="border rounded-md overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nº Pedido</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockOrders.map((order: any) => (
-                    <TableRow key={order.id}>
-                      <TableCell>#{order.id}</TableCell>
-                      <TableCell>{order.date}</TableCell>
-                      <TableCell>{order.type}</TableCell>
-                      <TableCell>
-                        {new Intl.NumberFormat('pt-BR', { 
-                          style: 'currency', 
-                          currency: 'BRL' 
-                        }).format(order.value)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            order.status === 'completed' ? 'default' : 
-                            order.status === 'in-progress' ? 'secondary' : 
-                            order.status === 'canceled' ? 'destructive' : 
-                            'outline'
-                          }
-                        >
-                          {order.status === 'completed' ? 'Concluído' : 
-                           order.status === 'in-progress' ? 'Em andamento' : 
-                           order.status === 'canceled' ? 'Cancelado' : 
-                           'Pendente'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Nenhum pedido ou contrato encontrado para este contato.
-            </p>
-          )}
-        </div>
+        </>
       )}
-
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button onClick={handleSubmit}>
-          Salvar Contato
-        </Button>
-      </div>
-    </div>
+    </form>
   );
 };
 

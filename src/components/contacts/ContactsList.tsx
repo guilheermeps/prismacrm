@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Table, 
   TableBody, 
@@ -28,8 +28,10 @@ import {
   UserRound,
   ShoppingCart
 } from "lucide-react";
-import { mockContacts } from "@/utils/mockData";
 import { Badge } from "@/components/ui/badge";
+import { Contact, getContacts, deleteContact } from "@/lib/supabase/contactsService";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface ContactsListProps {
   filterType: "all" | "client" | "supplier";
@@ -47,16 +49,51 @@ const ContactsList = ({
   onCreateContract
 }: ContactsListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const queryClient = useQueryClient();
+  
+  // Use React Query for fetching and caching contacts
+  const { data: contacts = [], isLoading, error } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: getContacts,
+  });
+  
+  // Handle contact deletion
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      const success = await deleteContact(contactId);
+      if (success) {
+        toast.success("Contato excluído com sucesso");
+        // Invalidate and refetch contacts after deletion
+        queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      } else {
+        toast.error("Erro ao excluir contato");
+      }
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      toast.error("Erro ao excluir contato");
+    }
+  };
   
   // Filter contacts based on type and search query
-  const filteredContacts = mockContacts.filter(contact => {
-    const matchesType = filterType === "all" || contact.type === filterType;
+  const filteredContacts = contacts.filter(contact => {
+    const matchesType = filterType === "all" || 
+                       (filterType === "client" && contact.tags.some(tag => tag.name.toLowerCase() === "cliente")) ||
+                       (filterType === "supplier" && contact.tags.some(tag => tag.name.toLowerCase() === "fornecedor"));
+    
     const matchesSearch = !searchQuery || 
                           contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           contact.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           contact.phone?.includes(searchQuery);
     return matchesType && matchesSearch;
   });
+
+  if (isLoading) {
+    return <div className="py-8 text-center">Carregando contatos...</div>;
+  }
+
+  if (error) {
+    return <div className="py-8 text-center text-red-500">Erro ao carregar contatos</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -94,7 +131,6 @@ const ContactsList = ({
                 <TableHead>Nome</TableHead>
                 <TableHead>Contato</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Cidade/UF</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -107,21 +143,26 @@ const ContactsList = ({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1.5">
                         <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{contact.phone}</span>
+                        <span className="text-sm">{contact.phone || contact.whatsapp || 'N/A'}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{contact.email}</span>
+                        <span className="text-sm">{contact.email || 'N/A'}</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={contact.type === "client" ? "default" : "secondary"}>
-                      {contact.type === "client" ? "Cliente" : "Fornecedor"}
-                    </Badge>
+                    {contact.tags.map((tag) => (
+                      <Badge 
+                        key={tag.id} 
+                        variant={tag.name.toLowerCase() === "cliente" ? "default" : "secondary"}
+                        className="mr-1"
+                      >
+                        {tag.name}
+                      </Badge>
+                    ))}
                   </TableCell>
-                  <TableCell>{contact.document}</TableCell>
-                  <TableCell>{contact.city}/{contact.state}</TableCell>
+                  <TableCell>{contact.city || 'N/A'}/{contact.state || 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -134,19 +175,22 @@ const ContactsList = ({
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        {onCreateOrder && contact.type === "client" && (
+                        {onCreateOrder && contact.tags.some(tag => tag.name.toLowerCase() === "cliente") && (
                           <DropdownMenuItem onClick={() => onCreateOrder(contact)}>
                             <ShoppingCart className="mr-2 h-4 w-4" />
                             Criar Pedido
                           </DropdownMenuItem>
                         )}
-                        {onCreateContract && contact.type === "client" && (
+                        {onCreateContract && contact.tags.some(tag => tag.name.toLowerCase() === "cliente") && (
                           <DropdownMenuItem onClick={() => onCreateContract(contact)}>
                             <FileText className="mr-2 h-4 w-4" />
                             Criar Contrato
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDeleteContact(contact.id)}
+                        >
                           <Trash className="mr-2 h-4 w-4" />
                           Excluir
                         </DropdownMenuItem>
