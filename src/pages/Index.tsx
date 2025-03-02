@@ -19,7 +19,7 @@ const Index = () => {
   };
   
   return (
-    <div className="min-h-screen flex w-full bg-background text-foreground">
+    <div className="min-h-screen flex w-full bg-dark text-white">
       <Sidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
       
       <div className="flex-1 flex flex-col min-h-screen">
@@ -27,10 +27,10 @@ const Index = () => {
         
         <main className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full animate-fade-in">
           {/* Welcome Banner */}
-          <section className="flex items-center justify-between bg-card rounded-xl p-6 border border-border">
+          <section className="flex items-center justify-between bg-darker rounded-xl p-6 border border-studio-gray">
             <div className="space-y-1">
               <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-                Bem-vindo, {userProfile.name}! <Rocket className="h-6 w-6 text-primary animate-pulse" />
+                Bem-vindo, {userProfile.name}! <Rocket className="h-6 w-6 text-studio-orange animate-pulse" />
               </h1>
               <p className="text-muted-foreground">
                 Confira o desempenho do seu estúdio hoje
