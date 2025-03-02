@@ -7,6 +7,7 @@ import LeadForm from "@/components/sales-pipeline/LeadForm";
 import LeadDetails from "@/components/sales-pipeline/LeadDetails";
 import ConvertToContactForm from "@/components/sales-pipeline/ConvertToContactForm";
 import { Lead, Stage } from "@/lib/supabase";
+import { useLeadOperations } from "@/components/sales-pipeline/hooks/useLeadOperations";
 
 interface LeadDialogsProps {
   lead: Lead;
@@ -34,17 +35,39 @@ const LeadDialogs = ({
   onConvertToContact
 }: LeadDialogsProps) => {
   const navigate = useNavigate();
+  const { refreshLeads } = useLeadOperations();
 
   const handleConvertClick = () => {
     setIsDetailsDialogOpen(false);
     setIsConvertDialogOpen(true);
   };
 
-  const handleConvertSuccess = () => {
-    onConvertToContact(lead);
+  const handleConvertSuccess = async () => {
+    await onConvertToContact(lead);
     setIsConvertDialogOpen(false);
     toast.success(`${lead.name} foi convertido em cliente com sucesso!`);
+    await refreshLeads();
     navigate("/contacts");
+  };
+
+  const handleUpdateSuccess = async (updatedLead: Lead) => {
+    // Add history entry for edit
+    const editedLead = {
+      ...updatedLead,
+      history: [
+        ...lead.history,
+        {
+          action: "edited",
+          timestamp: new Date().toISOString(),
+          from: null,
+          to: null
+        }
+      ]
+    };
+    
+    await onUpdateLead(editedLead);
+    await refreshLeads();
+    setIsEditDialogOpen(false);
   };
 
   return (
@@ -58,23 +81,7 @@ const LeadDialogs = ({
           <LeadForm 
             lead={lead} 
             stages={stages} 
-            onSave={(updatedLead) => {
-              // Add history entry for edit
-              const editedLead = {
-                ...updatedLead,
-                history: [
-                  ...lead.history,
-                  {
-                    action: "edited",
-                    timestamp: new Date().toISOString(),
-                    from: null,
-                    to: null
-                  }
-                ]
-              };
-              onUpdateLead(editedLead);
-              setIsEditDialogOpen(false);
-            }}
+            onSave={handleUpdateSuccess}
             onCancel={() => setIsEditDialogOpen(false)}
           />
         </DialogContent>

@@ -16,6 +16,7 @@ interface SalesFunnelBoardProps {
   onUnarchiveLead: (lead: Lead) => void;
   onDiscardLead?: (lead: Lead) => void;
   isArchived: boolean;
+  onRefreshLeads?: () => Promise<void>;
 }
 
 const SalesFunnelBoard = ({ 
@@ -28,11 +29,13 @@ const SalesFunnelBoard = ({
   onArchiveLead, 
   onUnarchiveLead,
   onDiscardLead,
-  isArchived 
+  isArchived,
+  onRefreshLeads
 }: SalesFunnelBoardProps) => {
   const [boardLeads, setBoardLeads] = useState<Lead[]>(filteredLeads);
   const [localFilteredLeads, setLocalFilteredLeads] = useState<Lead[]>(filteredLeads);
   const [isDragging, setIsDragging] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Update local state when props change
   useEffect(() => {
@@ -67,9 +70,12 @@ const SalesFunnelBoard = ({
   };
 
   // Handle refreshing the board
-  const handleRefresh = () => {
-    setBoardLeads(filteredLeads);
-    setLocalFilteredLeads(filteredLeads);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    if (onRefreshLeads) {
+      await onRefreshLeads();
+    }
+    setIsRefreshing(false);
   };
 
   // Calculate total value and count of leads
@@ -93,9 +99,10 @@ const SalesFunnelBoard = ({
           size="sm" 
           onClick={handleRefresh}
           className="gap-2"
+          disabled={isRefreshing}
         >
-          <RefreshCw className="h-4 w-4" />
-          Atualizar
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Atualizando...' : 'Atualizar'}
         </Button>
       </div>
       

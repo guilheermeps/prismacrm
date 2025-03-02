@@ -6,23 +6,25 @@ import { addHistoryEntry } from "./leadHistoryUtils";
 
 export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
   try {
-    // Se estamos em modo de desenvolvimento ou demo, mostrar mensagem
+    // Log for debugging
+    console.log('Updating lead:', updatedLead);
+    
+    // If we're in development or demo mode, show message
     if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      // Log para depuração
-      console.log('Atualizando lead em modo de desenvolvimento/demo:', updatedLead);
-      // Simular sucesso e retornar true imediatamente
+      console.log('Updating lead in development/demo mode:', updatedLead);
+      // Simulate success and return true immediately
       toast.success("Lead atualizado com sucesso!");
       return true;
     }
     
-    // Se não estamos em modo de desenvolvimento, continuar com a atualização
+    // If not in development mode, continue with the update
     await updateLead(updatedLead);
     toast.success("Lead atualizado com sucesso!");
     return true;
   } catch (error) {
     console.error("Erro ao atualizar lead:", error);
     
-    // Em modo de desenvolvimento, pretender que teve sucesso
+    // In development mode, pretend success
     if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
       return true;
     }
@@ -34,6 +36,8 @@ export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
 
 export const archiveLead = async (lead: Lead): Promise<boolean> => {
   try {
+    console.log('Archiving lead:', lead.id);
+    
     const updatedLead = {
       ...lead,
       isArchived: true,
@@ -45,6 +49,12 @@ export const archiveLead = async (lead: Lead): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error("Erro ao arquivar lead:", error);
+    
+    // In development mode, pretend success
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return true;
+    }
+    
     toast.error("Erro ao arquivar lead. Tente novamente.");
     return false;
   }
@@ -52,6 +62,8 @@ export const archiveLead = async (lead: Lead): Promise<boolean> => {
 
 export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
   try {
+    console.log('Unarchiving lead:', lead.id);
+    
     const updatedLead = {
       ...lead,
       isArchived: false,
@@ -63,6 +75,12 @@ export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error("Erro ao restaurar lead:", error);
+    
+    // In development mode, pretend success
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return true;
+    }
+    
     toast.error("Erro ao restaurar lead. Tente novamente.");
     return false;
   }
