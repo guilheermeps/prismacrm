@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
@@ -18,8 +19,8 @@ import { Button } from '@/components/ui/button';
 import { userProfile } from '@/utils/mockData';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/sales-pipeline', label: 'Leads', icon: Target },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/pipeline', label: 'Leads', icon: Target },
   { path: '/contacts', label: 'Contatos', icon: Users },
   { path: '/schedule', label: 'Agenda', icon: CalendarDays },
   { path: '/products', label: 'Produtos', icon: Package },

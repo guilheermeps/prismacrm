@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import Dashboard from './pages/Dashboard';
@@ -26,7 +26,7 @@ function App() {
           <Route path="/client-registration/:token" element={<ClientRegistration />} />
           
           {/* Rotas sem verificação de autenticação */}
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/pipeline" element={<SalesPipeline />} />
           <Route path="/contacts" element={<Contacts />} />
