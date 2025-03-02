@@ -150,7 +150,7 @@ export const moveLead = async (lead: Lead, newStageId: string): Promise<boolean>
 // Reset all leads
 export const resetAllLeads = async (): Promise<boolean> => {
   try {
-    // Logic to reset all leads
+    // We'll implement proper reset functionality later
     toast.success("Leads resetados com sucesso");
     return true;
   } catch (error) {

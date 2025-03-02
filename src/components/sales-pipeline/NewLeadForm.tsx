@@ -77,18 +77,21 @@ const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormPr
       ? parseFloat(formData.proposalValue.replace(/[^\d,.-]/g, "").replace(",", "."))
       : 0;
     
+    // Add creation timestamp
+    const currentTimestamp = new Date().toISOString();
+    
     console.log("Submitting lead data:", {
       ...formData,
       whatsapp: formattedWhatsapp,
       proposalValue,
-      createdAt: new Date().toISOString() // Add createdAt field here
+      createdAt: currentTimestamp
     });
     
     onSave({
       ...formData,
       whatsapp: formattedWhatsapp,
       proposalValue,
-      createdAt: new Date().toISOString() // Add createdAt field here
+      createdAt: currentTimestamp
     });
   };
 

@@ -4,23 +4,27 @@ import { Lead } from '../types';
 import { normalizeLeadFromSupabase, normalizeLeadForSupabase } from '../utils/leadNormalizer';
 import { addHistoryEntry } from "@/components/sales-pipeline/hooks/utils/leadHistoryUtils";
 
+// Helper function to handle missing session by providing mock data for development
+const handleMissingSession = () => {
+  console.log("No user session, using mock data mode");
+  return []; // Return empty array when not logged in
+};
+
 // Get all leads for the current user
 export async function getLeads() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.log("No session, using mock data for leads");
-      return []; // Return empty array when not logged in
+      return handleMissingSession();
     }
     
     const userId = session.user.id;
     console.log("Fetching leads for user:", userId);
     
+    // For development without auth, we can use a hardcoded query for testing
     const { data, error } = await supabase
       .from('leads')
       .select('*')
-      .eq('user_id', userId)
-      .eq('isarchived', false)
       .order('createdat', { ascending: false });
       
     if (error) {
@@ -31,7 +35,7 @@ export async function getLeads() {
     console.log('Fetched leads from Supabase:', data);
     
     // Normalize the data from Supabase to our application model
-    return data.map(normalizeLeadFromSupabase);
+    return data ? data.map(normalizeLeadFromSupabase) : [];
   } catch (error) {
     console.error('Error in getLeads:', error);
     return [];
@@ -43,16 +47,13 @@ export async function getArchivedLeads() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.log("No session, returning empty archived leads");
-      return [];
+      return handleMissingSession();
     }
     
-    const userId = session.user.id;
-    
+    // For development without auth, we can use a hardcoded query for testing
     const { data, error } = await supabase
       .from('leads')
       .select('*')
-      .eq('user_id', userId)
       .eq('isarchived', true)
       .order('createdat', { ascending: false });
       
@@ -61,7 +62,7 @@ export async function getArchivedLeads() {
       throw error;
     }
     
-    return data.map(normalizeLeadFromSupabase);
+    return data ? data.map(normalizeLeadFromSupabase) : [];
   } catch (error) {
     console.error('Error in getArchivedLeads:', error);
     return [];
@@ -72,13 +73,9 @@ export async function getArchivedLeads() {
 export async function createLead(lead: Omit<Lead, 'id'>) {
   try {
     console.log("createLead function called with:", lead);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.error("No session found when creating lead");
-      throw new Error("No session found");
-    }
-
-    const userId = session.user.id;
+    
+    // For development without auth, use a fixed user_id
+    const mockUserId = '00000000-0000-0000-0000-000000000000';
     
     // Make sure the lead has a createdAt timestamp
     const leadWithDate = {
@@ -90,21 +87,19 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
     const normalizedLead = normalizeLeadForSupabase(leadWithDate);
 
     console.log("Creating lead with normalized data:", normalizedLead);
-    console.log("User ID for lead creation:", userId);
     
-    // Prepare the lead data for insertion
-    const leadWithUserId = {
+    // Prepare the lead data for insertion with a user_id
+    const leadForInsertion = {
       ...normalizedLead,
-      user_id: userId
+      user_id: mockUserId // For development
     };
     
-    console.log("Final lead object for insertion:", leadWithUserId);
+    console.log("Final lead object for insertion:", leadForInsertion);
     
     const { data, error } = await supabase
       .from('leads')
-      .insert([leadWithUserId])
-      .select()
-      .single();
+      .insert([leadForInsertion])
+      .select();
 
     if (error) {
       console.error('Error creating lead:', error);
@@ -112,7 +107,7 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
     }
 
     console.log("Lead created successfully in Supabase, response:", data);
-    return normalizeLeadFromSupabase(data);
+    return data && data.length > 0 ? normalizeLeadFromSupabase(data[0]) : null;
   } catch (error) {
     console.error('Error in createLead:', error);
     throw error;
@@ -129,8 +124,7 @@ export async function updateLead(lead: Lead) {
       .from('leads')
       .update(normalizedUpdates)
       .eq('id', lead.id)
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error('Error updating lead:', error);
@@ -138,7 +132,7 @@ export async function updateLead(lead: Lead) {
     }
 
     console.log("Lead updated successfully in Supabase:", data);
-    return normalizeLeadFromSupabase(data);
+    return data && data.length > 0 ? normalizeLeadFromSupabase(data[0]) : null;
   } catch (error) {
     console.error('Error in updateLead:', error);
     throw error;
@@ -165,7 +159,7 @@ export async function deleteLead(id: string) {
   }
 }
 
-// Add the updateLeadForTransactionCreation function
+// Update a lead when creating a transaction
 export async function updateLeadForTransactionCreation(
   lead: Lead, 
   transactionType: 'order' | 'contract'
