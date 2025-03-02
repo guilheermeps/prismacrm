@@ -30,6 +30,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 // Mock data para clientes, pedidos e templates
 const mockClients = [
