@@ -1,286 +1,281 @@
-import React, { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from 'uuid';
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { v4 as uuidv4 } from "uuid";
+import { createContract } from "@/lib/supabase/contractsService";
+import { SourceEntity } from "@/lib/types";
+
+interface ContractService {
+  id: string;
+  name: string;
+  price: number;
+}
 
 interface ContractsTabProps {
   leadData?: SourceEntity;
   contactData?: SourceEntity;
-  onCreateContract: (contractId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
+  onCreateContract?: (contractId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
 }
 
-const ContractsTab: React.FC<ContractsTabProps> = ({ leadData, contactData, onCreateContract }) => {
-  const [contractDetails, setContractDetails] = useState({
-    contractId: uuidv4(),
-    clientName: contactData?.name || leadData?.name || "",
-    totalAmount: 0,
-    dueDate: new Date(),
-    paymentMethod: "",
-    installments: 1,
-    serviceType: "",
-    eventDate: new Date(),
-    eventTime: "09:00",
-    location: "",
-    notes: "",
-  });
+const ContractsTab = ({ leadData, contactData, onCreateContract }: ContractsTabProps) => {
+  const [contractId, setContractId] = useState(uuidv4());
+  const [clientName, setClientName] = useState(leadData?.name || contactData?.name || '');
+  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [paymentMethod, setPaymentMethod] = useState<string>('credit_card');
+  const [installments, setInstallments] = useState<number>(1);
+  const [serviceType, setServiceType] = useState<string>('photography');
+  const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
+  const [eventTime, setEventTime] = useState<string>('10:00');
+  const [location, setLocation] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+  const [services, setServices] = useState<ContractService[]>([{ id: uuidv4(), name: '', price: 0 }]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setContractDetails(prevState => ({
-      ...prevState,
-      [name]: value,
-    }));
+  const handleAddService = () => {
+    setServices([...services, { id: uuidv4(), name: '', price: 0 }]);
   };
 
-  const handleDateChange = (date: Date | undefined) => {
-    if (date) {
-      setContractDetails(prevState => ({
-        ...prevState,
-        dueDate: date,
-      }));
-    }
+  const handleRemoveService = (id: string) => {
+    setServices(services.filter(service => service.id !== id));
   };
 
-  const handleEventDateChange = (date: Date | undefined) => {
-    if (date) {
-      setContractDetails(prevState => ({
-        ...prevState,
-        eventDate: date,
-      }));
-    }
+  const updateService = (id: string, field: string, value: any) => {
+    setServices(services.map(service =>
+      service.id === id ? { ...service, [field]: value } : service
+    ));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const { contractId, clientName, totalAmount, dueDate, paymentMethod, installments, serviceType, eventDate, eventTime, location, notes } = contractDetails;
-
-    if (!clientName || !totalAmount || !dueDate || !paymentMethod || !serviceType || !eventDate || !eventTime || !location) {
-      toast.error("Preencha todos os campos obrigatórios.");
+  const handleSubmit = async () => {
+    if (!clientName || !dueDate || !paymentMethod || !serviceType || !eventDate || !eventTime || !location) {
+      toast.error('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    onCreateContract(
-      contractId,
-      clientName,
-      Number(totalAmount),
-      format(dueDate, 'yyyy-MM-dd'),
-      paymentMethod,
-      Number(installments),
-      serviceType,
-      format(eventDate, 'yyyy-MM-dd'),
-      eventTime,
-      location,
-      notes
-    );
+    if (totalAmount <= 0) {
+      toast.error('O valor total deve ser maior que zero.');
+      return;
+    }
 
-    toast.success("Contrato criado com sucesso!");
+    const formattedDueDate = format(dueDate, 'yyyy-MM-dd');
+    const formattedEventDate = format(eventDate, 'yyyy-MM-dd');
+
+    try {
+      const newContract = {
+        id: contractId,
+        client_id: leadData?.id || contactData?.id || null,
+        client_name: clientName,
+        total_amount: totalAmount,
+        due_date: formattedDueDate,
+        payment_method: paymentMethod,
+        installments: installments,
+        start_date: formattedEventDate,
+        notes: notes,
+        services: services,
+      };
+
+      const created = await createContract(newContract);
+
+      if (created) {
+        toast.success('Contrato criado com sucesso!');
+        if (onCreateContract) {
+          onCreateContract(contractId, clientName, totalAmount, formattedDueDate, paymentMethod, installments, serviceType, formattedEventDate, eventTime, location, notes);
+        }
+      } else {
+        toast.error('Erro ao criar contrato. Tente novamente.');
+      }
+    } catch (error) {
+      console.error("Error creating contract:", error);
+      toast.error('Erro ao criar contrato. Tente novamente.');
+    }
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Novo Contrato</CardTitle>
-        <CardDescription>
-          Preencha os detalhes do contrato abaixo.
-        </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="clientName">Nome do Cliente</Label>
-            <Input
-              id="clientName"
-              name="clientName"
-              value={contractDetails.clientName}
-              onChange={handleInputChange}
-              placeholder="Nome do cliente"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="totalAmount">Valor Total</Label>
-            <Input
-              id="totalAmount"
-              name="totalAmount"
-              type="number"
-              value={contractDetails.totalAmount}
-              onChange={handleInputChange}
-              placeholder="0.00"
-            />
-          </div>
+      <CardContent className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="clientName">Nome do Cliente</Label>
+          <Input
+            id="clientName"
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            placeholder="Nome do cliente"
+          />
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Data de Vencimento</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal",
-                    !contractDetails.dueDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {contractDetails.dueDate ? (
-                    format(contractDetails.dueDate, "PPP")
-                  ) : (
-                    <span>Escolha uma data</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center" side="bottom">
-                <Calendar
-                  mode="single"
-                  selected={contractDetails.dueDate}
-                  onSelect={handleDateChange}
-                  disabled={(date) =>
-                    date > new Date()
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">Método de Pagamento</Label>
-            <Select onValueChange={(value) => setContractDetails(prevState => ({ ...prevState, paymentMethod: value }))}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione o método" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                <SelectItem value="boleto">Boleto Bancário</SelectItem>
-                <SelectItem value="pix">PIX</SelectItem>
-                <SelectItem value="cash">Dinheiro</SelectItem>
-                <SelectItem value="bank_transfer">Transferência Bancária</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="grid gap-2">
+          <Label htmlFor="totalAmount">Valor Total</Label>
+          <Input
+            id="totalAmount"
+            type="number"
+            value={totalAmount.toString()}
+            onChange={(e) => setTotalAmount(Number(e.target.value))}
+            placeholder="Valor total"
+          />
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="installments">Parcelas</Label>
-            <Input
-              id="installments"
-              name="installments"
-              type="number"
-              value={contractDetails.installments}
-              onChange={handleInputChange}
-              placeholder="Número de parcelas"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="serviceType">Tipo de Serviço</Label>
-            <Input
-              id="serviceType"
-              name="serviceType"
-              type="text"
-              value={contractDetails.serviceType}
-              onChange={handleInputChange}
-              placeholder="Tipo de serviço"
-            />
-          </div>
+        <div className="grid gap-2">
+          <Label htmlFor="dueDate">Data de Vencimento</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={format(dueDate || new Date(), 'PPP', { locale: ptBR }) + " w-[240px] justify-start text-left font-normal"}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dueDate ? format(dueDate, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center" side="bottom">
+              <Calendar
+                mode="single"
+                locale={ptBR}
+                selected={dueDate}
+                onSelect={setDueDate}
+                disabled={(date) =>
+                  date > new Date()
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Data do Evento</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal",
-                    !contractDetails.eventDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {contractDetails.eventDate ? (
-                    format(contractDetails.eventDate, "PPP")
-                  ) : (
-                    <span>Escolha uma data</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center" side="bottom">
-                <Calendar
-                  mode="single"
-                  selected={contractDetails.eventDate}
-                  onSelect={handleEventDateChange}
-                  disabled={(date) =>
-                    date < new Date()
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="eventTime">Horário do Evento</Label>
-            <Input
-              type="time"
-              id="eventTime"
-              name="eventTime"
-              value={contractDetails.eventTime}
-              onChange={handleInputChange}
-            />
-          </div>
+        <div className="grid gap-2">
+          <Label htmlFor="paymentMethod">Método de Pagamento</Label>
+          <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+              <SelectItem value="boleto">Boleto</SelectItem>
+              <SelectItem value="pix">PIX</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="location">Local do Evento</Label>
+        <div className="grid gap-2">
+          <Label htmlFor="installments">Parcelas</Label>
+          <Input
+            id="installments"
+            type="number"
+            value={installments.toString()}
+            onChange={(e) => setInstallments(Number(e.target.value))}
+            placeholder="Número de parcelas"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="serviceType">Tipo de Serviço</Label>
+          <Select value={serviceType} onValueChange={setServiceType}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="photography">Fotografia</SelectItem>
+              <SelectItem value="videography">Videografia</SelectItem>
+              <SelectItem value="other">Outro</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="eventDate">Data do Evento</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={format(eventDate || new Date(), 'PPP', { locale: ptBR }) + " w-[240px] justify-start text-left font-normal"}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {eventDate ? format(eventDate, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center" side="bottom">
+              <Calendar
+                mode="single"
+                locale={ptBR}
+                selected={eventDate}
+                onSelect={setEventDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="eventTime">Horário do Evento</Label>
+          <Input
+            id="eventTime"
+            type="time"
+            value={eventTime}
+            onChange={(e) => setEventTime(e.target.value)}
+            placeholder="Horário do evento"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="location">Local</Label>
           <Input
             id="location"
-            name="location"
-            type="text"
-            value={contractDetails.location}
-            onChange={handleInputChange}
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
             placeholder="Local do evento"
           />
         </div>
-
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor="notes">Observações</Label>
           <Textarea
             id="notes"
-            name="notes"
-            value={contractDetails.notes}
-            onChange={handleInputChange}
-            placeholder="Observações adicionais"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Observações"
           />
         </div>
 
-        <Button onClick={handleSubmit}>Criar Contrato</Button>
+        <div>
+          <Label>Serviços:</Label>
+          {services.map((service, index) => (
+            <div key={service.id} className="flex items-center space-x-2 mb-2">
+              <div className="grid gap-2 flex-1">
+                <Label htmlFor={`serviceName-${index}`}>Nome do Serviço</Label>
+                <Input
+                  id={`serviceName-${index}`}
+                  type="text"
+                  value={service.name}
+                  onChange={(e) => updateService(service.id, 'name', e.target.value)}
+                  placeholder="Nome do serviço"
+                />
+              </div>
+              <div className="grid gap-2 flex-1">
+                <Label htmlFor={`servicePrice-${index}`}>Preço</Label>
+                <Input
+                  id={`servicePrice-${index}`}
+                  type="number"
+                  value={service.price}
+                  onChange={(e) => updateService(service.id, 'price', Number(e.target.value))}
+                  placeholder="Preço"
+                />
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => handleRemoveService(service.id)}>
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button variant="outline" size="sm" onClick={handleAddService}>
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar Serviço
+          </Button>
+        </div>
       </CardContent>
+      <CardFooter className="flex justify-end">
+        <Button onClick={handleSubmit}>Criar Contrato</Button>
+      </CardFooter>
     </Card>
   );
 };

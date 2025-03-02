@@ -96,7 +96,7 @@ export const moveLead = async (
     const updatedLead = {
       ...lead,
       stageId: toStageId,
-      history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
+      history: addHistoryEntry(lead.history || [], "moved", fromStageName, toStageName)
     };
     
     console.log("Updating lead in database:", updatedLead);
@@ -124,7 +124,7 @@ export const moveLead = async (
   } catch (error) {
     console.error("Erro ao mover lead:", error);
     
-    // In development mode, allow the UI to update even if the API call fails
+    // In development mode, allow the UI to update even if the API fails
     if (isDevOrDemoMode()) {
       console.log("Allowing move in development mode despite error");
       return true;

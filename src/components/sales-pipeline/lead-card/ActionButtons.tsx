@@ -1,9 +1,8 @@
 
 import React from "react";
-import { ArrowLeft, ArrowRight, ShoppingCart, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Stage } from "@/lib/supabase/types";
-import { useNavigate } from "react-router-dom";
 
 interface ActionButtonsProps {
   leadId: string;
@@ -11,7 +10,7 @@ interface ActionButtonsProps {
   stages: Stage[];
   onMoveLead: (leadId: string, fromStageId: string, toStageId: string) => void;
   isArchived: boolean;
-  leadName?: string; // Added to display in links
+  leadName?: string;
 }
 
 const ActionButtons = ({ 
@@ -20,10 +19,8 @@ const ActionButtons = ({
   stages, 
   onMoveLead, 
   isArchived,
-  leadName = "" // Default to empty string 
+  leadName = ""
 }: ActionButtonsProps) => {
-  const navigate = useNavigate();
-  
   // Don't show buttons if archived or if stages list is invalid
   if (isArchived || !stages || stages.length === 0) return null;
   
@@ -52,28 +49,6 @@ const ActionButtons = ({
     }
   };
 
-  const navigateToCreateOrder = () => {
-    // Store lead info in sessionStorage for use in OrderForm
-    sessionStorage.setItem('createOrderFromLead', JSON.stringify({
-      leadId,
-      leadName,
-      type: 'lead', // Identify the source as a lead
-      amount: 0, // Add a default amount of 0 to be updated later
-    }));
-    navigate('/orders-contracts');
-  };
-
-  const navigateToCreateContract = () => {
-    // Store lead info in sessionStorage for use in ContractForm
-    sessionStorage.setItem('createContractFromLead', JSON.stringify({
-      leadId,
-      leadName,
-      type: 'lead', // Identify the source as a lead
-      amount: 0, // Add a default amount of 0 to be updated later
-    }));
-    navigate('/orders-contracts');
-  };
-
   return (
     <div className="space-y-2">
       <div className="flex justify-between gap-2 pt-1">
@@ -97,30 +72,6 @@ const ActionButtons = ({
           title={hasNextStage ? `Mover para ${stages[currentStageIndex + 1].title}` : "Não há próximo estágio"}
         >
           <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
-      
-      <div className="flex justify-between gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={navigateToCreateOrder}
-          className="text-xs flex-1"
-          title="Criar pedido a partir deste lead"
-        >
-          <ShoppingCart className="h-3 w-3 mr-1" />
-          Pedido
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={navigateToCreateContract}
-          className="text-xs flex-1"
-          title="Criar contrato a partir deste lead"
-        >
-          <FileText className="h-3 w-3 mr-1" />
-          Contrato
         </Button>
       </div>
     </div>

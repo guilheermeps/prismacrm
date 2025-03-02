@@ -1,17 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useNavigate } from 'react-router-dom';
 import { Lead } from '@/lib/supabase/types';
-import { getLeadById } from '@/lib/supabase/services/leadsCrudService';
+import { getLeads } from '@/lib/supabase/leadsService';
 import OrdersTab from '@/components/orders-contracts/OrdersTab';
 import ContractsTab from '@/components/orders-contracts/ContractsTab';
-
-interface SourceEntity {
-  lead?: Lead;
-  contact?: any;
-}
+import { SourceEntity } from '@/lib/types';
 
 const OrdersContracts = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -26,8 +23,8 @@ const OrdersContracts = () => {
   useEffect(() => {
     // Function to extract data from sessionStorage
     const extractSessionStorageData = () => {
-      let leadData: Lead | null = null;
-      let contactData: any = null;
+      let leadData: SourceEntity | null = null;
+      let contactData: SourceEntity | null = null;
 
       // Check for lead data
       const leadDataStr = sessionStorage.getItem('createOrderFromLead') || sessionStorage.getItem('createContractFromLead');
@@ -58,14 +55,26 @@ const OrdersContracts = () => {
 
     const fetchData = async () => {
       const sessionStorageData = extractSessionStorageData();
-      if (sessionStorageData.lead && sessionStorageData.lead.leadId) {
+      
+      if (sessionStorageData.lead && sessionStorageData.lead.id) {
         try {
-          const lead = await getLeadById(sessionStorageData.lead.leadId);
-          setSourceEntityData({ ...sourceEntityData, lead: lead || undefined });
+          // Get all leads and find the specific one by ID
+          const leads = await getLeads();
+          const lead = leads.find(l => l.id === sessionStorageData.lead?.id);
+          if (lead) {
+            setSourceEntityData({ 
+              ...sourceEntityData, 
+              lead: {
+                ...sessionStorageData.lead,
+                ...lead
+              }
+            });
+          }
         } catch (error) {
           console.error("Error fetching lead data:", error);
         }
       }
+
       setSourceEntityData({
         lead: sessionStorageData.lead,
         contact: sessionStorageData.contact,

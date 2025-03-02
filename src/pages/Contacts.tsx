@@ -7,10 +7,18 @@ import ContactsList from "@/components/contacts/ContactsList";
 import ContactForm from "@/components/contacts/ContactForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 30000,
+    },
+  },
+});
 
 const ContactsPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -18,6 +26,7 @@ const ContactsPage = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -43,8 +52,8 @@ const ContactsPage = () => {
   const handleCreateOrderFromContact = (contact) => {
     // Store contact info in sessionStorage for use in OrderForm
     sessionStorage.setItem('createOrderFromContact', JSON.stringify({
-      contactId: contact.id,
-      contactName: contact.name
+      id: contact.id,
+      name: contact.name
     }));
     navigate('/orders-contracts');
   };
@@ -52,8 +61,8 @@ const ContactsPage = () => {
   const handleCreateContractFromContact = (contact) => {
     // Store contact info in sessionStorage for use in ContractForm
     sessionStorage.setItem('createContractFromContact', JSON.stringify({
-      contactId: contact.id,
-      contactName: contact.name
+      id: contact.id,
+      name: contact.name
     }));
     navigate('/orders-contracts');
   };
@@ -82,7 +91,7 @@ const ContactsPage = () => {
                     onCreateContract={handleCreateContractFromContact}
                   />
                 </TabsContent>
-                <TabsContent value="clients">
+                <TabsContent value="client">
                   <ContactsList 
                     filterType="client" 
                     onAddContact={handleAddContact} 
@@ -91,7 +100,7 @@ const ContactsPage = () => {
                     onCreateContract={handleCreateContractFromContact}
                   />
                 </TabsContent>
-                <TabsContent value="suppliers">
+                <TabsContent value="supplier">
                   <ContactsList 
                     filterType="supplier" 
                     onAddContact={handleAddContact} 
@@ -116,6 +125,7 @@ const ContactsPage = () => {
               queryClient.invalidateQueries({ queryKey: ['contacts'] });
               setIsContactFormOpen(false);
               setSelectedContact(null);
+              toast.success("Contato salvo com sucesso!");
             }}
           />
         </DialogContent>

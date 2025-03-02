@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { Json } from "@/integrations/supabase/types";
+import { toast } from "sonner";
 
 // Contact types
 export interface ContactTag {
@@ -55,12 +56,15 @@ export const createContact = async (contactData: Omit<Contact, 'id' | 'created_a
 
     if (error) {
       console.error("Error creating contact:", error);
+      toast.error("Erro ao criar contato");
       throw error;
     }
 
+    toast.success("Contato criado com sucesso!");
     return id;
   } catch (error) {
     console.error("Error in createContact:", error);
+    toast.error("Erro ao criar contato");
     return null;
   }
 };
@@ -136,12 +140,15 @@ export const updateContact = async (contact: Partial<Contact> & { id: string }):
 
     if (error) {
       console.error("Error updating contact:", error);
+      toast.error("Erro ao atualizar contato");
       throw error;
     }
 
+    toast.success("Contato atualizado com sucesso!");
     return true;
   } catch (error) {
     console.error("Error in updateContact:", error);
+    toast.error("Erro ao atualizar contato");
     return false;
   }
 };
@@ -156,12 +163,15 @@ export const deleteContact = async (id: string): Promise<boolean> => {
 
     if (error) {
       console.error("Error deleting contact:", error);
+      toast.error("Erro ao excluir contato");
       throw error;
     }
 
+    toast.success("Contato excluído com sucesso");
     return true;
   } catch (error) {
     console.error("Error in deleteContact:", error);
+    toast.error("Erro ao excluir contato");
     return false;
   }
 };
