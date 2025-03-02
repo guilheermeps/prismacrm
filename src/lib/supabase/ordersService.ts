@@ -83,9 +83,9 @@ export const getOrders = async (): Promise<Order[]> => {
     const orders = data.map(item => ({
       ...item,
       items: item.items as unknown as OrderItem[]
-    }));
+    })) as Order[];
 
-    return orders as Order[];
+    return orders;
   } catch (error) {
     console.error("Error in getOrders:", error);
     return [];
@@ -112,9 +112,9 @@ export const getOrderById = async (id: string): Promise<Order | null> => {
     const order = {
       ...data,
       items: data.items as unknown as OrderItem[]
-    };
+    } as Order;
 
-    return order as Order;
+    return order;
   } catch (error) {
     console.error("Error in getOrderById:", error);
     return null;
@@ -213,9 +213,9 @@ export const getOrdersByFilter = async (
     const orders = data.map(item => ({
       ...item,
       items: item.items as unknown as OrderItem[]
-    }));
+    })) as Order[];
 
-    return orders as Order[];
+    return orders;
   } catch (error) {
     console.error("Error in getOrdersByFilter:", error);
     return [];

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/layout/Header";
@@ -24,22 +23,21 @@ export interface SourceEntity {
   amount?: number;
 }
 
-// Define props for the Financial Tab
-interface FinancialTabProps {
-  transactions: FinancialTransaction[];
-  loading: boolean;
-  onUpdateStatus: (id: string, status: string) => Promise<void>;
-}
-
-// Define props for OrdersTab and ContractsTab
-interface TabProps {
+// Define props for OrdersTab and ContractsTab explicitly to avoid TypeScript errors
+export interface OrdersTabProps {
   leadData: SourceEntity | null;
   contactData: SourceEntity | null;
-  onCreateOrder?: (orderId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
-  onCreateContract?: (contractId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
+  onCreateOrder: (orderId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
+}
+
+export interface ContractsTabProps {
+  leadData: SourceEntity | null;
+  contactData: SourceEntity | null;
+  onCreateContract: (contractId: string, clientName: string, totalAmount: number, dueDate: string, paymentMethod: string, installments: number, serviceType: string, eventDate: string, eventTime: string, location: string, notes?: string) => void;
 }
 
 const OrdersContracts = () => {
+  
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("orders");
   const [selectedLead, setSelectedLead] = useState<SourceEntity | null>(null);
@@ -48,6 +46,7 @@ const OrdersContracts = () => {
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  
   
   useEffect(() => {
     // Check if there's query param to select initial tab
@@ -106,6 +105,7 @@ const OrdersContracts = () => {
   }, [location.search]);
 
   const loadTransactions = async () => {
+    
     setLoadingTransactions(true);
     try {
       const { data, error } = await supabase
@@ -134,6 +134,8 @@ const OrdersContracts = () => {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  
 
   // Create financial transaction when order or contract is created
   const createFinancialTransactionHandler = async (

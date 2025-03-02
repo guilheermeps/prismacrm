@@ -71,9 +71,9 @@ export const getPackages = async (): Promise<Package[]> => {
     const packages = data.map(item => ({
       ...item,
       products: item.products as unknown as PackageProduct[]
-    }));
+    })) as Package[];
 
-    return packages as Package[];
+    return packages;
   } catch (error) {
     console.error("Error in getPackages:", error);
     return [];
@@ -100,9 +100,9 @@ export const getPackageById = async (id: string): Promise<Package | null> => {
     const packageItem = {
       ...data,
       products: data.products as unknown as PackageProduct[]
-    };
+    } as Package;
 
-    return packageItem as Package;
+    return packageItem;
   } catch (error) {
     console.error("Error in getPackageById:", error);
     return null;
@@ -173,9 +173,9 @@ export const getActivePackages = async (): Promise<Package[]> => {
     const packages = data.map(item => ({
       ...item,
       products: item.products as unknown as PackageProduct[]
-    }));
+    })) as Package[];
 
-    return packages as Package[];
+    return packages;
   } catch (error) {
     console.error("Error in getActivePackages:", error);
     return [];

@@ -82,9 +82,9 @@ export const getContacts = async (): Promise<Contact[]> => {
     const contacts = data.map(item => ({
       ...item,
       tags: item.tags as unknown as ContactTag[]
-    }));
+    })) as Contact[];
 
-    return contacts as Contact[];
+    return contacts;
   } catch (error) {
     console.error("Error in getContacts:", error);
     return [];
@@ -111,9 +111,9 @@ export const getContactById = async (id: string): Promise<Contact | null> => {
     const contact = {
       ...data,
       tags: data.tags as unknown as ContactTag[]
-    };
+    } as Contact;
 
-    return contact as Contact;
+    return contact;
   } catch (error) {
     console.error("Error in getContactById:", error);
     return null;
@@ -203,9 +203,9 @@ export const getContactsByFilter = async (
     const contacts = data.map(item => ({
       ...item,
       tags: item.tags as unknown as ContactTag[]
-    }));
+    })) as Contact[];
 
-    return contacts as Contact[];
+    return contacts;
   } catch (error) {
     console.error("Error in getContactsByFilter:", error);
     return [];
@@ -232,9 +232,9 @@ export const getContactByLeadId = async (leadId: string): Promise<Contact | null
     const contact = {
       ...data,
       tags: data.tags as unknown as ContactTag[]
-    };
+    } as Contact;
 
-    return contact as Contact;
+    return contact;
   } catch (error) {
     console.error("Error in getContactByLeadId:", error);
     return null;

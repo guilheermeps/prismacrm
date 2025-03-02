@@ -91,9 +91,9 @@ export const getContracts = async (): Promise<Contract[]> => {
     const contracts = data.map(item => ({
       ...item,
       services: item.services as unknown as ContractService[]
-    }));
+    })) as Contract[];
 
-    return contracts as Contract[];
+    return contracts;
   } catch (error) {
     console.error("Error in getContracts:", error);
     return [];
@@ -120,9 +120,9 @@ export const getContractById = async (id: string): Promise<Contract | null> => {
     const contract = {
       ...data,
       services: data.services as unknown as ContractService[]
-    };
+    } as Contract;
 
-    return contract as Contract;
+    return contract;
   } catch (error) {
     console.error("Error in getContractById:", error);
     return null;
@@ -221,9 +221,9 @@ export const getContractsByFilter = async (
     const contracts = data.map(item => ({
       ...item,
       services: item.services as unknown as ContractService[]
-    }));
+    })) as Contract[];
 
-    return contracts as Contract[];
+    return contracts;
   } catch (error) {
     console.error("Error in getContractsByFilter:", error);
     return [];
