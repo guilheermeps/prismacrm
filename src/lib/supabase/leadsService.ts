@@ -3,6 +3,7 @@ import { supabase } from './client';
 import { Lead } from './types';
 import { mockLeads } from './mockData';
 
+// Function to get all leads
 export const getLeads = async (): Promise<Lead[]> => {
   try {
     console.log('Fetching leads from Supabase...');
@@ -46,6 +47,7 @@ export const getLeads = async (): Promise<Lead[]> => {
   }
 };
 
+// Function to create a new lead
 export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> => {
   try {
     console.log('Creating lead with data:', lead);
@@ -119,6 +121,7 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
   }
 };
 
+// Function to update an existing lead
 export const updateLead = async (lead: Lead): Promise<Lead | null> => {
   try {
     console.log('Updating lead:', lead);
@@ -179,6 +182,7 @@ export const updateLead = async (lead: Lead): Promise<Lead | null> => {
   }
 };
 
+// Function to delete a lead
 export const deleteLead = async (id: string): Promise<boolean> => {
   try {
     console.log('Deleting lead with ID:', id);

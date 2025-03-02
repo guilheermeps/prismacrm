@@ -19,8 +19,11 @@ const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
     }
     
     try {
+      // Format and validate WhatsApp number
+      const formattedNumber = formatWhatsAppNumber(lead.whatsapp);
+      
       // Generate WhatsApp URL
-      const whatsappUrl = getWhatsAppUrl(lead.whatsapp);
+      const whatsappUrl = getWhatsAppUrl(formattedNumber);
       console.log("Opening WhatsApp URL:", whatsappUrl);
       
       // Open WhatsApp in new tab
@@ -30,7 +33,7 @@ const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
       const updatedLead = {
         ...lead,
         history: [
-          ...lead.history,
+          ...(lead.history || []),
           {
             action: "whatsapp_clicked",
             timestamp: new Date().toISOString(),
