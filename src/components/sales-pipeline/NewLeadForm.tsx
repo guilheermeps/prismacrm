@@ -34,7 +34,6 @@ const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormPr
   const [formData, setFormData] = useState({
     name: "",
     whatsapp: "",
-    phone: "",
     serviceType: "",
     proposalValue: "",
     notes: "",
@@ -87,16 +86,6 @@ const NewLeadForm = ({ onSave, onCancel, stages, initialStageId }: NewLeadFormPr
           onChange={(e) => handleChange("whatsapp", e.target.value)}
           placeholder="Ex: 11999887766"
           required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="phone">Telefone (opcional)</Label>
-        <Input
-          id="phone"
-          value={formData.phone}
-          onChange={(e) => handleChange("phone", e.target.value)}
-          placeholder="Ex: 1133224455"
         />
       </div>
 

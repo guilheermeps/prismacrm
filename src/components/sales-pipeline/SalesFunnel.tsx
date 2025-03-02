@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Search, Filter, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import LeadColumn from "@/components/sales-pipeline/LeadColumn";
 import NewLeadForm from "@/components/sales-pipeline/NewLeadForm";
 import EditStageForm from "@/components/sales-pipeline/EditStageForm";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 // Initial mock data for stages
 const initialStages = [
@@ -185,6 +185,7 @@ const initialLeads = [
 ];
 
 const SalesFunnel = () => {
+  const navigate = useNavigate();
   const [stages, setStages] = useState(initialStages);
   const [leads, setLeads] = useState(initialLeads);
   const [searchTerm, setSearchTerm] = useState("");
@@ -294,7 +295,6 @@ const SalesFunnel = () => {
 
   const convertToContact = (lead) => {
     // In a real application, this would create a contact in the Contacts module
-    toast.success(`${lead.name} foi convertido em um contato!`);
     
     // You could then move the lead to the "Closed (Won)" stage
     const wonStage = stages.find(stage => stage.title === "Fechado (Ganho)");

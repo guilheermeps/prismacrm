@@ -4,7 +4,6 @@ import { MoreHorizontal, Edit, Trash, ArrowRight, ArrowLeft, UserCheck, MessageS
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LeadForm from "@/components/sales-pipeline/LeadForm";
 import LeadDetails from "@/components/sales-pipeline/LeadDetails";
+import ConvertToContactForm from "@/components/sales-pipeline/ConvertToContactForm";
+import { toast } from "sonner";
 
 interface LeadCardProps {
   lead: any;
@@ -33,6 +34,7 @@ const LeadCard = ({
 }: LeadCardProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
 
   const currentStageIndex = stages.findIndex(stage => stage.id === lead.stageId);
   const hasNextStage = currentStageIndex < stages.length - 1;
@@ -61,6 +63,17 @@ const LeadCard = ({
   const openWhatsApp = () => {
     const whatsappUrl = `https://wa.me/${lead.whatsapp}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleConvertClick = () => {
+    setIsDetailsDialogOpen(false);
+    setIsConvertDialogOpen(true);
+  };
+
+  const handleConvertSuccess = () => {
+    onConvertToContact(lead);
+    setIsConvertDialogOpen(false);
+    toast.success(`${lead.name} foi convertido em cliente com sucesso!`);
   };
 
   return (
@@ -95,7 +108,7 @@ const LeadCard = ({
                     <Edit className="mr-2 h-4 w-4" />
                     Editar
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onConvertToContact(lead)}>
+                  <DropdownMenuItem onClick={() => setIsConvertDialogOpen(true)}>
                     <UserCheck className="mr-2 h-4 w-4" />
                     Converter para Cliente
                   </DropdownMenuItem>
@@ -190,10 +203,21 @@ const LeadCard = ({
               setIsDetailsDialogOpen(false);
               setIsEditDialogOpen(true);
             }}
-            onConvertToContact={() => {
-              onConvertToContact(lead);
-              setIsDetailsDialogOpen(false);
-            }}
+            onConvertToContact={handleConvertClick}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Convert to Contact Dialog */}
+      <Dialog open={isConvertDialogOpen} onOpenChange={setIsConvertDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Converter Lead para Cliente</DialogTitle>
+          </DialogHeader>
+          <ConvertToContactForm 
+            lead={lead}
+            onClose={() => setIsConvertDialogOpen(false)}
+            onSuccess={handleConvertSuccess}
           />
         </DialogContent>
       </Dialog>

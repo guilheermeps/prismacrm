@@ -36,12 +36,6 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleCall = () => {
-    if (lead.phone) {
-      window.location.href = `tel:${lead.phone}`;
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -66,20 +60,10 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3">
         <Button onClick={handleOpenWhatsApp} className="flex gap-2 bg-green-600 hover:bg-green-700">
           <MessageSquare className="h-4 w-4" />
           WhatsApp
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          onClick={handleCall}
-          disabled={!lead.phone}
-          className="flex gap-2"
-        >
-          <Phone className="h-4 w-4" />
-          Ligar
         </Button>
       </div>
 
@@ -103,13 +87,6 @@ const LeadDetails = ({ lead, stages, onEdit, onConvertToContact }: LeadDetailsPr
             <p className="text-muted-foreground">WhatsApp</p>
             <p>{lead.whatsapp}</p>
           </div>
-          
-          {lead.phone && (
-            <div>
-              <p className="text-muted-foreground">Telefone</p>
-              <p>{lead.phone}</p>
-            </div>
-          )}
         </div>
       </div>
       

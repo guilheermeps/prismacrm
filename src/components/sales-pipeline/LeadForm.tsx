@@ -88,16 +88,6 @@ const LeadForm = ({ lead, stages, onSave, onCancel }: LeadFormProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone">Telefone (opcional)</Label>
-        <Input
-          id="phone"
-          value={formData.phone}
-          onChange={(e) => handleChange("phone", e.target.value)}
-          placeholder="Ex: 1133224455"
-        />
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="serviceType">Tipo de Serviço *</Label>
         <Select
           value={formData.serviceType}
