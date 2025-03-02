@@ -34,6 +34,36 @@ export async function getLeads() {
   }
 }
 
+// Get archived leads for the current user
+export async function getArchivedLeads() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log("No session, returning empty archived leads");
+      return [];
+    }
+    
+    const userId = session.user.id;
+    
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('isarchived', true)
+      .order('createdat', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching archived leads:', error);
+      return [];
+    }
+    
+    return data.map(normalizeLeadFromSupabase);
+  } catch (error) {
+    console.error('Error in getArchivedLeads:', error);
+    return [];
+  }
+}
+
 // Create a new lead
 export async function createLead(lead: Omit<Lead, 'id'>) {
   try {
@@ -102,5 +132,33 @@ export async function deleteLead(id: string) {
   } catch (error) {
     console.error('Error in deleteLead:', error);
     return false;
+  }
+}
+
+// Search leads by name or service type
+export async function searchLeads(query: string) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+    
+    const userId = session.user.id;
+    
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('user_id', userId)
+      .or(`name.ilike.%${query}%,servicetype.ilike.%${query}%`)
+      .eq('isarchived', false)
+      .order('createdat', { ascending: false });
+      
+    if (error) {
+      console.error('Error searching leads:', error);
+      return [];
+    }
+    
+    return data.map(normalizeLeadFromSupabase);
+  } catch (error) {
+    console.error('Error in searchLeads:', error);
+    return [];
   }
 }

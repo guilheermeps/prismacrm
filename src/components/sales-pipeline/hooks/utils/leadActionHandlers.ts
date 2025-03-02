@@ -2,105 +2,81 @@
 import { toast } from "sonner";
 import { 
   createLead, 
-  updateLead, 
+  updateLead,
   deleteLead
-} from "@/lib/supabase/leadsService";
+} from "@/lib/supabase/services/leadsCrudService";
 import { Lead } from "@/lib/supabase/types";
-import { createContact, getContactById } from "@/lib/supabase/contactsService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 
-// Add a new lead to the database
-export const addNewLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>): Promise<boolean> => {
+// Add a new lead
+export const addNewLead = async (
+  lead: Omit<Lead, 'id' | 'createdAt' | 'history' | 'isArchived'>
+): Promise<boolean> => {
   try {
-    // Set defaults for new lead
-    const newLead = {
-      ...leadData,
-      history: [],
-      isArchived: false,
-      createdAt: new Date().toISOString() // Add createdAt field
-    };
-    
-    console.log("Creating new lead with data:", newLead);
-    const createdLead = await createLead(newLead);
-    
-    if (createdLead) {
-      toast.success("Lead adicionado com sucesso!");
-      return true;
-    } else {
-      toast.error("Erro ao adicionar lead. Tente novamente.");
+    // Validate lead data
+    if (!lead.name || !lead.stageId) {
+      toast.error("Nome e estágio são obrigatórios");
       return false;
     }
+    
+    // Create history for the new lead
+    const history = addHistoryEntry([], "created", null, null);
+    
+    // Create the lead object to be sent to API
+    const newLead = {
+      ...lead,
+      isArchived: false,
+      createdAt: new Date().toISOString(),
+      history: history,
+    };
+
+    // Send to API
+    await createLead(newLead);
+    toast.success("Lead criado com sucesso!");
+    return true;
   } catch (error) {
-    console.error("Error in addNewLead:", error);
-    toast.error("Erro ao adicionar lead. Tente novamente.");
+    console.error("Erro ao adicionar lead:", error);
+    toast.error("Erro ao criar lead");
     return false;
   }
 };
 
-// Move a lead to another stage
-export const moveLead = async (lead: Lead, toStageId: string): Promise<boolean> => {
+// Update lead data
+export const updateLeadData = async (lead: Lead): Promise<boolean> => {
   try {
-    console.log(`Moving lead ${lead.id} to stage ${toStageId}`);
-    
-    // Add movement to history
+    // Add history entry for the update
     const updatedLead = {
       ...lead,
-      stageId: toStageId,
-      history: addHistoryEntry(lead.history, "moved", lead.stageId, toStageId)
+      history: addHistoryEntry(lead.history, "updated", null, null)
     };
     
-    const result = await updateLead(updatedLead);
-    
-    if (result) {
-      toast.success("Lead movido com sucesso!");
-      return true;
-    } else {
-      toast.error("Erro ao mover lead. Tente novamente.");
-      return false;
-    }
+    // Send to API
+    await updateLead(updatedLead);
+    toast.success("Lead atualizado com sucesso!");
+    return true;
   } catch (error) {
-    console.error("Error in moveLead:", error);
-    toast.error("Erro ao mover lead. Tente novamente.");
+    console.error("Erro ao atualizar lead:", error);
+    toast.error("Erro ao atualizar lead");
     return false;
   }
 };
 
-// Update a lead in the database
-export const updateLeadData = async (leadData: Lead): Promise<boolean> => {
-  try {
-    console.log("Updating lead with data:", leadData);
-    const updatedLead = await updateLead(leadData);
-    
-    if (updatedLead) {
-      toast.success("Lead atualizado com sucesso!");
-      return true;
-    } else {
-      toast.error("Erro ao atualizar lead. Tente novamente.");
-      return false;
-    }
-  } catch (error) {
-    console.error("Error in updateLeadData:", error);
-    toast.error("Erro ao atualizar lead. Tente novamente.");
-    return false;
-  }
-};
-
-// Remove a lead from the database
+// Remove a lead
 export const removeLead = async (leadId: string): Promise<boolean> => {
   try {
-    console.log("Deleting lead with ID:", leadId);
-    const success = await deleteLead(leadId);
-    
-    if (success) {
-      toast.success("Lead excluído com sucesso!");
-      return true;
-    } else {
-      toast.error("Erro ao excluir lead. Tente novamente.");
+    // First check if we have the lead id
+    if (!leadId) {
+      toast.error("ID do lead é obrigatório");
       return false;
     }
+
+    // Remove from API
+    await deleteLead(leadId);
+    toast.success("Lead removido com sucesso!");
+    return true;
   } catch (error) {
-    console.error("Error in removeLead:", error);
-    toast.error("Erro ao excluir lead. Tente novamente.");
+    console.error("Erro ao remover lead:", error);
+    toast.error("Erro ao remover lead");
     return false;
   }
 };
@@ -108,9 +84,6 @@ export const removeLead = async (leadId: string): Promise<boolean> => {
 // Archive a lead
 export const archiveLead = async (lead: Lead): Promise<boolean> => {
   try {
-    console.log("Archiving lead:", lead);
-    
-    // Add history entry and update isArchived flag
     const updatedLead = {
       ...lead,
       isArchived: true,
@@ -123,12 +96,11 @@ export const archiveLead = async (lead: Lead): Promise<boolean> => {
       toast.success("Lead arquivado com sucesso!");
       return true;
     } else {
-      toast.error("Erro ao arquivar lead. Tente novamente.");
-      return false;
+      throw new Error("Falha ao arquivar lead");
     }
   } catch (error) {
-    console.error("Error in archiveLead:", error);
-    toast.error("Erro ao arquivar lead. Tente novamente.");
+    console.error("Erro ao arquivar lead:", error);
+    toast.error("Erro ao arquivar lead");
     return false;
   }
 };
@@ -136,9 +108,6 @@ export const archiveLead = async (lead: Lead): Promise<boolean> => {
 // Unarchive a lead
 export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
   try {
-    console.log("Unarchiving lead:", lead);
-    
-    // Add history entry and update isArchived flag
     const updatedLead = {
       ...lead,
       isArchived: false,
@@ -148,33 +117,25 @@ export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
     const result = await updateLead(updatedLead);
     
     if (result) {
-      toast.success("Lead restaurado com sucesso!");
+      toast.success("Lead reativado com sucesso!");
       return true;
     } else {
-      toast.error("Erro ao restaurar lead. Tente novamente.");
-      return false;
+      throw new Error("Falha ao reativar lead");
     }
   } catch (error) {
-    console.error("Error in unarchiveLead:", error);
-    toast.error("Erro ao restaurar lead. Tente novamente.");
+    console.error("Erro ao reativar lead:", error);
+    toast.error("Erro ao reativar lead");
     return false;
   }
 };
 
-// Discard a lead
+// Discard a lead (similar to archive but with a different status for reporting)
 export const discardLead = async (lead: Lead): Promise<boolean> => {
   try {
-    console.log("Discarding lead:", lead);
-    
-    // Find the "Lost" stage or similar
-    // This is a simplified version, in a real app you'd get the actual stage ID
-    const lostStageId = "lost"; // Example ID
-    
-    // Add history entry and update stageId
     const updatedLead = {
       ...lead,
-      stageId: lostStageId,
-      history: addHistoryEntry(lead.history, "discarded", lead.stageId, lostStageId)
+      isArchived: true,
+      history: addHistoryEntry(lead.history, "discarded", null, null)
     };
     
     const result = await updateLead(updatedLead);
@@ -183,68 +144,40 @@ export const discardLead = async (lead: Lead): Promise<boolean> => {
       toast.success("Lead descartado com sucesso!");
       return true;
     } else {
-      toast.error("Erro ao descartar lead. Tente novamente.");
-      return false;
+      throw new Error("Falha ao descartar lead");
     }
   } catch (error) {
-    console.error("Error in discardLead:", error);
-    toast.error("Erro ao descartar lead. Tente novamente.");
+    console.error("Erro ao descartar lead:", error);
+    toast.error("Erro ao descartar lead");
     return false;
   }
 };
 
-// Convert a lead to a contact
-export const convertLeadToContact = async (lead: Lead): Promise<boolean> => {
+// Move lead to new stage
+export const moveLead = async (lead: Lead, newStageId: string): Promise<boolean> => {
   try {
-    console.log("Converting lead to contact:", lead);
-    
-    // Check if a contact already exists for this lead
-    // Since getContactByLeadId doesn't exist, we'll need to handle this differently
-    // For now, we'll just proceed with creating the contact
-    
-    // Create contact from lead data
-    const contactData = {
-      name: lead.name,
-      phone: lead.whatsapp,
-      whatsapp: lead.whatsapp,
-      is_active: true,
-      lead_id: lead.id,
-      tags: [{ id: uuidv4(), name: "Cliente", color: "#4caf50" }]
-    };
-    
-    const contactId = await createContact(contactData);
-    
-    if (!contactId) {
-      toast.error("Erro ao converter lead para contato. Tente novamente.");
+    if (!newStageId) {
+      toast.error("ID do novo estágio é obrigatório");
       return false;
     }
     
-    // Update lead with history entry
+    // Update the lead with new stage and history
     const updatedLead = {
       ...lead,
-      history: addHistoryEntry(lead.history, "converted", null, null)
+      stageId: newStageId,
+      history: addHistoryEntry(lead.history, "moved", lead.stageId, newStageId)
     };
     
     const result = await updateLead(updatedLead);
     
     if (result) {
-      toast.success("Lead convertido para contato com sucesso!");
       return true;
     } else {
-      toast.error("Erro ao atualizar histórico do lead. O contato foi criado, mas o histórico não foi atualizado.");
-      return true; // Still return true since the contact was created
+      throw new Error("Falha ao mover lead");
     }
   } catch (error) {
-    console.error("Error in convertLeadToContact:", error);
-    toast.error("Erro ao converter lead para contato. Tente novamente.");
+    console.error("Erro ao mover lead:", error);
+    toast.error("Erro ao mover lead");
     return false;
   }
 };
-
-// Helper function for generating UUIDs
-function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}

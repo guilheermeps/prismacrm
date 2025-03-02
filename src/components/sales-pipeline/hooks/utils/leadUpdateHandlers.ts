@@ -1,135 +1,103 @@
 
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
-import { updateLead } from "@/lib/supabase/leadsService";
+import { updateLead } from "@/lib/supabase/services/leadsCrudService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 
-/**
- * Update a lead's data in the database
- * @param updatedLead The lead with updated data
- * @returns Promise<boolean> Success status
- */
-export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
+// Update lead name
+export const updateLeadName = async (lead: Lead, newName: string): Promise<boolean> => {
   try {
-    // Log for debugging
-    console.log('Updating lead:', updatedLead);
-    
-    // If we're in development or demo mode, show message but allow realtime updates
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      console.log('Updating lead in development/demo mode:', updatedLead);
-      
-      // In dev mode, we still want to call updateLead to trigger the realtime updates
-      // This helps simulate the production behavior
-      try {
-        const result = await updateLead(updatedLead);
-        if (result) {
-          toast.success("Lead atualizado com sucesso!");
-          return true;
-        }
-      } catch (error) {
-        console.log('Dev mode - ignoring update error:', error);
-      }
-      
-      // Even if Supabase update fails, show success in dev mode
-      toast.success("Lead atualizado com sucesso!");
-      return true;
+    if (!newName) {
+      toast.error("Nome não pode ser vazio");
+      return false;
     }
-    
-    // If not in development mode, continue with the update
-    const result = await updateLead(updatedLead);
-    
-    if (result) {
-      toast.success("Lead atualizado com sucesso!");
-      return true;
-    } else {
-      throw new Error("Failed to update lead");
-    }
-  } catch (error) {
-    console.error("Erro ao atualizar lead:", error);
-    
-    // In development mode, pretend success
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      return true;
-    }
-    
-    toast.error("Erro ao atualizar lead. Tente novamente.");
-    return false;
-  }
-};
-
-export const archiveLead = async (lead: Lead): Promise<boolean> => {
-  try {
-    console.log('Archiving lead:', lead.id);
     
     const updatedLead = {
       ...lead,
-      isArchived: true,
-      history: addHistoryEntry(lead.history, "archived", null, null)
+      name: newName,
+      history: addHistoryEntry(lead.history, "updated_name", lead.name, newName)
     };
     
-    const result = await updateLead(updatedLead);
+    await updateLead(updatedLead);
     
-    if (result) {
-      toast.success("Lead arquivado com sucesso!");
-      return true;
-    } else {
-      throw new Error("Failed to archive lead");
-    }
+    toast.success("Nome atualizado com sucesso");
+    return true;
   } catch (error) {
-    console.error("Erro ao arquivar lead:", error);
-    
-    // In development mode, pretend success
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      return true;
-    }
-    
-    toast.error("Erro ao arquivar lead. Tente novamente.");
+    console.error("Erro ao atualizar nome:", error);
+    toast.error("Erro ao atualizar nome");
     return false;
   }
 };
 
-export const unarchiveLead = async (lead: Lead): Promise<boolean> => {
+// Update service type
+export const updateServiceType = async (lead: Lead, newServiceType: string): Promise<boolean> => {
   try {
-    console.log('Unarchiving lead:', lead.id);
+    const updatedLead = {
+      ...lead,
+      serviceType: newServiceType,
+      history: addHistoryEntry(lead.history, "updated_service_type", lead.serviceType || "", newServiceType)
+    };
+    
+    await updateLead(updatedLead);
+    
+    toast.success("Tipo de serviço atualizado com sucesso");
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar tipo de serviço:", error);
+    toast.error("Erro ao atualizar tipo de serviço");
+    return false;
+  }
+};
+
+// Update whatsapp
+export const updateWhatsApp = async (lead: Lead, newWhatsApp: string): Promise<boolean> => {
+  try {
+    const updatedLead = {
+      ...lead,
+      whatsapp: newWhatsApp,
+      history: addHistoryEntry(lead.history, "updated_whatsapp", lead.whatsapp || "", newWhatsApp)
+    };
+    
+    await updateLead(updatedLead);
+    
+    toast.success("WhatsApp atualizado com sucesso");
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar WhatsApp:", error);
+    toast.error("Erro ao atualizar WhatsApp");
+    return false;
+  }
+};
+
+// Update proposal value
+export const updateProposalValue = async (lead: Lead, newValue: number): Promise<boolean> => {
+  try {
+    const oldValue = lead.proposalValue || 0;
     
     const updatedLead = {
       ...lead,
-      isArchived: false,
-      history: addHistoryEntry(lead.history, "unarchived", null, null)
+      proposalValue: newValue,
+      history: addHistoryEntry(lead.history, "updated_value", oldValue.toString(), newValue.toString())
     };
     
-    const result = await updateLead(updatedLead);
+    await updateLead(updatedLead);
     
-    if (result) {
-      toast.success("Lead restaurado com sucesso!");
-      return true;
-    } else {
-      throw new Error("Failed to unarchive lead");
-    }
+    toast.success("Valor da proposta atualizado com sucesso");
+    return true;
   } catch (error) {
-    console.error("Erro ao restaurar lead:", error);
-    
-    // In development mode, pretend success
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      return true;
-    }
-    
-    toast.error("Erro ao restaurar lead. Tente novamente.");
+    console.error("Erro ao atualizar valor da proposta:", error);
+    toast.error("Erro ao atualizar valor da proposta");
     return false;
   }
 };
 
-/**
- * Updates lead history to record when a lead has been converted to a contact
- * with an order or contract
- */
-export const updateLeadForTransactionCreation = async (
+// Create order or contract from lead
+export const createTransactionFromLead = async (
   lead: Lead, 
   transactionType: 'order' | 'contract'
 ): Promise<boolean> => {
   try {
-    console.log(`Updating lead ${lead.id} for ${transactionType} creation`);
-    
+    // Update lead history to show a transaction was created from it
     const updatedLead = {
       ...lead,
       history: addHistoryEntry(
@@ -140,23 +108,13 @@ export const updateLeadForTransactionCreation = async (
       )
     };
     
-    const result = await updateLead(updatedLead);
+    await updateLead(updatedLead);
     
-    if (result) {
-      toast.success(`Lead atualizado para criação de ${transactionType === 'order' ? 'pedido' : 'contrato'}`);
-      return true;
-    } else {
-      throw new Error(`Failed to update lead for ${transactionType} creation`);
-    }
+    toast.success(`${transactionType === 'order' ? 'Pedido' : 'Contrato'} criado com sucesso`);
+    return true;
   } catch (error) {
-    console.error(`Erro ao atualizar lead para criação de ${transactionType === 'order' ? 'pedido' : 'contrato'}:`, error);
-    
-    // In development mode, pretend success
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      return true;
-    }
-    
-    toast.error(`Erro ao atualizar lead para criação de ${transactionType === 'order' ? 'pedido' : 'contrato'}. Tente novamente.`);
+    console.error(`Erro ao criar ${transactionType}:`, error);
+    toast.error(`Erro ao criar ${transactionType}`);
     return false;
   }
 };

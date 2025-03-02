@@ -1,136 +1,73 @@
 
 import { toast } from "sonner";
 import { Lead } from "@/lib/supabase/types";
-import { updateLead } from "@/lib/supabase/leadsService";
+import { updateLead } from "@/lib/supabase/services/leadsCrudService";
 import { addHistoryEntry } from "./leadHistoryUtils";
 
-/**
- * Checks if the application is running in development or demo mode
- */
-const isDevOrDemoMode = (): boolean => {
-  return import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
-};
-
-/**
- * Gets the name of a stage by ID from the provided stages
- * Note: In the future this should be retrieved from the database
- * @param stageId The ID of the stage
- * @returns The name of the stage or "Desconhecido" if not found
- */
-const getStageName = (stageId: string): string => {
-  // This is a placeholder. In a real implementation, we would fetch the stage name
-  // from the database or from application state
-  return "Etapa " + stageId.substring(0, 4);
-};
-
-/**
- * Updates a lead in development/demo mode
- */
-const handleDevModeMoveOperation = async (
-  lead: Lead,
-  toStageId: string
-): Promise<boolean> => {
-  const fromStageName = getStageName(lead.stageId);
-  const toStageName = getStageName(toStageId);
-  
-  // Create updated lead with the new stageId and history entry
-  const updatedLead = {
-    ...lead,
-    stageId: toStageId,
-    history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
-  };
-  
-  console.log("Moving lead in dev/demo mode:", updatedLead);
-  
+// Move the lead forward
+export const moveLeadForward = async (lead: Lead, stages: any[]): Promise<boolean> => {
   try {
-    // In dev mode, we still want to call updateLead to trigger any UI updates
-    // This helps simulate the production behavior
+    // Find current stage index
+    const currentStageIndex = stages.findIndex(stage => stage.id === lead.stageId);
+    
+    // Check if this is the last stage
+    if (currentStageIndex >= stages.length - 1) {
+      toast.info("Este lead já está no último estágio");
+      return false;
+    }
+    
+    // Get the next stage
+    const nextStage = stages[currentStageIndex + 1];
+    
+    // Update lead with new stage and history
+    const updatedLead = {
+      ...lead,
+      stageId: nextStage.id,
+      history: addHistoryEntry(lead.history, "moved", lead.stageId, nextStage.id)
+    };
+    
+    // Update the lead
     await updateLead(updatedLead);
     
-    // Show feedback toast with a delay to not disrupt drag operation
-    setTimeout(() => {
-      toast.success(`Lead movido para ${toStageName}!`);
-    }, 500);
-    
+    toast.success(`Lead movido para ${nextStage.title}`);
     return true;
   } catch (error) {
-    console.log('Dev mode - ignoring update error:', error);
-    return true; // Return success in dev mode even if API call fails
+    console.error("Erro ao mover lead para frente:", error);
+    toast.error("Erro ao mover lead");
+    return false;
   }
 };
 
-/**
- * Moves a lead to a different stage
- * @param lead The lead to move
- * @param toStageId The target stage ID
- * @returns Promise<boolean> Success status
- */
-export const moveLead = async (
-  lead: Lead | undefined,
-  toStageId: string
-): Promise<boolean> => {
+// Move the lead backward
+export const moveLeadBackward = async (lead: Lead, stages: any[]): Promise<boolean> => {
   try {
-    if (!lead) {
-      console.error("Tentativa de mover um lead indefinido");
+    // Find current stage index
+    const currentStageIndex = stages.findIndex(stage => stage.id === lead.stageId);
+    
+    // Check if this is the first stage
+    if (currentStageIndex <= 0) {
+      toast.info("Este lead já está no primeiro estágio");
       return false;
     }
     
-    // Skip if already in the target stage
-    if (lead.stageId === toStageId) {
-      console.log(`Lead ${lead.id} already in stage ${toStageId}`);
-      return true;
-    }
+    // Get the previous stage
+    const prevStage = stages[currentStageIndex - 1];
     
-    console.log(`Moving lead ${lead.id} from ${lead.stageId} to ${toStageId}`);
-    
-    // Development mode handling
-    if (isDevOrDemoMode()) {
-      return await handleDevModeMoveOperation(lead, toStageId);
-    }
-    
-    // Get stage names for history
-    const fromStageName = getStageName(lead.stageId);
-    const toStageName = getStageName(toStageId);
-    
-    // Create updated lead with new stageId and history entry
+    // Update lead with new stage and history
     const updatedLead = {
       ...lead,
-      stageId: toStageId,
-      history: addHistoryEntry(lead.history || [], "moved", fromStageName, toStageName)
+      stageId: prevStage.id,
+      history: addHistoryEntry(lead.history, "moved", lead.stageId, prevStage.id)
     };
     
-    console.log("Updating lead in database:", updatedLead);
+    // Update the lead
+    await updateLead(updatedLead);
     
-    // Try to update in Supabase
-    const result = await updateLead(updatedLead);
-    
-    if (!result) {
-      if (isDevOrDemoMode()) {
-        console.log("Fallback to local update mode due to API error");
-        // Return success for development mode
-        return true;
-      }
-      
-      toast.error("Erro ao mover lead. Tente novamente.");
-      return false;
-    }
-    
-    // Delay the toast to avoid interfering with drag operation
-    setTimeout(() => {
-      toast.success(`Lead movido para ${toStageName}!`);
-    }, 500);
-    
+    toast.success(`Lead movido para ${prevStage.title}`);
     return true;
   } catch (error) {
-    console.error("Erro ao mover lead:", error);
-    
-    // In development mode, allow the UI to update even if the API fails
-    if (isDevOrDemoMode()) {
-      console.log("Allowing move in development mode despite error");
-      return true;
-    }
-    
-    toast.error("Erro ao mover lead. Tente novamente.");
+    console.error("Erro ao mover lead para trás:", error);
+    toast.error("Erro ao mover lead");
     return false;
   }
 };
