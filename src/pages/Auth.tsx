@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -74,6 +75,58 @@ const Auth = () => {
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar conta");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to create and login with test credentials
+  const handleTestLogin = async () => {
+    const testEmail = "teste@exemplo.com";
+    const testPassword = "senha123";
+    const testName = "Usuário Teste";
+    
+    setLoading(true);
+    
+    try {
+      // Check if test user exists
+      const { data, error: checkError } = await supabase.auth.signInWithPassword({
+        email: testEmail,
+        password: testPassword
+      });
+      
+      if (checkError) {
+        // User doesn't exist, create it
+        console.log("Test user doesn't exist, creating it...");
+        const { error: signUpError } = await signUp(testEmail, testPassword, {
+          full_name: testName,
+        });
+        
+        if (signUpError) {
+          toast.error("Erro ao criar conta de teste");
+          setLoading(false);
+          return;
+        }
+        
+        // Try login after creation
+        setTimeout(async () => {
+          const { error: loginError } = await signIn(testEmail, testPassword);
+          
+          if (loginError) {
+            toast.error("Erro ao fazer login com conta de teste");
+          } else {
+            toast.success("Login de teste realizado com sucesso!");
+          }
+          setLoading(false);
+        }, 1500);
+      } else {
+        // User exists, just login
+        console.log("Test user exists, logging in...");
+        toast.success("Login de teste realizado com sucesso!");
+        // Navigation happens in the signIn function via session change
+      }
+    } catch (error: any) {
+      console.error("Test login error:", error);
+      toast.error(error.message || "Erro ao fazer login de teste");
       setLoading(false);
     }
   };
@@ -193,6 +246,18 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
+            
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleTestLogin}
+                disabled={loading}
+              >
+                {loading ? <LoaderCircle className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Entrar com conta de teste
+              </Button>
+            </div>
           </CardContent>
           
           <CardFooter className="flex flex-col">
