@@ -7,6 +7,8 @@ import WhatsAppButton from "./lead-card/WhatsAppButton";
 import LeadActions from "./lead-card/LeadActions";
 import ActionButtons from "./lead-card/ActionButtons";
 import LeadDialogs from "./lead-card/LeadDialogs";
+import ServiceTypeEditor from "./lead-card/ServiceTypeEditor";
+import ProposalValueEditor from "./lead-card/ProposalValueEditor";
 
 interface LeadCardProps {
   lead: Lead;
@@ -17,6 +19,7 @@ interface LeadCardProps {
   onConvertToContact: (lead: Lead) => void;
   onArchiveLead?: (lead: Lead) => void;
   onUnarchiveLead?: (lead: Lead) => void;
+  onDiscardLead?: (lead: Lead) => void;
   isArchived?: boolean;
 }
 
@@ -29,6 +32,7 @@ const LeadCard = ({
   onConvertToContact,
   onArchiveLead,
   onUnarchiveLead,
+  onDiscardLead,
   isArchived = false
 }: LeadCardProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -103,7 +107,12 @@ const LeadCard = ({
                 <h4 className="font-medium text-sm line-clamp-1 cursor-pointer hover:text-primary transition-colors" onClick={() => setIsDetailsDialogOpen(true)}>
                   {lead.name}
                 </h4>
-                <p className="text-xs text-muted-foreground">{lead.serviceType}</p>
+                {/* Substituir o texto estático pelo editor de tipo de serviço */}
+                <ServiceTypeEditor 
+                  lead={lead} 
+                  onUpdateLead={onUpdateLead} 
+                  isArchived={isArchived} 
+                />
                 {lead.createdAt && (
                   <p className="text-xs text-muted-foreground">
                     {new Date(lead.createdAt).toLocaleDateString('pt-BR')}
@@ -123,15 +132,12 @@ const LeadCard = ({
               />
             </div>
             
-            {/* Lead Value */}
-            {lead.proposalValue > 0 && (
-              <div className="text-sm font-medium">
-                {new Intl.NumberFormat('pt-BR', { 
-                  style: 'currency', 
-                  currency: 'BRL'
-                }).format(lead.proposalValue)}
-              </div>
-            )}
+            {/* Substituir a exibição do valor por um editor */}
+            <ProposalValueEditor 
+              lead={lead} 
+              onUpdateLead={onUpdateLead} 
+              isArchived={isArchived} 
+            />
             
             {/* WhatsApp Button */}
             <div className="flex items-center gap-2">

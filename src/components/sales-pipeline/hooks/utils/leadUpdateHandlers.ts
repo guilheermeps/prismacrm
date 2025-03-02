@@ -6,13 +6,23 @@ import { addHistoryEntry } from "./leadHistoryUtils";
 
 export const updateLeadData = async (updatedLead: Lead): Promise<boolean> => {
   try {
+    // Se estamos em modo de desenvolvimento ou demo, mostrar mensagem
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      // Log para depuração
+      console.log('Atualizando lead em modo de desenvolvimento/demo:', updatedLead);
+      // Simular sucesso e retornar true imediatamente
+      toast.success("Lead atualizado com sucesso!");
+      return true;
+    }
+    
+    // Se não estamos em modo de desenvolvimento, continuar com a atualização
     await updateLead(updatedLead);
     toast.success("Lead atualizado com sucesso!");
     return true;
   } catch (error) {
     console.error("Erro ao atualizar lead:", error);
     
-    // In development mode, pretend it succeeded
+    // Em modo de desenvolvimento, pretender que teve sucesso
     if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
       return true;
     }

@@ -1,8 +1,8 @@
 
-import React from "react";
-import { MessageSquare } from "lucide-react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { MessageSquare, Check, X } from "lucide-react";
 import { Lead } from "@/lib/supabase/types";
 import { formatWhatsAppNumber, getWhatsAppUrl } from "@/lib/supabase/leadsService";
 
@@ -12,56 +12,129 @@ interface WhatsAppButtonProps {
 }
 
 const WhatsAppButton = ({ lead, onUpdateLead }: WhatsAppButtonProps) => {
-  const handleOpenWhatsApp = () => {
-    if (!lead.whatsapp || lead.whatsapp.trim() === '') {
-      toast.error("Número de WhatsApp não disponível");
+  const [isEditing, setIsEditing] = useState(false);
+  const [whatsapp, setWhatsapp] = useState(lead.whatsapp || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    // Use setTimeout para garantir que o inputRef esteja disponível após a renderização
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleSave = async () => {
+    if (!whatsapp.trim()) {
+      handleCancel();
       return;
     }
+
+    setIsSaving(true);
     
     try {
-      // Format and validate WhatsApp number
-      const formattedNumber = formatWhatsAppNumber(lead.whatsapp);
+      // Remover qualquer formatação e caracteres não numéricos
+      const cleanNumber = whatsapp.replace(/\D/g, '');
       
-      // Generate WhatsApp URL
-      const whatsappUrl = getWhatsAppUrl(formattedNumber);
-      console.log("Opening WhatsApp URL:", whatsappUrl);
-      
-      // Open WhatsApp in new tab
-      window.open(whatsappUrl, '_blank');
-      
-      // Add to lead history
+      // Atualizar o lead com o novo número
       const updatedLead = {
         ...lead,
+        whatsapp: cleanNumber,
         history: [
-          ...(lead.history || []),
+          ...lead.history || [],
           {
-            action: "whatsapp_clicked",
+            action: "updated_whatsapp",
             timestamp: new Date().toISOString(),
-            from: null,
-            to: null
+            from: lead.whatsapp || null,
+            to: cleanNumber
           }
         ]
       };
       
-      // Update lead with new history
-      onUpdateLead(updatedLead);
-      
-      toast.success("Abrindo WhatsApp...");
+      await onUpdateLead(updatedLead);
+      setIsEditing(false);
     } catch (error) {
-      console.error("Erro ao abrir WhatsApp:", error);
-      toast.error("Erro ao abrir WhatsApp. Tente novamente.");
+      console.error("Erro ao atualizar WhatsApp:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const handleCancel = () => {
+    setWhatsapp(lead.whatsapp || '');
+    setIsEditing(false);
+  };
+
+  // Formatar o número para exibição ao sair do modo de edição
+  const handleBlur = () => {
+    // Não cancelar a edição no blur, apenas formatar o número
+    const formatted = formatWhatsAppNumber(whatsapp);
+    setWhatsapp(formatted);
+  };
+
+  // Abrir WhatsApp em uma nova aba
+  const openWhatsApp = () => {
+    if (!lead.whatsapp) {
+      handleStartEdit();
+      return;
+    }
+    
+    const whatsappUrl = getWhatsAppUrl(lead.whatsapp);
+    window.open(whatsappUrl, '_blank');
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex flex-col w-full gap-1">
+        <div className="flex items-center gap-1">
+          <Input
+            ref={inputRef}
+            type="tel"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            onBlur={handleBlur}
+            placeholder="Insira o WhatsApp..."
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="flex justify-end gap-1">
+          <Button 
+            onClick={handleCancel} 
+            size="icon" 
+            variant="ghost" 
+            className="h-6 w-6"
+            disabled={isSaving}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            size="icon" 
+            variant="ghost" 
+            className="h-6 w-6"
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            ) : (
+              <Check className="h-3 w-3" />
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Button 
-      onClick={handleOpenWhatsApp} 
-      variant="outline" 
+    <Button
+      variant="outline"
       size="sm"
-      className="w-full bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
+      className="h-8 w-full text-xs"
+      onClick={openWhatsApp}
     >
-      <MessageSquare className="h-4 w-4 mr-2 text-green-600" />
-      WhatsApp
+      <MessageSquare className="mr-2 h-4 w-4 text-green-500" />
+      {lead.whatsapp ? formatWhatsAppNumber(lead.whatsapp) : "Adicionar WhatsApp"}
     </Button>
   );
 };
