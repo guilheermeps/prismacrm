@@ -13,7 +13,8 @@ import {
   removeLead,
   archiveLead,
   unarchiveLead,
-  convertLeadToContact
+  convertLeadToContact,
+  discardLead
 } from "./utils/leadActionHandlers";
 import { resetAllLeads } from "./utils/leadBulkOperations";
 
@@ -76,6 +77,10 @@ export function useLeadOperations() {
     return await unarchiveLead(lead);
   };
 
+  const handleDiscardLead = async (lead: Lead) => {
+    return await discardLead(lead);
+  };
+
   const convertToContact = async (lead: Lead) => {
     return await convertLeadToContact(lead);
   };
@@ -93,6 +98,7 @@ export function useLeadOperations() {
     handleDeleteLead,
     handleArchiveLead,
     handleUnarchiveLead,
+    handleDiscardLead,
     convertToContact,
     handleResetLeads
   };

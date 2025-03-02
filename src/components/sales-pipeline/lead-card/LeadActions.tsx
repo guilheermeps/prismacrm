@@ -1,6 +1,6 @@
 
 import React from "react";
-import { MoreHorizontal, Edit, Trash, UserCheck, Archive, RefreshCcw } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, UserCheck, Archive, RefreshCcw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ interface LeadActionsProps {
   onDelete: (leadId: string) => void;
   onArchive?: (lead: Lead) => void;
   onUnarchive?: (lead: Lead) => void;
+  onDiscard?: (lead: Lead) => void;
 }
 
 const LeadActions = ({
@@ -29,7 +30,8 @@ const LeadActions = ({
   onConvert,
   onDelete,
   onArchive,
-  onUnarchive
+  onUnarchive,
+  onDiscard
 }: LeadActionsProps) => {
   return (
     <DropdownMenu>
@@ -50,6 +52,12 @@ const LeadActions = ({
           <UserCheck className="mr-2 h-4 w-4" />
           Converter para Cliente
         </DropdownMenuItem>
+        {!isArchived && onDiscard && (
+          <DropdownMenuItem onClick={() => onDiscard(lead)}>
+            <XCircle className="mr-2 h-4 w-4" />
+            Descartar Lead
+          </DropdownMenuItem>
+        )}
         {!isArchived && onArchive && (
           <DropdownMenuItem onClick={() => onArchive(lead)}>
             <Archive className="mr-2 h-4 w-4" />

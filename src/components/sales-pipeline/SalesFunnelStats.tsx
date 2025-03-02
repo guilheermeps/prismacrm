@@ -58,7 +58,8 @@ const SalesFunnelStats = () => {
         // Encontrar estágios por categorias
         const negotiationStages = stagesData.filter(stage => 
           stage.title.includes("Negociação") || 
-          stage.title.includes("Reunião")
+          stage.title.includes("Reunião") || 
+          stage.title.includes("Contato")
         );
         
         const proposalStages = stagesData.filter(stage => 
@@ -71,15 +72,25 @@ const SalesFunnelStats = () => {
           stage.title.includes("Ganho")
         );
         
-        // Calcular totais
-        const negotiationLeads = leadsData.filter(lead => 
-          negotiationStages.some(stage => stage.id === lead.stageId)
+        const closedLostStages = stagesData.filter(stage => 
+          stage.title.includes("Fechado (Perdido)") || 
+          stage.title.includes("Perdido")
         );
         
+        // Calcular totais
+        // Em negociação: todos os leads ativos exceto os que estão em estágios de fechado (ganho ou perdido)
+        const negotiationLeads = leadsData.filter(lead => 
+          !lead.isArchived && 
+          !closedWonStages.some(stage => stage.id === lead.stageId) &&
+          !closedLostStages.some(stage => stage.id === lead.stageId)
+        );
+        
+        // Propostas enviadas: todos os leads na coluna de propostas, independente do status
         const proposalLeads = leadsData.filter(lead => 
           proposalStages.some(stage => stage.id === lead.stageId)
         );
         
+        // Fechado (mês): leads ganhos no mês atual
         const closedWonLeads = leadsData.filter(lead => {
           const isClosedWon = closedWonStages.some(stage => stage.id === lead.stageId);
           if (!isClosedWon) return false;
@@ -101,14 +112,15 @@ const SalesFunnelStats = () => {
         const proposalStats = calculateTotals(proposalLeads);
         const closedStats = calculateTotals(closedWonLeads);
         
-        // Calcular taxa de conversão (leads fechados / total de leads) * 100
-        const totalLeads = leadsData.length;
-        const closedTotalLeads = leadsData.filter(lead => 
-          closedWonStages.some(stage => stage.id === lead.stageId)
-        ).length;
+        // Calcular taxa de conversão:
+        // Total de leads convertidos em clientes (com action "converted") / total de leads * 100
+        const convertedLeads = leadsData.filter(lead => 
+          lead.history && lead.history.some(entry => entry.action === "converted")
+        );
+        const totalActiveLeads = leadsData.filter(lead => !lead.isArchived).length;
         
-        const conversionRate = totalLeads > 0 
-          ? Math.round((closedTotalLeads / totalLeads) * 100) 
+        const conversionRate = totalActiveLeads > 0 
+          ? Math.round((convertedLeads.length / totalActiveLeads) * 100) 
           : 0;
         
         // Atualizar estatísticas
@@ -142,7 +154,7 @@ const SalesFunnelStats = () => {
             data: {
               total: conversionRate,
               currency: "",
-              count: closedTotalLeads
+              count: convertedLeads.length
             },
             isPercentage: true
           }

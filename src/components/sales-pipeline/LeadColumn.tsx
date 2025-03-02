@@ -18,6 +18,7 @@ interface LeadColumnProps {
   onConvertToContact: (lead: Lead) => void;
   onArchiveLead?: (lead: Lead) => void;
   onUnarchiveLead?: (lead: Lead) => void;
+  onDiscardLead?: (lead: Lead) => void;
   isArchived?: boolean;
 }
 
@@ -31,6 +32,7 @@ const LeadColumn = ({
   onConvertToContact,
   onArchiveLead,
   onUnarchiveLead,
+  onDiscardLead,
   isArchived = false
 }: LeadColumnProps) => {
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
@@ -153,6 +155,7 @@ const LeadColumn = ({
         onConvertToContact={onConvertToContact}
         onArchiveLead={onArchiveLead}
         onUnarchiveLead={onUnarchiveLead}
+        onDiscardLead={onDiscardLead}
         isArchived={isArchived}
       />
 

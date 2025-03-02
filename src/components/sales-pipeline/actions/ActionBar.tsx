@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { PlusCircle, Settings, Trash2 } from "lucide-react";
+import { PlusCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -9,17 +9,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import NewLeadForm from "@/components/sales-pipeline/NewLeadForm";
 import EditStageForm from "@/components/sales-pipeline/EditStageForm";
 import { toast } from "sonner";
@@ -47,7 +36,6 @@ const ActionBar = ({
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
   const [isEditStageDialogOpen, setIsEditStageDialogOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   
   const openEditStageDialog = (stage: Stage) => {
     setSelectedStage(stage);
@@ -133,30 +121,6 @@ const ActionBar = ({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      {/* Reset Leads Button */}
-      <AlertDialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
-        <AlertDialogTrigger asChild>
-          <Button variant="destructive" className="flex gap-2">
-            <Trash2 className="h-4 w-4" />
-            Limpar {isArchived ? "Arquivados" : "Leads"}
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação removerá permanentemente todos os leads {isArchived ? "arquivados" : ""} do pipeline de vendas. Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onResetLeads}>
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

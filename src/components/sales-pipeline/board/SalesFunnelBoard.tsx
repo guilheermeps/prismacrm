@@ -14,6 +14,7 @@ interface SalesFunnelBoardProps {
   onConvertToContact: (lead: Lead) => void;
   onArchiveLead: (lead: Lead) => void;
   onUnarchiveLead: (lead: Lead) => void;
+  onDiscardLead?: (lead: Lead) => void;
   isArchived: boolean;
 }
 
@@ -25,7 +26,8 @@ const SalesFunnelBoard = ({
   onDeleteLead, 
   onConvertToContact, 
   onArchiveLead, 
-  onUnarchiveLead, 
+  onUnarchiveLead,
+  onDiscardLead,
   isArchived 
 }: SalesFunnelBoardProps) => {
   const [boardLeads, setBoardLeads] = useState<Lead[]>(filteredLeads);
@@ -117,6 +119,7 @@ const SalesFunnelBoard = ({
               onConvertToContact={onConvertToContact}
               onArchiveLead={onArchiveLead}
               onUnarchiveLead={onUnarchiveLead}
+              onDiscardLead={onDiscardLead}
               isArchived={isArchived}
             />
           ))}
