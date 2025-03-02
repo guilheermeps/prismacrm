@@ -1,7 +1,20 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
-import { FinancialTransaction } from "@/lib/types";
+
+export interface FinancialTransaction {
+  id: string;
+  type: 'receivable' | 'payable';
+  client: string;
+  dueDate: string;
+  paymentMethod?: string;
+  sourceId?: string;
+  sourceType?: 'order' | 'contract' | 'manual';
+  status: 'pending' | 'completed' | 'canceled';
+  amount: number;
+  category?: string;
+  totalInstallments?: number;
+}
 
 // Create a new financial transaction
 export const createTransaction = async (transactionData: Omit<FinancialTransaction, 'id'>): Promise<string | null> => {

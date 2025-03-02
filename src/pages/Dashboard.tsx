@@ -9,14 +9,6 @@ import CategoryChart from "@/components/dashboard/CategoryChart";
 import GoalProgress from "@/components/dashboard/GoalProgress";
 import NegotiationCard from "@/components/dashboard/NegotiationCard";
 
-interface DashboardCardProps {
-  title: string;
-  count: string;
-  trend: string;
-  trendDirection: string;
-  period: string;
-}
-
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -36,21 +28,21 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               <DashboardCard 
                 title="Total de Leads" 
-                count="127" 
+                value="127" 
                 trend="+12%" 
                 trendDirection="up" 
                 period="último mês"
               />
               <DashboardCard 
                 title="Taxa de Conversão" 
-                count="23%" 
+                value="23%" 
                 trend="+5%" 
                 trendDirection="up" 
                 period="último mês"
               />
               <DashboardCard 
                 title="Receita Prevista" 
-                count="R$ 89.750" 
+                value="R$ 89.750" 
                 trend="+18%" 
                 trendDirection="up" 
                 period="último mês"

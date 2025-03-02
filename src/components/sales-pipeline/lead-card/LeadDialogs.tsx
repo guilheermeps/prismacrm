@@ -16,7 +16,7 @@ export interface LeadDialogsProps {
   setIsEditDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isDetailsDialogOpen: boolean;
   setIsDetailsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isDeleteDialogOpen: boolean; // Add this missing property
+  isDeleteDialogOpen: boolean;
   setIsDeleteDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isConvertDialogOpen: boolean;
   setIsConvertDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;

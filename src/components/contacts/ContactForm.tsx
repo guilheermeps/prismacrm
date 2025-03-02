@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Link2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { generateClientRegistrationLink, getClientRegistrationLink } from "@/lib/supabase";
-import { Contact, createContact, updateContact, ContactTag } from "@/lib/supabase/contactsService";
+import { Contact, createContact, updateContact } from "@/lib/supabase/contactsService";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Ensure we have the correct props for ContactForm

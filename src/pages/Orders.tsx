@@ -9,13 +9,6 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, FileDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface ExportDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-}
-
 interface OrderFilterProps {
   onClose?: () => void;
 }
@@ -67,7 +60,7 @@ const Orders = () => {
             </div>
             
             <ExportDialog 
-              open={isExportDialogOpen} 
+              isOpen={isExportDialogOpen} 
               onOpenChange={setIsExportDialogOpen}
               title="Exportar Pedidos"
               description="Selecione o formato e os filtros para exportar os pedidos."
