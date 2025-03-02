@@ -49,6 +49,15 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
   try {
     console.log('Creating lead with data:', lead);
     
+    // Get the current user
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    
+    if (!userId) {
+      console.error('No user ID found, cannot create lead');
+      return null;
+    }
+    
     // Check if we're in development or demo mode - simulate success with mock data
     if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
       const mockId = crypto.randomUUID();
@@ -62,7 +71,8 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
         notes: lead.notes || '',
         createdAt: new Date().toISOString(),
         isArchived: lead.isArchived === undefined ? false : lead.isArchived,
-        history: lead.history || []
+        history: lead.history || [],
+        user_id: userId
       };
       console.log('Created mock lead in development mode:', mockLead);
       return mockLead;
@@ -71,7 +81,8 @@ export const createLead = async (lead: Omit<Lead, 'id'>): Promise<Lead | null> =
     // Normalize lead data for Supabase
     const leadWithDefaults = {
       ...normalizeLeadForSupabase(lead),
-      createdat: new Date().toISOString()
+      createdat: new Date().toISOString(),
+      user_id: userId
     };
     
     console.log('Sending to Supabase:', leadWithDefaults);

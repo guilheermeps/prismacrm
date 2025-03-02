@@ -1,125 +1,126 @@
-
-import { useState } from 'react';
-import { Bell, User, Menu } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/components/ui/use-toast";
-import { userProfile, notifications } from '@/utils/mockData';
+import {
+  Bell,
+  Menu,
+  Search,
+  Settings,
+  LogOut,
+  User,
+} from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/lib/supabase/client";
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 const Header = ({ toggleSidebar }: HeaderProps) => {
-  const { toast } = useToast();
-  const [unreadNotifications, setUnreadNotifications] = useState(
-    notifications.filter(n => !n.read).length
-  );
-  
-  const handleNotificationClick = () => {
-    setUnreadNotifications(0);
-    toast({
-      title: "Notificações marcadas como lidas",
-      description: "Todas as notificações foram visualizadas",
-    });
-  };
+  const { user, signOut } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [fullName, setFullName] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const getProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', user.id)
+          .single();
+        
+        if (data) {
+          setFullName(data.full_name);
+          setAvatarUrl(data.avatar_url);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+    
+    getProfile();
+  }, [user]);
 
   return (
-    <header className="w-full p-3 md:p-4 flex items-center justify-between bg-darker border-b border-studio-gray animate-fade-in">
-      <div className="flex items-center gap-2 md:gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={toggleSidebar}
-          className="md:hidden text-studio-light hover:text-white hover:bg-studio-gray"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        
-        <div className="flex items-center gap-2 md:gap-3">
-          <Avatar className="h-8 w-8 md:h-10 md:w-10 border-2 border-studio-orange">
-            <AvatarImage src={userProfile.avatar} alt={userProfile.name} />
-            <AvatarFallback className="bg-studio-orange text-white text-xs md:text-sm">
-              {userProfile.name.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div className="hidden sm:block">
-            <h2 className="text-base md:text-lg font-semibold">{userProfile.fullName}</h2>
-            <p className="text-xs md:text-sm text-muted-foreground">{userProfile.handle}</p>
-          </div>
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background px-4">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={toggleSidebar}
+      >
+        <Menu className="h-6 w-6" />
+        <span className="sr-only">Toggle Menu</span>
+      </Button>
+
+      <div className="w-full flex justify-between items-center">
+        <div className="relative hidden md:flex">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <input
+            type="search"
+            placeholder="Pesquisar..."
+            className="rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
         </div>
-      </div>
-      
-      <div className="flex items-center gap-1 md:gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative text-studio-light hover:text-white hover:bg-studio-gray h-8 w-8 md:h-10 md:w-10"
-            >
-              <Bell className="h-5 w-5" />
-              {unreadNotifications > 0 && (
-                <span className="absolute top-1 right-1 flex h-3 w-3 md:h-4 md:w-4 items-center justify-center rounded-full bg-studio-orange text-[8px] md:text-[10px] text-white">
-                  {unreadNotifications}
-                </span>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 md:w-72 bg-darker border border-studio-gray">
-            <div className="flex items-center justify-between p-2 border-b border-studio-gray">
-              <span className="text-sm font-medium">Notificações</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleNotificationClick}
-                className="text-xs hover:text-studio-orange"
-              >
-                Marcar todas como lidas
+
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1.5 flex h-2 w-2 rounded-full bg-primary"></span>
+            <span className="sr-only">Notifications</span>
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={avatarUrl || ""} alt="Avatar" />
+                  <AvatarFallback>{fullName?.substring(0, 2)?.toUpperCase() || user?.email?.substring(0, 2)?.toUpperCase()}</AvatarFallback>
+                </Avatar>
               </Button>
-            </div>
-            {notifications.map((notification) => (
-              <DropdownMenuItem key={notification.id} className="p-2 md:p-3 focus:bg-studio-gray focus:text-white cursor-pointer">
-                <div className="flex flex-col gap-1">
-                  <span className={`text-xs md:text-sm ${!notification.read ? 'font-medium' : ''}`}>
-                    {notification.message}
-                  </span>
-                  <span className="text-[10px] md:text-xs text-muted-foreground">{notification.time}</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{fullName || 'Usuário'}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
                 </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/settings" className="cursor-pointer flex w-full items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Perfil</span>
+                </Link>
               </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-studio-light hover:text-white hover:bg-studio-gray h-8 w-8 md:h-10 md:w-10"
-            >
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 md:w-56 bg-darker border border-studio-gray">
-            <DropdownMenuItem className="focus:bg-studio-gray focus:text-white cursor-pointer text-sm">
-              Perfil
-            </DropdownMenuItem>
-            <DropdownMenuItem className="focus:bg-studio-gray focus:text-white cursor-pointer text-sm">
-              Configurações
-            </DropdownMenuItem>
-            <DropdownMenuItem className="focus:bg-studio-gray focus:text-white cursor-pointer text-sm">
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem asChild>
+                <Link to="/settings" className="cursor-pointer flex w-full items-center">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

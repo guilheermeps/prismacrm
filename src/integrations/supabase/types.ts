@@ -54,6 +54,7 @@ export type Database = {
           postal_code: string | null
           state: string | null
           tags: Json | null
+          user_id: string
           whatsapp: string | null
         }
         Insert: {
@@ -70,6 +71,7 @@ export type Database = {
           postal_code?: string | null
           state?: string | null
           tags?: Json | null
+          user_id: string
           whatsapp?: string | null
         }
         Update: {
@@ -86,6 +88,7 @@ export type Database = {
           postal_code?: string | null
           state?: string | null
           tags?: Json | null
+          user_id?: string
           whatsapp?: string | null
         }
         Relationships: []
@@ -110,6 +113,7 @@ export type Database = {
           status: string
           terms: string | null
           total_amount: number
+          user_id: string
         }
         Insert: {
           client_id?: string | null
@@ -130,6 +134,7 @@ export type Database = {
           status?: string
           terms?: string | null
           total_amount?: number
+          user_id: string
         }
         Update: {
           client_id?: string | null
@@ -150,6 +155,7 @@ export type Database = {
           status?: string
           terms?: string | null
           total_amount?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -167,6 +173,7 @@ export type Database = {
           status: string
           total_installments: number | null
           type: string
+          user_id: string
         }
         Insert: {
           amount?: number
@@ -181,6 +188,7 @@ export type Database = {
           status?: string
           total_installments?: number | null
           type: string
+          user_id: string
         }
         Update: {
           amount?: number
@@ -195,6 +203,7 @@ export type Database = {
           status?: string
           total_installments?: number | null
           type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -209,6 +218,7 @@ export type Database = {
           proposalvalue: number | null
           servicetype: string | null
           stageid: string
+          user_id: string
           whatsapp: string | null
         }
         Insert: {
@@ -221,6 +231,7 @@ export type Database = {
           proposalvalue?: number | null
           servicetype?: string | null
           stageid: string
+          user_id: string
           whatsapp?: string | null
         }
         Update: {
@@ -233,6 +244,7 @@ export type Database = {
           proposalvalue?: number | null
           servicetype?: string | null
           stageid?: string
+          user_id?: string
           whatsapp?: string | null
         }
         Relationships: []
@@ -253,6 +265,7 @@ export type Database = {
           source_type: string | null
           status: string
           total_amount: number
+          user_id: string
         }
         Insert: {
           client_id?: string | null
@@ -269,6 +282,7 @@ export type Database = {
           source_type?: string | null
           status?: string
           total_amount?: number
+          user_id: string
         }
         Update: {
           client_id?: string | null
@@ -285,6 +299,7 @@ export type Database = {
           source_type?: string | null
           status?: string
           total_amount?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -297,6 +312,7 @@ export type Database = {
           name: string
           price: number
           products: Json | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -306,6 +322,7 @@ export type Database = {
           name: string
           price?: number
           products?: Json | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -315,6 +332,7 @@ export type Database = {
           name?: string
           price?: number
           products?: Json | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -327,6 +345,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           price: number
+          user_id: string
         }
         Insert: {
           category?: string | null
@@ -336,6 +355,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           price?: number
+          user_id: string
         }
         Update: {
           category?: string | null
@@ -345,6 +365,40 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           price?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          settings: Json | null
+          social_links: Json | null
+          website: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          settings?: Json | null
+          social_links?: Json | null
+          website?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          settings?: Json | null
+          social_links?: Json | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -360,6 +414,7 @@ export type Database = {
           source_id: string | null
           source_type: string | null
           time: string
+          user_id: string
         }
         Insert: {
           client: string
@@ -372,6 +427,7 @@ export type Database = {
           source_id?: string | null
           source_type?: string | null
           time: string
+          user_id: string
         }
         Update: {
           client?: string
@@ -384,6 +440,34 @@ export type Database = {
           source_id?: string | null
           source_type?: string | null
           time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      service_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -392,16 +476,19 @@ export type Database = {
           color: string | null
           id: string
           title: string
+          user_id: string
         }
         Insert: {
           color?: string | null
           id?: string
           title: string
+          user_id: string
         }
         Update: {
           color?: string | null
           id?: string
           title?: string
+          user_id?: string
         }
         Relationships: []
       }
