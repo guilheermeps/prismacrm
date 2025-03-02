@@ -9,59 +9,185 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import OrderForm from "@/components/orders-contracts/OrderForm";
 import ContractForm from "@/components/orders-contracts/ContractForm";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+// Define the type for the selected lead/contact
+interface SelectedEntity {
+  id: string;
+  name: string;
+  type: 'lead' | 'contact';
+  amount?: number;
+}
 
 const OrdersContracts = () => {
   const [activeTab, setActiveTab] = useState("orders");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showContractForm, setShowContractForm] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<{ leadId: string, leadName: string } | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Check sessionStorage for lead information on component mount
+  // Function to add financial record when an order or contract is created
+  const addFinancialRecord = async (data: {
+    client: string;
+    amount: number;
+    dueDate: string;
+    category: string;
+    paymentMethod: string;
+    totalInstallments?: number;
+    type: 'receivable';
+    status: 'pending';
+    sourceId: string;
+    sourceType: 'order' | 'contract';
+  }) => {
+    try {
+      // Generate an insert record into financial_transactions table
+      console.log("Adding financial record:", data);
+      
+      // Create a payment record in Supabase
+      const { data: financialRecord, error } = await supabase
+        .from('financial_transactions')
+        .insert([{
+          client: data.client,
+          amount: data.amount,
+          due_date: data.dueDate,
+          category: data.category,
+          payment_method: data.paymentMethod,
+          total_installments: data.totalInstallments || 1,
+          type: 'receivable',
+          status: 'pending',
+          source_id: data.sourceId,
+          source_type: data.sourceType
+        }])
+        .select();
+
+      if (error) {
+        console.error("Error adding financial record:", error);
+        toast.error("Erro ao adicionar registro financeiro");
+        return null;
+      }
+
+      toast.success("Registro financeiro adicionado com sucesso");
+      return financialRecord;
+    } catch (error) {
+      console.error("Error in addFinancialRecord:", error);
+      toast.error("Erro ao processar registro financeiro");
+      return null;
+    }
+  };
+
+  // Check sessionStorage for lead/contact information on component mount
   useEffect(() => {
     // Check for order creation request
-    const orderFromLeadData = sessionStorage.getItem('createOrderFromLead');
-    if (orderFromLeadData) {
+    const orderFromEntityData = sessionStorage.getItem('createOrderFromLead');
+    if (orderFromEntityData) {
       try {
-        const leadData = JSON.parse(orderFromLeadData);
-        setSelectedLead(leadData);
+        const entityData = JSON.parse(orderFromEntityData);
+        setSelectedEntity({
+          id: entityData.leadId || entityData.contactId,
+          name: entityData.leadName || entityData.contactName,
+          type: entityData.type || 'lead',
+          amount: entityData.amount || 0
+        });
         setActiveTab("orders"); // Switch to orders tab
         setShowOrderForm(true);
         sessionStorage.removeItem('createOrderFromLead'); // Clean up
-        toast.info(`Criando pedido para ${leadData.leadName || 'lead'}`);
+        toast.info(`Criando pedido para ${entityData.leadName || entityData.contactName || 'cliente'}`);
       } catch (error) {
-        console.error("Error parsing lead data for order:", error);
+        console.error("Error parsing entity data for order:", error);
       }
     }
 
     // Check for contract creation request
-    const contractFromLeadData = sessionStorage.getItem('createContractFromLead');
-    if (contractFromLeadData) {
+    const contractFromEntityData = sessionStorage.getItem('createContractFromLead');
+    if (contractFromEntityData) {
       try {
-        const leadData = JSON.parse(contractFromLeadData);
-        setSelectedLead(leadData);
+        const entityData = JSON.parse(contractFromEntityData);
+        setSelectedEntity({
+          id: entityData.leadId || entityData.contactId,
+          name: entityData.leadName || entityData.contactName,
+          type: entityData.type || 'lead',
+          amount: entityData.amount || 0
+        });
         setActiveTab("contracts"); // Switch to contracts tab
         setShowContractForm(true);
         sessionStorage.removeItem('createContractFromLead'); // Clean up
-        toast.info(`Criando contrato para ${leadData.leadName || 'lead'}`);
+        toast.info(`Criando contrato para ${entityData.leadName || entityData.contactName || 'cliente'}`);
       } catch (error) {
-        console.error("Error parsing lead data for contract:", error);
+        console.error("Error parsing entity data for contract:", error);
       }
     }
   }, []);
 
   const handleCloseOrderForm = () => {
     setShowOrderForm(false);
-    setSelectedLead(null);
+    setSelectedEntity(null);
   };
 
   const handleCloseContractForm = () => {
     setShowContractForm(false);
-    setSelectedLead(null);
+    setSelectedEntity(null);
+  };
+
+  const handleCreateOrder = () => {
+    setShowOrderForm(true);
+  };
+
+  const handleCreateContract = () => {
+    setShowContractForm(true);
+  };
+
+  const handleOrderCreated = async (orderData: any) => {
+    // Called when an order is successfully created
+    try {
+      // Add financial record for the order
+      if (orderData && orderData.id) {
+        await addFinancialRecord({
+          client: orderData.clientName,
+          amount: orderData.totalAmount,
+          dueDate: orderData.dueDate || new Date().toISOString().split('T')[0],
+          category: "Vendas",
+          paymentMethod: orderData.paymentMethod || "Dinheiro",
+          totalInstallments: orderData.installments || 1,
+          type: 'receivable',
+          status: 'pending',
+          sourceId: orderData.id,
+          sourceType: 'order'
+        });
+      }
+      handleCloseOrderForm();
+    } catch (error) {
+      console.error("Error in handleOrderCreated:", error);
+      toast.error("Erro ao processar o pedido");
+    }
+  };
+
+  const handleContractCreated = async (contractData: any) => {
+    // Called when a contract is successfully created
+    try {
+      // Add financial record for the contract
+      if (contractData && contractData.id) {
+        await addFinancialRecord({
+          client: contractData.clientName,
+          amount: contractData.totalAmount,
+          dueDate: contractData.dueDate || new Date().toISOString().split('T')[0],
+          category: "Contratos",
+          paymentMethod: contractData.paymentMethod || "Dinheiro",
+          totalInstallments: contractData.installments || 1,
+          type: 'receivable',
+          status: 'pending',
+          sourceId: contractData.id,
+          sourceType: 'contract'
+        });
+      }
+      handleCloseContractForm();
+    } catch (error) {
+      console.error("Error in handleContractCreated:", error);
+      toast.error("Erro ao processar o contrato");
+    }
   };
 
   return (
@@ -79,10 +205,10 @@ const OrdersContracts = () => {
                   <TabsTrigger value="contracts" className="text-sm md:text-base">Contratos</TabsTrigger>
                 </TabsList>
                 <TabsContent value="orders">
-                  <OrdersTab onCreateOrder={() => setShowOrderForm(true)} />
+                  <OrdersTab onCreateOrder={handleCreateOrder} />
                 </TabsContent>
                 <TabsContent value="contracts">
-                  <ContractsTab onCreateContract={() => setShowContractForm(true)} />
+                  <ContractsTab onCreateContract={handleCreateContract} />
                 </TabsContent>
               </Tabs>
             </div>
@@ -95,7 +221,8 @@ const OrdersContracts = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <OrderForm 
             onClose={handleCloseOrderForm} 
-            initialLead={selectedLead}
+            initialLead={selectedEntity}
+            onOrderCreated={handleOrderCreated}
           />
         </DialogContent>
       </Dialog>
@@ -105,7 +232,8 @@ const OrdersContracts = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <ContractForm 
             onClose={handleCloseContractForm}
-            initialLead={selectedLead}
+            initialLead={selectedEntity}
+            onContractCreated={handleContractCreated}
           />
         </DialogContent>
       </Dialog>

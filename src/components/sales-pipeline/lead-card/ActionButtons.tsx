@@ -56,7 +56,9 @@ const ActionButtons = ({
     // Store lead info in sessionStorage for use in OrderForm
     sessionStorage.setItem('createOrderFromLead', JSON.stringify({
       leadId,
-      leadName
+      leadName,
+      type: 'lead', // Identify the source as a lead
+      amount: 0, // Add a default amount of 0 to be updated later
     }));
     navigate('/orders-contracts');
   };
@@ -65,7 +67,9 @@ const ActionButtons = ({
     // Store lead info in sessionStorage for use in ContractForm
     sessionStorage.setItem('createContractFromLead', JSON.stringify({
       leadId,
-      leadName
+      leadName,
+      type: 'lead', // Identify the source as a lead
+      amount: 0, // Add a default amount of 0 to be updated later
     }));
     navigate('/orders-contracts');
   };

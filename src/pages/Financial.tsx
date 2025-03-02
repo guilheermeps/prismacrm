@@ -1,14 +1,107 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import FinancialTab from "@/components/orders-contracts/FinancialTab";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+// Define transaction types
+export interface FinancialTransaction {
+  id: string;
+  client: string;
+  amount: number;
+  due_date: string;
+  category: string;
+  payment_method: string;
+  total_installments: number;
+  type: 'receivable' | 'payable';
+  status: 'pending' | 'completed';
+  source_id?: string;
+  source_type?: 'order' | 'contract' | 'manual';
+  created_at: string;
+}
 
 const Financial = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  // Fetch financial transactions
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('financial_transactions')
+          .select('*')
+          .order('due_date', { ascending: true });
+
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setTransactions(data as FinancialTransaction[]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching financial transactions:", error.message);
+        toast.error("Erro ao carregar transações financeiras");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+
+    // Set up real-time subscription for new transactions
+    const channel = supabase
+      .channel('financial-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'financial_transactions'
+      }, (payload) => {
+        console.log('Financial transaction change received:', payload);
+        
+        // Refresh transactions after any change
+        fetchTransactions();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Function to update transaction status
+  const updateTransactionStatus = async (id: string, status: 'pending' | 'completed') => {
+    try {
+      const { error } = await supabase
+        .from('financial_transactions')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success(`Status da transação atualizado para ${status === 'completed' ? 'Pago' : 'Pendente'}`);
+      
+      // Update local state
+      setTransactions(prev => 
+        prev.map(transaction => 
+          transaction.id === id ? { ...transaction, status } : transaction
+        )
+      );
+    } catch (error: any) {
+      console.error("Error updating transaction status:", error.message);
+      toast.error("Erro ao atualizar status da transação");
+    }
   };
 
   return (
@@ -20,7 +113,11 @@ const Financial = () => {
           <div className="max-w-7xl mx-auto">
             <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Financeiro</h1>
             <div className="bg-card rounded-lg p-3 md:p-5">
-              <FinancialTab />
+              <FinancialTab 
+                transactions={transactions}
+                loading={loading}
+                onUpdateStatus={updateTransactionStatus}
+              />
             </div>
           </div>
         </main>
