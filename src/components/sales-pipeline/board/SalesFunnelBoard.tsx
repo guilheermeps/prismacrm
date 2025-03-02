@@ -51,6 +51,14 @@ const SalesFunnelBoard = ({
     
     console.log(`Optimistically moving lead ${leadId} from ${fromStageId} to ${toStageId}`);
     
+    // Find the lead to be moved
+    const leadToMove = boardLeads.find(lead => lead.id === leadId);
+    
+    if (!leadToMove) {
+      console.error("Lead not found for optimistic update");
+      return;
+    }
+    
     // Update the lead's stage in our local state first for instant UI update
     const updatedLeads = boardLeads.map(lead => {
       if (lead.id === leadId) {

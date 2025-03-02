@@ -20,6 +20,8 @@ const handleDevModeMoveOperation = async (
   fromStageName: string = "Desconhecido",
   toStageName: string = "Desconhecido"
 ): Promise<boolean> => {
+  console.log("Movendo lead no modo de desenvolvimento:", lead.id, "para estágio", toStageId);
+  
   try {
     // Even in dev mode, we'll update the lead to ensure persistence
     const updatedLead = {
@@ -28,11 +30,19 @@ const handleDevModeMoveOperation = async (
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
+    // In dev mode, we still want to persist changes
     const result = await updateLead(updatedLead);
-    return result !== null;
     
+    // Check if the update was successful
+    if (!result) {
+      console.error("Falha ao atualizar lead no banco de dados mesmo no modo dev");
+      return false;
+    }
+    
+    console.log("Lead movido com sucesso no modo de desenvolvimento");
+    return true;
   } catch (error) {
-    console.error("Dev mode error:", error);
+    console.error("Erro no modo de desenvolvimento:", error);
     return false;
   }
 };
@@ -49,9 +59,11 @@ export const moveLead = async (
     
     // Skip if already in the target stage
     if (lead.stageId === toStageId) {
-      console.log(`Lead ${lead.id} already in stage ${toStageId}`);
+      console.log(`Lead ${lead.id} já está no estágio ${toStageId}`);
       return true;
     }
+    
+    console.log(`Movendo lead ${lead.id} do estágio ${lead.stageId} para ${toStageId}`);
     
     // Get stage names for better history tracking
     const fromStageName = "Desconhecido";
@@ -69,20 +81,27 @@ export const moveLead = async (
       history: addHistoryEntry(lead.history, "moved", fromStageName, toStageName)
     };
     
-    // Update lead in database and handle result
+    console.log("Atualizando lead no banco de dados com novo estágio:", updatedLead);
+    
+    // Persist the change to database - await the result to ensure it's saved
     const result = await updateLead(updatedLead);
     
     if (!result) {
-      console.error("Failed to update lead in database");
-      toast.error("Erro ao mover o lead. Tente novamente.");
+      console.error("Falha ao atualizar lead no banco de dados");
+      toast.error("Erro ao persistir a mudança de etapa do lead. Tente novamente.");
       return false;
     }
     
+    console.log("Lead movido com sucesso:", lead.id);
+    toast.success("Lead movido com sucesso!");
+    
+    // Return success
     return true;
   } catch (error) {
     console.error("Erro ao mover lead:", error);
-    toast.error("Erro ao mover o lead. Tente novamente.");
+    
+    // Always show error toast regardless of mode
+    toast.error("Erro ao persistir a mudança de etapa do lead. Tente novamente.");
     return false;
   }
 };
-

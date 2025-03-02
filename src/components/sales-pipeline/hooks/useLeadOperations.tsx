@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
@@ -80,7 +79,22 @@ export function useLeadOperations() {
       return false;
     }
     
-    return await moveLead(lead, toStageId);
+    try {
+      const success = await moveLead(lead, toStageId);
+      if (success) {
+        // Update local state to reflect the change
+        setLeads(prevLeads => 
+          prevLeads.map(l => 
+            l.id === leadId ? { ...l, stageId: toStageId } : l
+          )
+        );
+      }
+      return success;
+    } catch (error) {
+      console.error("Error in handleMoveLead:", error);
+      toast.error("Erro ao mover o lead. Tente novamente.");
+      return false;
+    }
   };
 
   const handleUpdateLead = async (updatedLead: Lead) => {
