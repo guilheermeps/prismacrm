@@ -10,7 +10,8 @@ import {
   Users,
   Target,
   Banknote,
-  MoreHorizontal
+  MoreHorizontal,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -33,8 +34,11 @@ const mainNavItems = [
 
 const moreNavItems = [
   { path: '/products', label: 'Produtos', icon: Package },
-  { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
+  { path: '/orders', label: 'Pedidos', icon: ClipboardList },
+  { path: '/contracts', label: 'Contratos', icon: FileText },
+  { path: '/orders-contracts', label: 'Novo Pedido/Contrato', icon: FileText },
   { path: '/financial', label: 'Financeiro', icon: Banknote },
+  { path: '/projects', label: 'Projetos', icon: FileText },
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
 
