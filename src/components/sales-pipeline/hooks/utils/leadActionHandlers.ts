@@ -24,6 +24,10 @@ export const addNewLead = async (newLead: Omit<Lead, 'id' | 'createdAt' | 'histo
     const createdLead = await createLead(lead);
     console.log("Lead created successfully in Supabase:", createdLead);
     
+    if (!createdLead) {
+      throw new Error("Failed to create lead - no lead returned from API");
+    }
+    
     toast.success("Lead adicionado com sucesso");
     return true;
   } catch (error) {

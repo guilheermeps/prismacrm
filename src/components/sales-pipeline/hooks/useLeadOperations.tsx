@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { 
@@ -104,27 +103,11 @@ function useLeadOperationsInternal() {
         async (payload) => {
           console.log('Real-time lead update detected:', payload);
           
-          // Check the type of change and update state accordingly for better performance
-          if (payload.eventType === 'INSERT') {
-            // For new leads, just append to the current state
-            await fetchLeads(); // Refresh all leads to ensure we have complete data
-          } else if (payload.eventType === 'UPDATE') {
-            // For updates, replace the specific lead
-            await fetchLeads(); // Refresh all leads to ensure we have complete data
-          } else if (payload.eventType === 'DELETE') {
-            // For deletions, remove the lead
-            const deletedLeadId = payload.old.id;
-            setLeads(currentLeads => 
-              currentLeads.filter(lead => lead.id !== deletedLeadId)
-            );
-          } else {
-            // For any other changes, refresh the whole list
-            await fetchLeads();
-          }
+          // For any changes, refresh the whole list to ensure consistency
+          await fetchLeads();
         })
       .subscribe((status) => {
         console.log(`Supabase real-time subscription status: ${status}`);
-        // Fix: Use the correct type comparison
         if (status === 'CHANNEL_ERROR') {
           console.error('Error subscribing to real-time updates. Retrying...');
           // Auto-retry after a delay

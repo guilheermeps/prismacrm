@@ -1,12 +1,27 @@
+
 import { supabase } from "../client";
 import { Lead } from '../types';
 import { normalizeLeadFromSupabase, normalizeLeadForSupabase } from '../utils/leadNormalizer';
 import { addHistoryEntry } from "@/components/sales-pipeline/hooks/utils/leadHistoryUtils";
 
 // Helper function to handle missing session by providing mock data for development
-const handleMissingSession = () => {
+const handleMissingSession = async () => {
   console.log("No user session, using mock data mode");
-  return []; // Return empty array when not logged in
+  
+  // Instead of returning empty array, actually query the database without user_id filter
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('isarchived', false)
+    .order('createdat', { ascending: false });
+    
+  if (error) {
+    console.error('Error fetching leads in development mode:', error);
+    return [];
+  }
+  
+  console.log('Fetched leads in development mode:', data);
+  return data ? data.map(normalizeLeadFromSupabase) : [];
 };
 
 // Get all leads for the current user
@@ -24,6 +39,7 @@ export async function getLeads() {
     const { data, error } = await supabase
       .from('leads')
       .select('*')
+      .eq('isarchived', false)
       .order('createdat', { ascending: false });
       
     if (error) {
