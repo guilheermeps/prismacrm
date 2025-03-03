@@ -74,8 +74,9 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
   try {
     console.log("createLead function called with:", lead);
     
-    // For development without auth, use a fixed user_id
-    const mockUserId = '00000000-0000-0000-0000-000000000000';
+    // IMPORTANT FIX: Instead of using a mock user_id that doesn't exist,
+    // We will insert the lead without a user_id for now (development only)
+    // In production, this should use the authenticated user's ID
     
     // Make sure the lead has a createdAt timestamp
     const leadWithDate = {
@@ -88,10 +89,11 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
 
     console.log("Creating lead with normalized data:", normalizedLead);
     
-    // Prepare the lead data for insertion with a user_id
+    // Prepare the lead data for insertion WITHOUT user_id for development
+    // Remove user_id since it's causing foreign key constraint issues
     const leadForInsertion = {
-      ...normalizedLead,
-      user_id: mockUserId // For development
+      ...normalizedLead
+      // No user_id for development
     };
     
     console.log("Final lead object for insertion:", leadForInsertion);
