@@ -1,146 +1,129 @@
-
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  CalendarDays, 
-  BarChart,
-  Settings, 
-  ChevronLeft, 
-  ChevronRight, 
-  FileText,
-  Package,
-  Users,
-  Target,
-  Banknote
-} from 'lucide-react';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { userProfile } from '@/utils/mockData';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  LayoutDashboard, 
+  Users, 
+  FileText, 
+  Settings, 
+  Package, 
+  ListChecks, 
+  CreditCard, 
+  BarChart3, 
+  Bot,
+  Menu
+} from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/pipeline', label: 'Leads', icon: Target },
-  { path: '/contacts', label: 'Contatos', icon: Users },
-  { path: '/schedule', label: 'Agenda', icon: CalendarDays },
-  { path: '/products', label: 'Produtos', icon: Package },
-  { path: '/orders-contracts', label: 'Pedidos e Contratos', icon: FileText },
-  { path: '/financial', label: 'Financeiro', icon: Banknote },
-  { path: '/reports', label: 'Relatórios', icon: BarChart },
-  { path: '/settings', label: 'Configurações', icon: Settings },
-];
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-interface SidebarProps {
-  isOpen: boolean;
-  toggle: () => void;
-}
-
-const Sidebar = ({ isOpen, toggle }: SidebarProps) => {
+export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
-  return (
-    <>
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black/50 z-20"
-          onClick={toggle}
-        />
-      )}
-    
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed md:sticky top-0 left-0 z-30 h-screen bg-darker border-r border-studio-gray transition-all duration-300 ease-in-out",
-        isOpen ? "w-64" : "w-0 md:w-20",
-        "flex flex-col"
-      )}>
-        {/* Logo area */}
-        <div className={cn(
-          "h-16 flex items-center justify-between px-4 border-b border-studio-gray",
-          !isOpen && "md:justify-center"
-        )}>
-          {isOpen ? (
-            <>
-              <div className="flex items-center justify-center">
-                <img 
-                  src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
-                  alt="Prisma CM" 
-                  className="h-12 w-auto object-contain"
-                />
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggle}
-                className="text-studio-light hover:text-white hover:bg-studio-gray"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="hidden md:flex items-center justify-center">
-                <img 
-                  src="/lovable-uploads/d6af68b5-dd34-496c-ab4b-789c04482342.png" 
-                  alt="Prisma CM" 
-                  className="h-10 w-10 object-contain"
-                />
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggle}
-                className="text-studio-light hover:text-white hover:bg-studio-gray hidden md:flex"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </>
-          )}
-        </div>
-        
-        {/* Navigation */}
-        <nav className={cn(
-          "flex-1 py-4 px-2 overflow-y-auto",
-          !isOpen && "md:px-1"
-        )}>
-          <ul className="space-y-1">
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <NavLink 
-                  to={item.path} 
-                  className={({ isActive }) => cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm",
-                    isActive 
-                      ? "bg-studio-gray text-white" 
-                      : "text-studio-light hover:bg-studio-gray/80 hover:text-white",
-                    !isOpen && "md:justify-center md:px-2"
-                  )}
-                >
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
-                  {isOpen && <span>{item.label}</span>}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        
-        {/* Footer - User Profile */}
-        {isOpen && (
-          <div className="p-3 border-t border-studio-gray">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-studio-gray flex items-center justify-center text-white font-medium text-xs">
-                {userProfile.name.substring(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{userProfile.fullName}</p>
-                <p className="text-xs text-muted-foreground truncate">{userProfile.handle}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </aside>
-    </>
-  );
-};
+  const navigation = [
+    {
+      label: 'Dashboard',
+      icon: <LayoutDashboard size={16} />,
+      href: '/dashboard',
+    },
+    {
+      label: 'Pipeline de Vendas',
+      icon: <BarChart3 size={16} />,
+      href: '/sales-pipeline',
+    },
+    {
+      label: 'Contatos',
+      icon: <Users size={16} />,
+      href: '/contacts',
+    },
+    {
+      label: 'Contratos',
+      icon: <FileText size={16} />,
+      href: '/contracts',
+    },
+    {
+      label: 'Pedidos',
+      icon: <Package size={16} />,
+      href: '/orders',
+    },
+    {
+      label: 'Tarefas',
+      icon: <ListChecks size={16} />,
+      href: '/tasks',
+    },
+    {
+      label: 'Financeiro',
+      icon: <CreditCard size={16} />,
+      href: '/finances',
+    },
+    {
+      label: 'Assistente IA',
+      icon: <Bot size={16} />,
+      href: '/ai-assistant',
+    },
+    {
+      label: 'Configurações',
+      icon: <Settings size={16} />,
+      href: '/settings',
+    },
+  ];
 
-export default Sidebar;
+  const SidebarContent = (
+    <div className={cn("pb-12 h-full flex flex-col", className)}>
+      <div className="py-4 px-3 border-b">
+        <Link to="/dashboard" className="flex items-center gap-2">
+          <img src="/logo.svg" alt="Logo" className="h-6 w-6" />
+          <h1 className="text-lg font-bold">CRM Pro</h1>
+        </Link>
+      </div>
+      <ScrollArea className="flex-1 py-2">
+        <nav className="grid gap-1 px-2">
+          {navigation.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                location.pathname === item.href ? "bg-accent text-accent-foreground" : "transparent"
+              )}
+            >
+              {item.icon}
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </ScrollArea>
+      <div className="mt-auto p-4">
+        <p className="text-xs text-muted-foreground text-center">
+          CRM Pro v1.0.0
+        </p>
+      </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" size="icon" className="md:hidden fixed left-4 top-4 z-40">
+            <Menu size={16} />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-72">
+          {SidebarContent}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <div className="hidden border-r bg-card md:block w-72">
+      {SidebarContent}
+    </div>
+  );
+}

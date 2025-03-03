@@ -1,54 +1,49 @@
-
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { ThemeProvider } from 'next-themes';
 import { QueryProvider } from './providers/QueryProvider';
-import Dashboard from './pages/Dashboard';
-import SalesPipeline from './pages/SalesPipeline';
-import Contacts from './pages/Contacts';
-import NotFound from './pages/NotFound';
-import OrdersContracts from './pages/OrdersContracts';
-import Orders from './pages/Orders';
-import Products from './pages/Products';
-import Contracts from './pages/Contracts';
-import Settings from './pages/Settings';
-import Reports from './pages/Reports';
-import Financial from './pages/Financial';
-import Schedule from './pages/Schedule';
-import Scheduling from './pages/Scheduling';
-import ClientRegistration from './pages/ClientRegistration';
+import { AuthProvider } from './providers/AuthProvider';
+import { ThemeProvider } from './providers/ThemeProvider';
+import { ModalProvider } from './providers/ModalProvider';
+import { LoadingScreen } from './components/ui/loading-screen';
+
+// Lazy-loaded components
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SalesPipeline = lazy(() => import('./pages/SalesPipeline'));
+const Contacts = lazy(() => import('./pages/Contacts'));
+const Contracts = lazy(() => import('./pages/Contracts'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Settings = lazy(() => import('./pages/Settings'));
+const AuthPage = lazy(() => import('./pages/Auth'));
+const AIAssistantPage = lazy(() => import('./pages/AIAssistant'));
 
 function App() {
   return (
-    <QueryProvider>
-      <ThemeProvider attribute="class" defaultTheme="light">
-        <Router>
-          <Routes>
-            {/* Rota pública */}
-            <Route path="/client-registration/:token" element={<ClientRegistration />} />
-            
-            {/* Rotas sem verificação de autenticação */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/pipeline" element={<SalesPipeline />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/orders-contracts" element={<OrdersContracts />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/contracts" element={<Contracts />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/financial" element={<Financial />} />
-            <Route path="/scheduling" element={<Scheduling />} />
-            
-            {/* Rota para páginas não encontradas */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
-        <Toaster position="top-right" richColors />
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <QueryProvider>
+          <AuthProvider>
+            <ModalProvider>
+              <Toaster position="top-right" richColors />
+              <Suspense fallback={<LoadingScreen />}>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/sales-pipeline" element={<SalesPipeline />} />
+                  <Route path="/contacts" element={<Contacts />} />
+                  <Route path="/contracts" element={<Contracts />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/ai-assistant" element={<AIAssistantPage />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </Suspense>
+            </ModalProvider>
+          </AuthProvider>
+        </QueryProvider>
       </ThemeProvider>
-    </QueryProvider>
+    </BrowserRouter>
   );
 }
 
