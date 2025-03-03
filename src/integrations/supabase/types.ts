@@ -218,7 +218,7 @@ export type Database = {
           proposalvalue: number | null
           servicetype: string | null
           stageid: string
-          user_id: string
+          user_id: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -231,7 +231,7 @@ export type Database = {
           proposalvalue?: number | null
           servicetype?: string | null
           stageid: string
-          user_id: string
+          user_id?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -244,7 +244,7 @@ export type Database = {
           proposalvalue?: number | null
           servicetype?: string | null
           stageid?: string
-          user_id?: string
+          user_id?: string | null
           whatsapp?: string | null
         }
         Relationships: []

@@ -1,4 +1,3 @@
-
 import { supabase } from "../client";
 import { Lead } from '../types';
 import { normalizeLeadFromSupabase, normalizeLeadForSupabase } from '../utils/leadNormalizer';
@@ -74,9 +73,8 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
   try {
     console.log("createLead function called with:", lead);
     
-    // IMPORTANT FIX: Instead of using a mock user_id that doesn't exist,
-    // We will insert the lead without a user_id for now (development only)
-    // In production, this should use the authenticated user's ID
+    // Get current user session (if any)
+    const { data: { session } } = await supabase.auth.getSession();
     
     // Make sure the lead has a createdAt timestamp
     const leadWithDate = {
@@ -89,12 +87,11 @@ export async function createLead(lead: Omit<Lead, 'id'>) {
 
     console.log("Creating lead with normalized data:", normalizedLead);
     
-    // Prepare the lead data for insertion WITHOUT user_id for development
-    // Remove user_id since it's causing foreign key constraint issues
-    const leadForInsertion = {
-      ...normalizedLead
-      // No user_id for development
-    };
+    // If we have a user session, add the user_id
+    // Otherwise, we'll rely on the nullable column we just created
+    const leadForInsertion = session?.user?.id 
+      ? { ...normalizedLead, user_id: session.user.id }
+      : { ...normalizedLead };
     
     console.log("Final lead object for insertion:", leadForInsertion);
     
